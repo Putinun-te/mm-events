@@ -11,12 +11,12 @@ let show2 = ref<boolean>(false)
 
 function click () {
     show.value = !show.value
-    console.log(show.value)
+    // console.log(show.value)
 }
 
 function click2 () {
     show2.value = !show2.value
-    console.log(show.value)
+    // console.log(show.value)
 }
 </script>
 

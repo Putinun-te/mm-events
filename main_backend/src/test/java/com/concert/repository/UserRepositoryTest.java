@@ -26,7 +26,7 @@ class UserRepositoryTest {
 
     @BeforeEach
     void setUp() {
-        testUser = new User("testuser", "test@example.com", "password123");
+        testUser = new User("Test User", "testuser", "test@example.com", "password123");
     }
 
     @Test
@@ -136,7 +136,7 @@ class UserRepositoryTest {
     void testUniqueConstraints() {
         // Arrange
         entityManager.persistAndFlush(testUser);
-        User duplicateUsernameUser = new User("testuser", "different@example.com", "password456");
+        User duplicateUsernameUser = new User("Duplicate User", "testuser", "different@example.com", "password456");
 
         // Act & Assert
         assertThrows(Exception.class, () -> {

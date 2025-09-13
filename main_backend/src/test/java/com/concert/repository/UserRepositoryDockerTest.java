@@ -48,10 +48,20 @@ public class UserRepositoryDockerTest {
         userRepository.deleteAll();
     }
 
+    private User createValidUser(String name, String username, String email, String password) {
+        User user = new User();
+        user.setName(name);
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPassword(password);
+        return user;
+    }
+
     @Test
     public void testSaveAndFindUser() {
         // Create user
         User user = new User();
+        user.setName("Test User");
         user.setUsername("testuser");
         user.setEmail("test@example.com");
         user.setPassword("hashedpassword");
@@ -76,6 +86,7 @@ public class UserRepositoryDockerTest {
     public void testFindByUsername() {
         // Create and save user
         User user = new User();
+        user.setName("Find Me User");
         user.setUsername("findme");
         user.setEmail("findme@example.com");
         user.setPassword("password");
@@ -96,6 +107,7 @@ public class UserRepositoryDockerTest {
     public void testFindByEmail() {
         // Create and save user
         User user = new User();
+        user.setName("Email Test User");
         user.setUsername("emailtest");
         user.setEmail("email@example.com");
         user.setPassword("password");
@@ -116,6 +128,7 @@ public class UserRepositoryDockerTest {
     public void testFindByUsernameOrEmail() {
         // Create and save user
         User user = new User();
+        user.setName("Combined Test User");
         user.setUsername("combined");
         user.setEmail("combined@example.com");
         user.setPassword("password");
@@ -141,6 +154,7 @@ public class UserRepositoryDockerTest {
     public void testExistsByUsername() {
         // Create and save user
         User user = new User();
+        user.setName("Exists Test User");
         user.setUsername("exists");
         user.setEmail("exists@example.com");
         user.setPassword("password");
@@ -156,6 +170,7 @@ public class UserRepositoryDockerTest {
     public void testExistsByEmail() {
         // Create and save user
         User user = new User();
+        user.setName("Email Exists User");
         user.setUsername("emailexists");
         user.setEmail("exists@example.com");
         user.setPassword("password");
@@ -172,6 +187,7 @@ public class UserRepositoryDockerTest {
         LocalDateTime beforeCreation = LocalDateTime.now();
         
         User user = new User();
+        user.setName("Time Test User");
         user.setUsername("timetest");
         user.setEmail("time@example.com");
         user.setPassword("password");
@@ -204,6 +220,7 @@ public class UserRepositoryDockerTest {
         // Create multiple users to test Docker container can handle multiple operations
         for (int i = 0; i < 5; i++) {
             User user = new User();
+            user.setName("User " + i);
             user.setUsername("user" + i);
             user.setEmail("user" + i + "@example.com");
             user.setPassword("password" + i);
@@ -224,6 +241,7 @@ public class UserRepositoryDockerTest {
     public void testDockerPersistenceAcrossOperations() {
         // Save a user
         User user = new User();
+        user.setName("Persistent User");
         user.setUsername("persistent");
         user.setEmail("persistent@example.com");
         user.setPassword("password");

@@ -26,12 +26,14 @@ class UserTest {
 
     @Test
     void testParameterizedConstructor() {
+        String name = "Test User";
         String username = "testuser";
         String email = "test@example.com";
         String password = "password123";
 
-        User paramUser = new User(username, email, password);
+        User paramUser = new User(name, username, email, password);
 
+        assertEquals(name, paramUser.getName());
         assertEquals(username, paramUser.getUsername());
         assertEquals(email, paramUser.getEmail());
         assertEquals(password, paramUser.getPassword());

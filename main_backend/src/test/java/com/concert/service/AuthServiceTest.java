@@ -50,7 +50,7 @@ class AuthServiceTest {
         
         registerRequest = new RegisterRequest("testuser", "test@example.com", "password123");
         loginRequest = new LoginRequest("testuser", "password123");
-        testUser = new User("testuser", "test@example.com", "encodedPassword");
+        testUser = new User("Test User", "testuser", "test@example.com", "encodedPassword");
         testUser.setId(1L);
     }
 

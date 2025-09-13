@@ -1,12 +1,58 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { login } from "~~/server/login/login";
 
 const email = ref('')
 const password = ref('')
+const isLoading = ref(false)
+const message = ref('')
+const isSuccess = ref(false)
 
-const handleSubmit = () => {
-  console.log("Email:", email.value);
-  console.log("Password:", password.value);
+const handleSubmit = async () => {
+  if (!email.value || !password.value) {
+    message.value = "Please fill in all fields";
+    isSuccess.value = false;
+    return;
+  }
+
+  isLoading.value = true;
+  message.value = '';
+
+  try {
+    const res = await login({
+      usernameOrEmail: email.value,
+      password: password.value,
+    });
+    console.log("Login Success:", res);
+    
+    if (res.token) {
+      message.value = `Login successful! Welcome back ${res.username}!`;
+      isSuccess.value = true;
+      // Store token in localStorage
+      localStorage.setItem('jwt_token', res.token);
+      localStorage.setItem('user_email', res.email);
+      localStorage.setItem('username', res.username);
+      
+      // Clear form
+      email.value = '';
+      password.value = '';
+      
+      // Redirect or update UI as needed
+      setTimeout(() => {
+        // You can navigate to dashboard or home page here
+        console.log("Redirecting to dashboard...");
+      }, 2000);
+    } else if (res.message) {
+      message.value = res.message;
+      isSuccess.value = false;
+    }
+  } catch (err: any) {
+    console.error("Login error:", err);
+    message.value = err.response?.data?.message || "Login failed!";
+    isSuccess.value = false;
+  } finally {
+    isLoading.value = false;
+  }
 };
 </script>
 <template>
@@ -16,16 +62,43 @@ const handleSubmit = () => {
                 <div class="flex items-center justify-center mb-4">
                     <img src="~/assets/img/apple.jpg" class="h-32"/>
                 </div>
-                    <div class="bg-red-500 px-3 py-2 rounded text-gray-100">
-                        <p>test</p>
-                    </div>
-                <label class="text-grey-700">Email</label>
-                <input v-model="email" class="w-full py-2 bg-gray-200 text-grey-500 px-1 outline-none mb-4"/>
+                
+                <!-- Success/Error Message -->
+                <div v-if="message" :class="[
+                  'px-3 py-2 rounded mb-4 text-center',
+                  isSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                ]">
+                    <p>{{ message }}</p>
+                </div>
+                
+                <label class="text-grey-700">Email or Username</label>
+                <input 
+                  v-model="email" 
+                  type="text"
+                  placeholder="Enter your email or username"
+                  class="w-full py-2 bg-gray-200 text-grey-500 px-1 outline-none mb-4"
+                  :disabled="isLoading"
+                />
                 <label class="text-grey-700">Password</label>
-                <input v-model="password" class="w-full py-2 bg-gray-200 text-grey-500 px-1 outline-none mb-4"/>
+                <input 
+                  v-model="password" 
+                  type="password"
+                  placeholder="Enter your password"
+                  class="w-full py-2 bg-gray-200 text-grey-500 px-1 outline-none mb-4"
+                  :disabled="isLoading"
+                />
                 <input class="mb-4" type="checkbox" id="remember"/>
-                <label class="text-gray-300" for="remember">Remember</label>
-                <button type="submit" class="bg-blue-500 w-full text-gray-100 py-2 rounded hover:bg-blue-500 transition-colors">Login</button>
+                <label class="text-gray-300" for="remember">Remember me</label>
+                <button 
+                  type="submit" 
+                  :disabled="isLoading"
+                  :class="[
+                    'w-full text-gray-100 py-2 rounded transition-colors',
+                    isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+                  ]"
+                >
+                  {{ isLoading ? 'Logging in...' : 'Login' }}
+                </button>
             </div>
         </form>
     </div>

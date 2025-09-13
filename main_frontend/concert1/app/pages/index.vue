@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import RegisterCheck from './RegisterCheck.vue';
+import DatabaseInfo from '~/components/DatabaseInfo.vue';
+
 const pages = ref([
     { text: 'Login', value: 'login'},
     { text: 'Register', value: 'register'}
@@ -46,6 +48,6 @@ function click3 () {
 
     <button class="pl-5 text-red-500 bg-gray-200 pointer cursor-pointer" @click="click3">check database</button>
     <div v-if=show3>
-        <RegisterCheck />
+        <DatabaseInfo />
     </div>
 </template>

@@ -73,7 +73,7 @@ class AuthIntegrationTest {
     @Test
     void testRegisterDuplicateUsername() throws Exception {
         // Arrange - Create existing user
-        User existingUser = new User("existinguser", "existing@example.com", "password");
+        User existingUser = new User("Existing User", "existinguser", "existing@example.com", "password");
         userRepository.save(existingUser);
 
         RegisterRequest registerRequest = new RegisterRequest("existinguser", "new@example.com", "password123");
@@ -89,7 +89,7 @@ class AuthIntegrationTest {
     @Test
     void testRegisterDuplicateEmail() throws Exception {
         // Arrange - Create existing user
-        User existingUser = new User("existinguser", "existing@example.com", "password");
+        User existingUser = new User("Existing User", "existinguser", "existing@example.com", "password");
         userRepository.save(existingUser);
 
         RegisterRequest registerRequest = new RegisterRequest("newuser", "existing@example.com", "password123");
@@ -105,7 +105,7 @@ class AuthIntegrationTest {
     @Test
     void testLoginWithValidCredentials() throws Exception {
         // Arrange - Create user
-        User user = new User("testuser", "test@example.com", passwordEncoder.encode("password123"));
+        User user = new User("Test User", "testuser", "test@example.com", passwordEncoder.encode("password123"));
         userRepository.save(user);
 
         LoginRequest loginRequest = new LoginRequest("testuser", "password123");
@@ -124,7 +124,7 @@ class AuthIntegrationTest {
     @Test
     void testLoginWithEmail() throws Exception {
         // Arrange - Create user
-        User user = new User("testuser", "test@example.com", passwordEncoder.encode("password123"));
+        User user = new User("Test User", "testuser", "test@example.com", passwordEncoder.encode("password123"));
         userRepository.save(user);
 
         LoginRequest loginRequest = new LoginRequest("test@example.com", "password123");
@@ -155,7 +155,7 @@ class AuthIntegrationTest {
     @Test
     void testLoginWithInvalidPassword() throws Exception {
         // Arrange - Create user
-        User user = new User("testuser", "test@example.com", passwordEncoder.encode("correctpassword"));
+        User user = new User("Test User", "testuser", "test@example.com", passwordEncoder.encode("correctpassword"));
         userRepository.save(user);
 
         LoginRequest loginRequest = new LoginRequest("testuser", "wrongpassword");

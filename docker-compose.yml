@@ -6,15 +6,15 @@ services:
     container_name: concert-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_DATABASE: devop_db
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: concert_db
       MYSQL_USER: concert_user
       MYSQL_PASSWORD: concert_password
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database-setup.sql:/docker-entrypoint-initdb.d/database-setup.sql
     networks:
       - concert-network
     healthcheck:
@@ -23,22 +23,31 @@ services:
       retries: 10
 
   backend:
-    build: ./main_backend
+    build: 
+      context: ./main_backend
+      dockerfile: Dockerfile
     container_name: concert-backend
     restart: always
     depends_on:
       mysql:
         condition: service_healthy
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/devop_db
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/concert_db
       SPRING_DATASOURCE_USERNAME: concert_user
       SPRING_DATASOURCE_PASSWORD: concert_password
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_PROFILES_ACTIVE: docker
+      JAVA_OPTS: "-Xmx512m -Xms256m"
     ports:
       - "8080:8080"
     networks:
       - concert-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
 
 volumes:
   mysql_data:

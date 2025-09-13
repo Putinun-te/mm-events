@@ -2,8 +2,8 @@
 -- This script creates the database and tables for the Concert Backend project
 
 -- Create database
-CREATE DATABASE IF NOT EXISTS devop_db;
-USE devop_db;
+CREATE DATABASE IF NOT EXISTS concert_db;
+USE concert_db;
 
 -- Drop tables if they exist (for clean setup)
 DROP TABLE IF EXISTS favs;
@@ -147,3 +147,11 @@ INSERT INTO tickets (event_id, tk_types, price, quantity) VALUES
 -- Display success message
 SELECT 'Database setup completed successfully!' as status;
 SELECT 'Default password for all users is: password123' as note;
+
+-- Create MySQL user for testing
+CREATE USER IF NOT EXISTS 'username'@'%' IDENTIFIED BY 'password';
+GRANT ALL PRIVILEGES ON devop_db.* TO 'username'@'%';
+FLUSH PRIVILEGES;
+
+-- Display user creation message
+SELECT 'MySQL user created: username/password' as user_info;

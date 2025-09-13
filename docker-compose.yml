@@ -1,0 +1,19 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pj_devop_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234   # รหัสผ่าน root
+      MYSQL_DATABASE: devop_db        # สร้าง DB อัตโนมัติ
+      MYSQL_USER: devop_user          # user สำหรับ connect
+      MYSQL_PASSWORD: devop_pass      # รหัสผ่าน user
+    ports:
+      - "3306:3306"                   # expose port ให้เครื่อง host
+    volumes:
+      - mysql_data:/var/lib/mysql     # เก็บข้อมูล persist
+
+volumes:
+  mysql_data:

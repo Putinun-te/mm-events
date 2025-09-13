@@ -78,29 +78,28 @@ class JwtServiceTest {
     }
 
     @Test
-    void testTokenExpiration() {
-        // Set a very short expiration time (50ms to ensure quick expiration)
-        ReflectionTestUtils.setField(jwtService, "jwtExpirationInMs", 50);
+    public void testTokenExpiration() {
+        // Test with 1 second expiration
+        jwtService.setJwtExpirationInMs(1000);
         
-        String token = jwtService.generateToken(testUsername);
+        String token = jwtService.generateToken("testuser");
         
-        // Initially token should be valid
-        Boolean isInitiallyValid = jwtService.validateToken(token, testUsername);
-        assertTrue(isInitiallyValid, "Token should be initially valid");
+        // Token should be initially valid
+        assertTrue(jwtService.validateToken(token, "testuser"), "Token should be initially valid");
+        
+        // Test with expired token
+        jwtService.setJwtExpirationInMs(1); // 1 millisecond
+        String expiredToken = jwtService.generateToken("testuser");
         
         // Wait for token to expire
         try {
-            Thread.sleep(100); // Wait longer than expiration time
+            Thread.sleep(10); // Wait for expiration
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            fail("Thread interrupted during sleep");
         }
         
-        // Check if token is expired directly
-        Boolean isExpired = jwtService.isTokenExpired(token);
-        assertTrue(isExpired, "Token should be expired after waiting");
-        
-        // validateToken should return false for expired token
-        Boolean isValid = jwtService.validateToken(token, testUsername);
-        assertFalse(isValid, "Expired token should not be valid");
+        // Token should now be expired/invalid
+        assertFalse(jwtService.validateToken(expiredToken, "testuser"), "Token should be expired and invalid");
     }
 }

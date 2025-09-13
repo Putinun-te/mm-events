@@ -102,4 +102,34 @@ class JwtServiceTest {
         // Token should now be expired/invalid
         assertFalse(jwtService.validateToken(expiredToken, "testuser"), "Token should be expired and invalid");
     }
+
+    @Test
+    void testExtractUsernameAlias() {
+        // Test the alias method extractUsername
+        String token = jwtService.generateToken(testUsername);
+        
+        String extractedUsername = jwtService.extractUsername(token);
+        assertEquals(testUsername, extractedUsername);
+        
+        // Verify it returns the same result as the main method
+        String mainMethodResult = jwtService.getUsernameFromToken(token);
+        assertEquals(mainMethodResult, extractedUsername);
+    }
+
+    @Test
+    void testIsTokenValidAlias() {
+        // Test the alias method isTokenValid
+        String token = jwtService.generateToken(testUsername);
+        
+        Boolean isValid = jwtService.isTokenValid(token, testUsername);
+        assertTrue(isValid);
+        
+        // Verify it returns the same result as the main method
+        Boolean mainMethodResult = jwtService.validateToken(token, testUsername);
+        assertEquals(mainMethodResult, isValid);
+        
+        // Test with wrong username
+        Boolean isValidWrongUser = jwtService.isTokenValid(token, "wronguser");
+        assertFalse(isValidWrongUser);
+    }
 }

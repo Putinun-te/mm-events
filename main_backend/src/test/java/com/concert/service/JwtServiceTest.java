@@ -14,15 +14,15 @@ import static org.junit.jupiter.api.Assertions.*;
 @ExtendWith(MockitoExtension.class)
 class JwtServiceTest {
 
-    @InjectMocks
-    private JwtService jwtService;
+    private JwtService jwtService; // Create fresh instance for each test
 
-    private final String testSecret = "testSecretKeyForJunitTesting";
+    private final String testSecret = "testSecretKeyThatIsAtLeast512BitsLongForHS512AlgorithmSecurityRequirements12345";
     private final int testExpiration = 3600000; // 1 hour
     private final String testUsername = "testuser";
 
     @BeforeEach
     void setUp() {
+        jwtService = new JwtService(); // Fresh instance for each test
         ReflectionTestUtils.setField(jwtService, "jwtSecret", testSecret);
         ReflectionTestUtils.setField(jwtService, "jwtExpirationInMs", testExpiration);
     }
@@ -79,22 +79,28 @@ class JwtServiceTest {
 
     @Test
     void testTokenExpiration() {
-        // Set a very short expiration time
-        ReflectionTestUtils.setField(jwtService, "jwtExpirationInMs", 1);
+        // Set a very short expiration time (50ms to ensure quick expiration)
+        ReflectionTestUtils.setField(jwtService, "jwtExpirationInMs", 50);
         
         String token = jwtService.generateToken(testUsername);
         
-        // Wait a bit to let the token expire
+        // Initially token should be valid
+        Boolean isInitiallyValid = jwtService.validateToken(token, testUsername);
+        assertTrue(isInitiallyValid, "Token should be initially valid");
+        
+        // Wait for token to expire
         try {
-            Thread.sleep(10);
+            Thread.sleep(100); // Wait longer than expiration time
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
         
+        // Check if token is expired directly
         Boolean isExpired = jwtService.isTokenExpired(token);
-        assertTrue(isExpired);
+        assertTrue(isExpired, "Token should be expired after waiting");
         
+        // validateToken should return false for expired token
         Boolean isValid = jwtService.validateToken(token, testUsername);
-        assertFalse(isValid);
+        assertFalse(isValid, "Expired token should not be valid");
     }
 }

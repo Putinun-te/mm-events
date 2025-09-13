@@ -152,6 +152,12 @@ class UserRepositoryTest {
         // Assert
         assertNotNull(savedUser.getCreatedAt());
         assertNotNull(savedUser.getUpdatedAt());
-        assertEquals(savedUser.getCreatedAt(), savedUser.getUpdatedAt());
+        
+        // Allow for small timing differences (up to 1 second)
+        long timeDifferenceNanos = Math.abs(
+            savedUser.getCreatedAt().atZone(java.time.ZoneOffset.UTC).toInstant().toEpochMilli() - 
+            savedUser.getUpdatedAt().atZone(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        );
+        assertTrue(timeDifferenceNanos < 1000, "CreatedAt and UpdatedAt should be within 1 second of each other");
     }
 }

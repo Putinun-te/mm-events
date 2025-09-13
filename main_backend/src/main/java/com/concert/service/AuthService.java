@@ -14,14 +14,18 @@ import java.util.Optional;
 @Service
 public class AuthService {
     
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
     
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-    
-    @Autowired
-    private JwtService jwtService;
+    // Constructor for dependency injection
+    public AuthService(UserRepository userRepository, 
+                      PasswordEncoder passwordEncoder, 
+                      JwtService jwtService) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+    }
     
     public AuthResponse register(RegisterRequest registerRequest) {
         // Check if username already exists

@@ -53,17 +53,36 @@ public class JwtService {
     }
     
     public Boolean isTokenExpired(String token) {
-        final Date expiration = getExpirationDateFromToken(token);
-        return expiration.before(new Date());
+        try {
+            final Date expiration = getExpirationDateFromToken(token);
+            return expiration.before(new Date());
+        } catch (Exception e) {
+            // If we can't parse the token, consider it expired
+            return true;
+        }
     }
     
     public Boolean validateToken(String token, String username) {
-        final String tokenUsername = getUsernameFromToken(token);
-        return (tokenUsername.equals(username) && !isTokenExpired(token));
+        try {
+            final String tokenUsername = getUsernameFromToken(token);
+            return (tokenUsername.equals(username) && !isTokenExpired(token));
+        } catch (Exception e) {
+            // Token is invalid (expired, malformed, etc.)
+            return false;
+        }
     }
     
     private Key getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    // Setter methods for testing
+    public void setJwtSecret(String jwtSecret) {
+        this.jwtSecret = jwtSecret;
+    }
+
+    public void setJwtExpirationInMs(long jwtExpirationInMs) {
+        this.jwtExpirationInMs = (int) jwtExpirationInMs;
     }
 }

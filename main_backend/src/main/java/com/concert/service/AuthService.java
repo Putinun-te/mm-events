@@ -40,10 +40,13 @@ public class AuthService {
         
         // Create new user
         User user = new User(
-            registerRequest.getUsername(),
+            registerRequest.getUsername(), // This will be the name
             registerRequest.getEmail(),
             passwordEncoder.encode(registerRequest.getPassword())
         );
+        
+        // Set username if provided
+        user.setUsername(registerRequest.getUsername());
         
         User savedUser = userRepository.save(user);
         
@@ -73,5 +76,16 @@ public class AuthService {
         String jwt = jwtService.generateToken(user.getUsername());
         
         return new AuthResponse(jwt, user.getUsername(), user.getEmail());
+    }
+    
+    public AuthResponse getCurrentUser(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        
+        if (userOptional.isEmpty()) {
+            return new AuthResponse("User not found");
+        }
+        
+        User user = userOptional.get();
+        return new AuthResponse(null, user.getUsername(), user.getEmail());
     }
 }

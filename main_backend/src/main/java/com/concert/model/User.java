@@ -12,10 +12,13 @@ public class User {
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "user_id")
     private Long id;
     
-    @NotBlank(message = "Username is required")
-    @Size(min = 3, max = 50, message = "Username must be between 3 and 50 characters")
+    @NotBlank(message = "Name is required")
+    @Column(name = "name")
+    private String name;
+    
     @Column(unique = true)
     private String username;
     
@@ -27,6 +30,17 @@ public class User {
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
+    
+    @Column(name = "profile_photo")
+    private String profilePhoto;
+    
+    private String company;
+    private String website;
+    private String phone;
+    private String address;
+    private String city;
+    private String country;
+    private String pincode;
     
     @Column(name = "created_at")
     private LocalDateTime createdAt;
@@ -40,9 +54,9 @@ public class User {
         this.updatedAt = LocalDateTime.now();
     }
     
-    public User(String username, String email, String password) {
+    public User(String name, String email, String password) {
         this();
-        this.username = username;
+        this.name = name;
         this.email = email;
         this.password = password;
     }
@@ -54,6 +68,14 @@ public class User {
     
     public void setId(Long id) {
         this.id = id;
+    }
+    
+    public String getName() {
+        return name;
+    }
+    
+    public void setName(String name) {
+        this.name = name;
     }
     
     public String getUsername() {
@@ -78,6 +100,70 @@ public class User {
     
     public void setPassword(String password) {
         this.password = password;
+    }
+    
+    public String getProfilePhoto() {
+        return profilePhoto;
+    }
+    
+    public void setProfilePhoto(String profilePhoto) {
+        this.profilePhoto = profilePhoto;
+    }
+    
+    public String getCompany() {
+        return company;
+    }
+    
+    public void setCompany(String company) {
+        this.company = company;
+    }
+    
+    public String getWebsite() {
+        return website;
+    }
+    
+    public void setWebsite(String website) {
+        this.website = website;
+    }
+    
+    public String getPhone() {
+        return phone;
+    }
+    
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+    
+    public String getAddress() {
+        return address;
+    }
+    
+    public void setAddress(String address) {
+        this.address = address;
+    }
+    
+    public String getCity() {
+        return city;
+    }
+    
+    public void setCity(String city) {
+        this.city = city;
+    }
+    
+    public String getCountry() {
+        return country;
+    }
+    
+    public void setCountry(String country) {
+        this.country = country;
+    }
+    
+    public String getPincode() {
+        return pincode;
+    }
+    
+    public void setPincode(String pincode) {
+        this.pincode = pincode;
     }
     
     public LocalDateTime getCreatedAt() {

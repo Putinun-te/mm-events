@@ -14,10 +14,10 @@ import java.util.function.Function;
 @Service
 public class JwtService {
     
-    @Value("${app.jwtSecret:mySecretKey}")
+    @Value("${jwt.secret:mySecretKey}")
     private String jwtSecret;
     
-    @Value("${app.jwtExpirationInMs:604800000}")
+    @Value("${jwt.expiration:604800000}")
     private int jwtExpirationInMs;
     
     public String generateToken(String username) {
@@ -75,6 +75,15 @@ public class JwtService {
     private Key getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
+    }
+
+    // Alias methods for JwtAuthenticationFilter compatibility
+    public String extractUsername(String token) {
+        return getUsernameFromToken(token);
+    }
+
+    public Boolean isTokenValid(String token, String username) {
+        return validateToken(token, username);
     }
 
     // Setter methods for testing

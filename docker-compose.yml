@@ -3,17 +3,46 @@ version: '3.8'
 services:
   mysql:
     image: mysql:8.0
-    container_name: pj_devop_mysql
+    container_name: concert-mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: root1234   # รหัสผ่าน root
-      MYSQL_DATABASE: devop_db        # สร้าง DB อัตโนมัติ
-      MYSQL_USER: devop_user          # user สำหรับ connect
-      MYSQL_PASSWORD: devop_pass      # รหัสผ่าน user
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_DATABASE: devop_db
+      MYSQL_USER: concert_user
+      MYSQL_PASSWORD: concert_password
     ports:
-      - "3306:3306"                   # expose port ให้เครื่อง host
+      - "3306:3306"
     volumes:
-      - mysql_data:/var/lib/mysql     # เก็บข้อมูล persist
+      - mysql_data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - concert-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  backend:
+    build: ./main_backend
+    container_name: concert-backend
+    restart: always
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/devop_db
+      SPRING_DATASOURCE_USERNAME: concert_user
+      SPRING_DATASOURCE_PASSWORD: concert_password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_PROFILES_ACTIVE: docker
+    ports:
+      - "8080:8080"
+    networks:
+      - concert-network
 
 volumes:
   mysql_data:
+
+networks:
+  concert-network:
+    driver: bridge

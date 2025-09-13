@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue';
+import RegisterCheck from './RegisterCheck.vue';
 const pages = ref([
     { text: 'Login', value: 'login'},
     { text: 'Register', value: 'register'}
@@ -7,7 +8,7 @@ const pages = ref([
 
 let show = ref<boolean>(false)
 let show2 = ref<boolean>(false)
-
+let show3 = ref<boolean>(false)
 
 function click () {
     show.value = !show.value
@@ -16,6 +17,11 @@ function click () {
 
 function click2 () {
     show2.value = !show2.value
+    // console.log(show.value)
+}
+
+function click3 () {
+    show3.value = !show3.value
     // console.log(show.value)
 }
 </script>
@@ -36,5 +42,10 @@ function click2 () {
     <button class="pl-5 text-red-500 bg-gray-200 pointer cursor-pointer" @click="click2">Register</button>
     <div v-if=show2>
         <Register />
+    </div>
+
+    <button class="pl-5 text-red-500 bg-gray-200 pointer cursor-pointer" @click="click3">check database</button>
+    <div v-if=show3>
+        <RegisterCheck />
     </div>
 </template>

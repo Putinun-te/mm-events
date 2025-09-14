@@ -7,6 +7,10 @@ import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
+
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -145,5 +149,18 @@ class JwtServiceTest {
         // validateToken should catch exceptions and return false
         String malformedToken = "still.not.valid";
         assertFalse(jwtService.validateToken(malformedToken, testUsername));
+    }
+
+    @Test
+    void testValidateTokenWithNoExpirationClaim() {
+        // Build a token without the exp claim (same subject), so isTokenExpired() hits exception path and returns true
+        String tokenWithoutExp = Jwts.builder()
+                .setSubject(testUsername)
+                .setIssuedAt(new Date())
+                .signWith(Keys.hmacShaKeyFor(testSecret.getBytes()), SignatureAlgorithm.HS512)
+                .compact();
+
+        assertTrue(jwtService.isTokenExpired(tokenWithoutExp), "Token without exp should be treated as expired");
+        assertFalse(jwtService.validateToken(tokenWithoutExp, testUsername), "Validation should fail when token lacks exp even if username matches");
     }
 }

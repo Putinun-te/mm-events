@@ -132,4 +132,18 @@ class JwtServiceTest {
         Boolean isValidWrongUser = jwtService.isTokenValid(token, "wronguser");
         assertFalse(isValidWrongUser);
     }
+
+    @Test
+    void testIsTokenExpiredWithMalformedToken() {
+        // Pass a malformed token to trigger exception path and return true
+        String malformedToken = "not.a.valid.token";
+        assertTrue(jwtService.isTokenExpired(malformedToken));
+    }
+
+    @Test
+    void testValidateTokenWithMalformedToken() {
+        // validateToken should catch exceptions and return false
+        String malformedToken = "still.not.valid";
+        assertFalse(jwtService.validateToken(malformedToken, testUsername));
+    }
 }

@@ -197,4 +197,36 @@ class AuthServiceTest {
         
         verify(userRepository).findByUsernameOrEmail("test@example.com", "test@example.com");
     }
+
+    @Test
+    void testGetCurrentUserSuccess() {
+        // Arrange
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+
+        // Act
+        AuthResponse response = authService.getCurrentUser("testuser");
+
+        // Assert
+        assertNotNull(response);
+        assertNull(response.getToken());
+        assertEquals("testuser", response.getUsername());
+        assertEquals("test@example.com", response.getEmail());
+        assertNull(response.getMessage());
+        verify(userRepository).findByUsername("testuser");
+    }
+
+    @Test
+    void testGetCurrentUserUserNotFound() {
+        // Arrange
+        when(userRepository.findByUsername("missinguser")).thenReturn(Optional.empty());
+
+        // Act
+        AuthResponse response = authService.getCurrentUser("missinguser");
+
+        // Assert
+        assertNotNull(response);
+        assertNull(response.getToken());
+        assertEquals("User not found", response.getMessage());
+        verify(userRepository).findByUsername("missinguser");
+    }
 }

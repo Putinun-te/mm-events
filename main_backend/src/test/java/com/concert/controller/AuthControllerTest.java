@@ -112,4 +112,29 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string("Auth API is working!"));
     }
+
+    // New tests to cover exception catch blocks
+    @Test
+    void testRegisterServiceException() throws Exception {
+        when(authService.register(any(RegisterRequest.class)))
+                .thenThrow(new RuntimeException("Database connection failed"));
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(registerRequest)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Registration failed: Database connection failed"));
+    }
+
+    @Test
+    void testLoginServiceException() throws Exception {
+        when(authService.login(any(LoginRequest.class)))
+                .thenThrow(new RuntimeException("Authentication service unavailable"));
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(loginRequest)))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Login failed: Authentication service unavailable"));
+    }
 }

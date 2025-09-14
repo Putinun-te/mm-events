@@ -67,16 +67,39 @@ class UserTest {
     @Test
     void testPreUpdate() {
         LocalDateTime initialUpdatedAt = user.getUpdatedAt();
-        
+
         // Simulate some delay
         try {
             Thread.sleep(10);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        
+
         user.preUpdate();
-        
+
         assertTrue(user.getUpdatedAt().isAfter(initialUpdatedAt));
+    }
+
+    @Test
+    void testAllAdditionalSetters() {
+        user.setName("Test Name");
+        user.setProfilePhoto("photo.png");
+        user.setCompany("Acme Inc");
+        user.setWebsite("https://example.com");
+        user.setPhone("1234567890");
+        user.setAddress("123 Street");
+        user.setCity("Bangkok");
+        user.setCountry("Thailand");
+        user.setPincode("10200");
+
+        assertEquals("Test Name", user.getName());
+        assertEquals("photo.png", user.getProfilePhoto());
+        assertEquals("Acme Inc", user.getCompany());
+        assertEquals("https://example.com", user.getWebsite());
+        assertEquals("1234567890", user.getPhone());
+        assertEquals("123 Street", user.getAddress());
+        assertEquals("Bangkok", user.getCity());
+        assertEquals("Thailand", user.getCountry());
+        assertEquals("10200", user.getPincode());
     }
 }

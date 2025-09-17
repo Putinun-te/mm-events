@@ -133,4 +133,22 @@ class UserControllerTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(0));
     }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"USER"})
+    void testGetAllUsers_InternalServerError() throws Exception {
+        when(userRepository.findAll()).thenThrow(new RuntimeException("DB down"));
+
+        mockMvc.perform(get("/api/users").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+    }
+
+    @Test
+    @WithMockUser(username = "testuser", roles = {"USER"})
+    void testGetUserById_InternalServerError() throws Exception {
+        when(userRepository.findById(1L)).thenThrow(new RuntimeException("DB down"));
+
+        mockMvc.perform(get("/api/users/1").contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isInternalServerError());
+    }
 }

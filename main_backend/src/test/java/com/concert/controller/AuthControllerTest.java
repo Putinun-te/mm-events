@@ -137,4 +137,24 @@ class AuthControllerTest {
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.message").value("Login failed: Authentication service unavailable"));
     }
+
+    @Test
+    void testRegisterValidationFailure() throws Exception {
+        RegisterRequest invalidRequest = new RegisterRequest("", "", "");
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testLoginValidationFailure() throws Exception {
+        LoginRequest invalidRequest = new LoginRequest("", "");
+
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalidRequest)))
+                .andExpect(status().isBadRequest());
+    }
 }

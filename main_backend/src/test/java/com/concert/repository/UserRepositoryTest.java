@@ -1,6 +1,7 @@
 package com.concert.repository;
 
 import com.concert.model.User;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -159,5 +160,38 @@ class UserRepositoryTest {
             savedUser.getUpdatedAt().atZone(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
         );
         assertTrue(timeDifferenceNanos < 1000, "CreatedAt and UpdatedAt should be within 1 second of each other");
+    }
+
+    @Test
+    void testUpdatedAtChangesOnUpdate() throws InterruptedException {
+        // Arrange - persist initial entity
+        User saved = entityManager.persistFlushFind(testUser);
+        assertNotNull(saved.getUpdatedAt());
+        var beforeUpdate = saved.getUpdatedAt();
+
+        // Ensure time moves forward to observe change
+        Thread.sleep(5);
+
+        // Act - update an attribute and save
+        saved.setName("Updated Name");
+        userRepository.save(saved);
+        entityManager.flush();
+        entityManager.clear();
+
+        User reloaded = entityManager.find(User.class, saved.getId());
+
+        // Assert - updatedAt should be after the previous value
+        assertNotNull(reloaded.getUpdatedAt());
+        assertTrue(reloaded.getUpdatedAt().isAfter(beforeUpdate), "updatedAt should be updated on entity update");
+    }
+
+    @Test
+    void testValidationConstraints_onUserEntity() {
+        User invalid = new User("", "", "");
+        invalid.setUsername("");
+
+        assertThrows(ConstraintViolationException.class, () -> {
+            entityManager.persistAndFlush(invalid);
+        });
     }
 }

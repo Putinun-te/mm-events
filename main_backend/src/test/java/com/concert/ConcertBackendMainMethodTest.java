@@ -8,9 +8,12 @@ public class ConcertBackendMainMethodTest {
 
     @Test
     void testMainMethodDoesNotThrow() {
-        // Run the application main with non-web mode to avoid starting server
+        // Run the application main with test profile and non-web mode to avoid starting server and real DB
         assertDoesNotThrow(() -> {
-            ConcertBackendApplication.main(new String[]{"--spring.main.web-application-type=none"});
+            ConcertBackendApplication.main(new String[]{
+                "--spring.profiles.active=test",
+                "--spring.main.web-application-type=none"
+            });
         });
     }
 }

@@ -49,6 +49,8 @@ services:
 
   # Dockerized backend tests with JaCoCo + Testcontainers
   backend-tests:
+    profiles:
+      - tests
     image: maven:3.9.9-eclipse-temurin-21
     container_name: concert-backend-tests
     working_dir: /workspace/main_backend

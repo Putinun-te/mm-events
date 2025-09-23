@@ -1,6 +1,7 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/api/auth"; // your Spring Boot backend URL
+const BASE_URL = process.env.BACKEND_BASE_URL || "http://localhost:8080";
+const API_URL = `${BASE_URL}/api/auth`;
 
 export const login = async (credentials: { usernameOrEmail: string; password: string }) => {
   try {

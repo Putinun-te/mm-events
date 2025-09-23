@@ -15,6 +15,8 @@
 	<description>Concert Backend API</description>
 	<properties>
 		<java.version>17</java.version>
+		<!-- Fail build on low coverage by default; CI can set -Djacoco.haltOnFailure=false -->
+		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -105,18 +107,58 @@
 				<artifactId>maven-surefire-plugin</artifactId>
 				<version>3.0.0-M9</version>
 				<configuration>
+					<forkCount>1C</forkCount>
+					<reuseForks>true</reuseForks>
 					<argLine>-Dnet.bytebuddy.experimental=true --add-opens java.base/java.lang=ALL-UNNAMED ${argLine}</argLine>
+					<systemPropertyVariables>
+						<testcontainers.checks.disable>true</testcontainers.checks.disable>
+						<testcontainers.ryuk.disabled>true</testcontainers.ryuk.disabled>
+					</systemPropertyVariables>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.10</version>
+				<version>0.8.12</version>
+				<configuration>
+					<!-- New: default plugin configuration to support direct CLI invocation (default-cli) -->
+					<haltOnFailure>${jacoco.haltOnFailure}</haltOnFailure>
+					<rules>
+						<rule>
+							<element>BUNDLE</element>
+							<limits>
+								<limit>
+									<counter>LINE</counter>
+									<value>COVEREDRATIO</value>
+									<minimum>0.60</minimum>
+								</limit>
+								<limit>
+									<counter>BRANCH</counter>
+									<value>COVEREDRATIO</value>
+									<minimum>0.60</minimum>
+								</limit>
+							</limits>
+						</rule>
+					</rules>
+				</configuration>
 				<executions>
 					<execution>
 						<goals>
 							<goal>prepare-agent</goal>
 						</goals>
+						<configuration>
+							<!-- Limit instrumentation to our code to avoid instrumenting JDK and third-party classes -->
+							<includes>
+								<include>com/concert/**</include>
+							</includes>
+							<!-- Exclude dynamic proxies/mocks that cause noisy instrumentation issues -->
+							<excludes>
+								<exclude>**/*$Mockito*</exclude>
+								<exclude>**/*$HibernateProxy*</exclude>
+								<exclude>**/*$ByteBuddy*</exclude>
+								<exclude>**/*$CGLIB*</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 					<execution>
 						<id>report</id>
@@ -132,12 +174,20 @@
 							<goal>check</goal>
 						</goals>
 						<configuration>
+							<!-- Allow CI to not fail the build while still evaluating rules -->
+							<haltOnFailure>${jacoco.haltOnFailure}</haltOnFailure>
 							<rules>
 								<rule>
 									<element>BUNDLE</element>
 									<limits>
 										<limit>
 											<counter>LINE</counter>
+											<value>COVEREDRATIO</value>
+											<minimum>0.60</minimum>
+										</limit>
+										<!-- Enforce branch coverage as well -->
+										<limit>
+											<counter>BRANCH</counter>
 											<value>COVEREDRATIO</value>
 											<minimum>0.60</minimum>
 										</limit>

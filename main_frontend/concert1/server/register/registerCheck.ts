@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = "http://localhost:8080/registerCheck";
+const BASE_URL = process.env.BACKEND_BASE_URL || "http://localhost:8080";
+const API_URL = `${BASE_URL}/registerCheck`;
+
 type user = {
     name: string,
     email: string,

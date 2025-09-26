@@ -11,11 +11,11 @@ docker compose up -d
 ```bash
 docker compose up -d```
 
-## Run tests on demand
+Run tests on demand
 ```bash
 docker compose run --rm backend-tests```
 
-## Run backend tests with coverage
+Run backend tests with coverage
 
 Local (macOS, use JDK 21 for tests):
 ```bash

@@ -1,14 +1,12 @@
-[^1]How to use:
+How to use:
 
-Start app stack (no tests): > docker compose up -d
+[^1]:Start app stack (no tests): > docker compose up -d
 <br />
-Run tests on demand > docker compose run --rm backend-tests
-<br />
+[^2]:Run tests on demand > docker compose run --rm backend-tests
 Or enable tests profile: > docker compose --profile tests up backend-tests
 <br />
 
-[^2]Options to shut down:
-
+Options to shut down:
 Stop containers (keep them for quick restart): run docker compose stop
 <br />
 Stop and remove containers + network: run docker compose down

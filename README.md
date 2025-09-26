@@ -7,6 +7,14 @@ docker compose up -d
 - Backend: http://localhost:8080
 - Frontend (Nuxt dev): http://localhost:3000
 
+## Start app stack (no tests)
+```bash
+docker compose up -d```
+
+## Run tests on demand
+```bash
+docker compose run --rm backend-tests```
+
 ## Run backend tests with coverage
 
 Local (macOS, use JDK 21 for tests):
@@ -50,3 +58,6 @@ main_backend/target/site/jacoco/index.html
 
 ## Notes
 - Tests are not run automatically on `docker compose up`. The `backend-tests` service is behind the `tests` profile and must be invoked explicitly as shown above.
+- Open the HTML report after it finishes:
+```bash
+main_backend/target/site/jacoco/index.html ```

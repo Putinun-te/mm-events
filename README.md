@@ -1,4 +1,4 @@
-How to use:
+## How to use:
 
 Start app stack (no tests)<br />
 ```docker compose up -d```
@@ -10,7 +10,7 @@ Or enable tests profile<br />
 ```docker compose --profile tests up backend-tests```
 <br />
 
-Options to shut down<br />
+## Options to shut down<br />
 Stop containers (keep them for quick restart)<br />
 ```run docker compose stop```
 <br />

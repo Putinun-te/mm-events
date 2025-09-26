@@ -11,7 +11,7 @@ Or enable tests profile<br />
 <br />
 
 Options to shut down<br />
-Stop containers (keep them for quick restart)
+Stop containers (keep them for quick restart)<br />
 ```run docker compose stop```
 <br />
 Stop and remove containers + network <br />

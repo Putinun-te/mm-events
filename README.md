@@ -7,19 +7,17 @@ docker compose up -d
 - Backend: http://localhost:8080
 - Frontend (Nuxt dev): http://localhost:3000
 
-## Start app stack (no tests)
-```bash
-docker compose up -d```
-
 ## Run tests on demand
 ```bash
-docker compose run --rm backend-tests```
+docker compose run --rm backend-tests
+```
 
 ## Run backend tests with coverage
 
 Local (macOS, use JDK 21 for tests):
 ```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -DforkCount=1 -DreuseForks=false test jacoco:report -f main_backend/pom.xml```
+JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -DforkCount=1 -DreuseForks=false test jacoco:report -f main_backend/pom.xml
+```
 
 Docker (uses Maven JDK 21 image):
 ```bash

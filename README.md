@@ -11,16 +11,15 @@ docker compose up -d
 ```bash
 docker compose up -d```
 
-Run tests on demand
+## Run tests on demand
 ```bash
 docker compose run --rm backend-tests```
 
-Run backend tests with coverage
+## Run backend tests with coverage
 
 Local (macOS, use JDK 21 for tests):
 ```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -DforkCount=1 -DreuseForks=false test jacoco:report -f main_backend/pom.xml
-```
+JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -DforkCount=1 -DreuseForks=false test jacoco:report -f main_backend/pom.xml```
 
 Docker (uses Maven JDK 21 image):
 ```bash
@@ -58,6 +57,5 @@ main_backend/target/site/jacoco/index.html
 
 ## Notes
 - Tests are not run automatically on `docker compose up`. The `backend-tests` service is behind the `tests` profile and must be invoked explicitly as shown above.
-- Open the HTML report after it finishes:
-```bash
-main_backend/target/site/jacoco/index.html ```
+
+

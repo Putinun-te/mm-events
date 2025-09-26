@@ -75,8 +75,11 @@ mvn test -Dtest="**/*Test"
 # Integration tests only  
 mvn test -Dtest="**/*IntegrationTest"
 
-# Test with coverage report
-mvn test jacoco:report
+# Test with coverage (macOS, use JDK 21 for tests)
+JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -DforkCount=1 -DreuseForks=false test jacoco:report
+
+# Or run coverage in Docker (uses JDK 21 Maven image)
+docker compose run --rm backend-tests
 ```
 
 ### Test Coverage
@@ -93,6 +96,8 @@ The project includes comprehensive test coverage:
   - Database integration
   - Security configuration
   - Error handling
+
+HTML coverage report: `main_backend/target/site/jacoco/index.html`
 
 ### Test Structure
 ```

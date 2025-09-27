@@ -8,8 +8,9 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "test:e2e": "playwright test --project=chromium --reporter=list --headed",
-    "test:e2e:headless": "playwright test --project=chromium --reporter=list"
+    "test:e2e": "playwright test --project=chromium --reporter=list",
+    "test:e2e:headless": "playwright test --project=chromium --reporter=list",
+    "test:e2e:headed": "playwright test --project=chromium --reporter=list --headed"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",

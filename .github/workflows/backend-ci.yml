@@ -1,0 +1,93 @@
+name: Backend CI
+
+on:
+  push:
+    branches: [ main, FE-Testing ]
+  pull_request:
+    branches: [ main ]
+
+concurrency:
+  group: backend-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-test-coverage:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache Maven repository for Docker run
+        uses: actions/cache@v4
+        with:
+          path: ./.cache/m2
+          key: m2-${{ runner.os }}-${{ hashFiles('main_backend/pom.xml') }}
+          restore-keys: |
+            m2-${{ runner.os }}-
+            m2-
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start services (MySQL)
+        run: docker compose up -d mysql
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..60}; do
+            if docker exec concert-mysql mysqladmin ping -h 127.0.0.1 -uroot -ppassword --silent; then
+              echo "MySQL is up"; break; fi; sleep 2; done
+
+      - name: Pre-pull Docker images (speed up Testcontainers)
+        run: |
+          docker pull mysql:8.0
+
+      - name: Run backend tests in Docker (with JaCoCo)
+        run: |
+          set -euo pipefail
+          docker compose run --rm backend-tests bash -lc "mvn -B -T 1C -Djacoco.haltOnFailure=false test jacoco:report"
+
+      - name: Publish test run log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-tests-log
+          path: backend-tests.log
+
+      - name: Publish JaCoCo Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: main_backend/target/site/jacoco
+
+      - name: Publish Surefire Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: main_backend/target/surefire-reports
+
+      - name: Generate JUnit test summary
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: JUnit Tests
+          path: main_backend/target/surefire-reports/*.xml
+          reporter: java-junit
+
+      - name: Upload coverage to Codecov (optional)
+        if: ${{ always() && secrets.CODECOV_TOKEN != '' }}
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: main_backend/target/site/jacoco/jacoco.xml
+          fail_ci_if_error: false
+
+      - name: Save coverage history
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-xml
+          path: main_backend/target/site/jacoco/jacoco.xml

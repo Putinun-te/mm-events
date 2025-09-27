@@ -5,7 +5,10 @@ import com.concert.dto.LoginRequest;
 import com.concert.dto.RegisterRequest;
 import com.concert.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -17,6 +20,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,7 +34,20 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("docker")
 @Testcontainers
 @Transactional
+@Tag("docker")
 public class AuthDockerIntegrationTest {
+
+    @BeforeAll
+    static void checkDocker() {
+        boolean available;
+        try {
+            DockerClientFactory.instance().client();
+            available = true;
+        } catch (Throwable t) {
+            available = false;
+        }
+        Assumptions.assumeTrue(available, "Docker not available - skipping AuthDockerIntegrationTest");
+    }
 
     @Container
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")

@@ -3,7 +3,10 @@ package com.concert.controller;
 import com.concert.model.User;
 import com.concert.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,6 +16,7 @@ import org.springframework.http.*;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -24,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
 @ActiveProfiles("docker")
+@Tag("docker")
 class UserControllerDockerTest {
 
     @LocalServerPort
@@ -52,6 +57,18 @@ class UserControllerDockerTest {
     }
 
     private String jwtToken;
+
+    @BeforeAll
+    static void checkDocker() {
+        boolean available;
+        try {
+            DockerClientFactory.instance().client();
+            available = true;
+        } catch (Throwable t) {
+            available = false;
+        }
+        Assumptions.assumeTrue(available, "Docker not available - skipping UserControllerDockerTest");
+    }
 
     @BeforeEach
     void setUp() {

@@ -31,25 +31,50 @@ Open the HTML coverage report:
 main_backend/target/site/jacoco/index.html
 ```
 
-## Frontend E2E tests (Playwright)
+## Backend tests + JaCoCo quick commands
 
-Local run (headed Chromium):
+Run tests with coverage (fail build if coverage < thresholds in pom):
+```bash
+mvn -f main_backend/pom.xml test jacoco:report
+```
+Allow build to pass even if coverage below thresholds (override halt flag):
+```bash
+mvn -f main_backend/pom.xml -Djacoco.haltOnFailure=false test jacoco:report
+```
+Generate XML only (for codecov etc.):
+```bash
+mvn -f main_backend/pom.xml -Djacoco.haltOnFailure=false test jacoco:report && \
+  echo "XML: main_backend/target/site/jacoco/jacoco.xml"
+```
+Run only the coverage check goal (after tests already run):
+```bash
+mvn -f main_backend/pom.xml jacoco:check
+```
+Current enforced minimums (see pom): LINE >= 60%, BRANCH >= 60%.
+
+## Frontend E2E tests (Cypress)
+
+Local headed (open Cypress GUI):
 ```bash
 cd main_frontend/concert1
 npm ci
-npx playwright install --with-deps chromium
 npm run dev &
 NUXT_PID=$!
-# wait for dev server
 for i in {1..40}; do curl -sf http://localhost:3000/concert/ >/dev/null && break || sleep 2; done
-npm run test:e2e
+npm run test:e2e:headed
 kill $NUXT_PID || true
 ```
 Headless (CI style):
 ```bash
-npm run test:e2e:headless
+cd main_frontend/concert1
+npm ci
+npm run dev &
+NUXT_PID=$!
+for i in {1..40}; do curl -sf http://localhost:3000/concert/ >/dev/null && break || sleep 2; done
+npm run test:e2e
+kill $NUXT_PID || true
 ```
-GitHub Actions workflow: `.github/workflows/frontend-e2e.yml` runs automatically on pushes/PRs to `main` or `FE-Testing`.
+GitHub Actions workflow: `.github/workflows/ci.yml` (job `frontend-e2e`). Remove old Playwright workflow if not needed: `.github/workflows/frontend-e2e.yml`.
 
 ## Shut down
 - Stop containers (keep for quick restart):
@@ -75,11 +100,11 @@ GitHub Actions workflow: `.github/workflows/frontend-e2e.yml` runs automatically
 
 ## Status (27 Sep)
 - [x] Backend CI (GitHub Actions) `.github/workflows/backend-ci.yml`
-- [x] Initial E2E framework (Playwright) added
-- [x] Frontend E2E GitHub Action workflow stub `.github/workflows/frontend-e2e.yml`
+- [x] Switch to Cypress for E2E
+- [x] Frontend E2E job integrated in `.github/workflows/ci.yml`
 - [x] Jenkins pipeline added `Jenkinsfile`
 - [x] GitLab CI pipeline added `.gitlab-ci.yml`
-- [ ] Expand E2E tests to cover all user stories (add real selectors & flows)
+- [ ] Expand E2E tests with real backend assertions
 - [ ] Jenkins / GitLab pipeline templates (future)
 
 ## Notes

@@ -18,6 +18,8 @@
 		<java.version>21</java.version>
 		<!-- Fail build on low coverage by default; CI can set -Djacoco.haltOnFailure=false -->
 		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
+		<!-- New: make surefire excluded groups configurable -->
+		<surefire.excludedGroups></surefire.excludedGroups>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -115,6 +117,8 @@
 						<testcontainers.checks.disable>true</testcontainers.checks.disable>
 						<testcontainers.ryuk.disabled>true</testcontainers.ryuk.disabled>
 					</systemPropertyVariables>
+					<!-- Use property so default run executes all tests; activate profile to skip docker -->
+					<excludedGroups>${surefire.excludedGroups}</excludedGroups>
 				</configuration>
 			</plugin>
 			<plugin>
@@ -201,5 +205,15 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<!-- Activate with -Pskip-docker to exclude docker tagged tests -->
+		<profile>
+			<id>skip-docker</id>
+			<properties>
+				<surefire.excludedGroups>docker</surefire.excludedGroups>
+			</properties>
+		</profile>
+	</profiles>
 
 </project>

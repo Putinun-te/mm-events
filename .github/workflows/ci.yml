@@ -1,0 +1,134 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, '**/feature/**', 'feature/**' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  backend-test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: concert
+        ports: ["3306:3306"]
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword --silent" 
+          --health-interval=10s --health-timeout=5s --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Wait for MySQL
+        run: |
+          for i in {1..60}; do
+            if mysqladmin ping -h 127.0.0.1 -ppassword --silent; then echo UP; break; fi
+            sleep 2
+          done
+      - name: Backend Tests & Coverage
+        run: |
+          cd main_backend
+          mvn -B -T 1C -Djacoco.haltOnFailure=false test jacoco:report
+      - name: Upload JaCoCo HTML
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-site
+          path: main_backend/target/site/jacoco
+      - name: Upload Surefire Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: main_backend/target/surefire-reports
+
+  frontend-e2e:
+    runs-on: ubuntu-latest
+    needs: backend-test
+    env:
+      PLAYWRIGHT_BASE_URL: http://localhost:3000/concert
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+      - name: Install dependencies
+        working-directory: main_frontend/concert1
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: main_frontend/concert1
+        run: npx playwright install --with-deps chromium
+      - name: Start Nuxt
+        working-directory: main_frontend/concert1
+        run: |
+          npm run dev &
+          echo $! > nuxt.pid
+          for i in {1..60}; do if curl -sf http://localhost:3000/concert/ >/dev/null; then echo Frontend up; break; fi; sleep 2; done
+      - name: Run E2E Tests
+        working-directory: main_frontend/concert1
+        run: npm run test:e2e
+      - name: Upload Playwright Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: main_frontend/concert1/playwright-report
+      - name: Stop Nuxt
+        if: always()
+        run: |
+          kill $(cat main_frontend/concert1/nuxt.pid) || true
+
+  build-backend-jar:
+    runs-on: ubuntu-latest
+    needs: backend-test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Build Jar
+        run: |
+          cd main_backend
+          mvn -B -DskipTests package
+      - name: Upload Jar
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: main_backend/target/*.jar
+
+  docker-backend:
+    runs-on: ubuntu-latest
+    needs: build-backend-jar
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and Push Image
+        run: |
+          IMAGE=ghcr.io/${{ github.repository_owner }}/concert-backend:$(echo $GITHUB_SHA | cut -c1-12)
+          docker build -t $IMAGE -f main_backend/Dockerfile main_backend
+          docker push $IMAGE

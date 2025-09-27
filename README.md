@@ -31,6 +31,26 @@ Open the HTML coverage report:
 main_backend/target/site/jacoco/index.html
 ```
 
+## Frontend E2E tests (Playwright)
+
+Local run (headed Chromium):
+```bash
+cd main_frontend/concert1
+npm ci
+npx playwright install --with-deps chromium
+npm run dev &
+NUXT_PID=$!
+# wait for dev server
+for i in {1..40}; do curl -sf http://localhost:3000/concert/ >/dev/null && break || sleep 2; done
+npm run test:e2e
+kill $NUXT_PID || true
+```
+Headless (CI style):
+```bash
+npm run test:e2e:headless
+```
+GitHub Actions workflow: `.github/workflows/frontend-e2e.yml` runs automatically on pushes/PRs to `main` or `FE-Testing`.
+
 ## Shut down
 - Stop containers (keep for quick restart):
   ```bash
@@ -52,6 +72,15 @@ main_backend/target/site/jacoco/index.html
   ```
   Press Ctrl+C in the terminal running: mvn spring-boot:run
   ```
+
+## Status (27 Sep)
+- [x] Backend CI (GitHub Actions) `.github/workflows/backend-ci.yml`
+- [x] Initial E2E framework (Playwright) added
+- [x] Frontend E2E GitHub Action workflow stub `.github/workflows/frontend-e2e.yml`
+- [x] Jenkins pipeline added `Jenkinsfile`
+- [x] GitLab CI pipeline added `.gitlab-ci.yml`
+- [ ] Expand E2E tests to cover all user stories (add real selectors & flows)
+- [ ] Jenkins / GitLab pipeline templates (future)
 
 ## Notes
 - Tests are not run automatically on `docker compose up`. The `backend-tests` service is behind the `tests` profile and must be invoked explicitly as shown above.

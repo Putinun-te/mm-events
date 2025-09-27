@@ -1,0 +1,63 @@
+name: Frontend E2E
+
+on:
+  push:
+    branches: [ main, FE-Testing ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      - name: Install deps
+        working-directory: main_frontend/concert1
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Start backend stack (MySQL + backend)
+        run: |
+          docker compose up -d mysql backend
+          echo "Waiting for backend..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/actuator/health | grep 'UP'; then echo OK; break; fi; sleep 2; done
+
+      - name: Start frontend
+        working-directory: main_frontend/concert1
+        run: |
+          npm run dev &
+          echo $! > /tmp/nuxt.pid
+          for i in {1..60}; do
+            if curl -sf http://localhost:3000/concert/ >/dev/null; then echo "Frontend up"; break; fi; sleep 2; done
+
+      - name: Run Playwright tests
+        env:
+          PLAYWRIGHT_BASE_URL: http://localhost:3000/concert
+        working-directory: main_frontend/concert1
+        run: npm run test:e2e
+
+      - name: Upload Playwright report (if exists)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: main_frontend/concert1/playwright-report
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f /tmp/nuxt.pid ]; then kill $(cat /tmp/nuxt.pid) || true; fi
+          docker compose down

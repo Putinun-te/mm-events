@@ -1,0 +1,81 @@
+stages:
+  - backend-test
+  - frontend-e2e
+  - build
+  - docker
+
+variables:
+  MAVEN_OPTS: "-Xmx1024m"
+  DOCKER_DRIVER: overlay2
+
+backend:test:
+  stage: backend-test
+  image: docker:27.1.1
+  services:
+    - docker:27.1.1-dind
+  before_script:
+    - apk add --no-cache bash curl openjdk21-jdk maven
+    - java -version
+    - docker version
+  script:
+    - docker compose up -d mysql
+    - |
+      for i in $(seq 1 60); do
+        if docker exec concert-mysql mysqladmin ping -h 127.0.0.1 -uroot -ppassword --silent; then echo "MySQL up"; break; fi; sleep 2; done
+    - docker compose run --rm backend-tests bash -lc "mvn -B -T 1C -Djacoco.haltOnFailure=false test jacoco:report"
+  artifacts:
+    when: always
+    paths:
+      - main_backend/target/site/jacoco
+      - main_backend/target/surefire-reports
+    reports:
+      junit: main_backend/target/surefire-reports/*.xml
+
+frontend:e2e:
+  stage: frontend-e2e
+  image: mcr.microsoft.com/playwright:v1.48.2-jammy
+  needs: [backend:test]
+  variables:
+    PLAYWRIGHT_BASE_URL: http://localhost:3000/concert
+  before_script:
+    - apt-get update && apt-get install -y curl
+  script:
+    - cd main_frontend/concert1
+    - npm ci
+    - npm run dev &
+    - NUXT_PID=$!
+    - for i in $(seq 1 60); do if curl -sf http://localhost:3000/concert/ >/dev/null; then echo Frontend up; break; fi; sleep 2; done
+    - npm run test:e2e || EXIT_CODE=$?
+    - kill $NUXT_PID || true
+    - exit ${EXIT_CODE:-0}
+  artifacts:
+    when: always
+    paths:
+      - main_frontend/concert1/playwright-report
+
+build:jar:
+  stage: build
+  image: maven:3.9.9-eclipse-temurin-21
+  needs: [backend:test]
+  script:
+    - cd main_backend
+    - mvn -B -DskipTests package
+  artifacts:
+    paths:
+      - main_backend/target/*.jar
+
+docker:backend:
+  stage: docker
+  image: docker:27.1.1
+  services:
+    - docker:27.1.1-dind
+  needs: [build:jar]
+  variables:
+    REGISTRY_IMAGE: $CI_REGISTRY_IMAGE/backend
+  before_script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" "$CI_REGISTRY" --password-stdin
+  script:
+    - docker build -t $REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA -f main_backend/Dockerfile main_backend
+    - docker push $REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"

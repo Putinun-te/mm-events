@@ -20,35 +20,44 @@ import java.util.Arrays;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
-    
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
+            // CORS config
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // ปิด CSRF สำหรับ REST API
             .csrf(csrf -> csrf.disable())
+            // ใช้ stateless session เพราะ JWT
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // กำหนดสิทธิ์การเข้าถึงแต่ละ endpoint
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers("/api/auth/register").permitAll()
                     .requestMatchers("/api/auth/login").permitAll()
                     .requestMatchers("/api/auth/test").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
                     .requestMatchers("/error").permitAll()
-                    .anyRequest().authenticated()
+                    .requestMatchers("/actuator/health").permitAll()  // <-- เปิด public สำหรับ health
+                    .anyRequest().authenticated() // ทุก request อื่นต้อง login
             )
+            // เพิ่ม JWT filter ก่อน UsernamePasswordAuthenticationFilter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable())); // For H2 console
-        
+            // สำหรับ H2 console
+            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
+
         return http.build();
     }
-    
+
+    // Password encoder สำหรับใช้เข้ารหัส password
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
-    
+
+    // CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
@@ -56,7 +65,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

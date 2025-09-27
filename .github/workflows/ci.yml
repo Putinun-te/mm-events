@@ -52,9 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: backend-test
     env:
-      PLAYWRIGHT_BASE_URL: http://localhost:3000/concert
-      # Force headless even if script changes
-      HEADLESS: '1'
+      CYPRESS_BASE_URL: http://localhost:3000/concert
     steps:
       - uses: actions/checkout@v4
       - name: Install Node
@@ -66,28 +64,29 @@ jobs:
       - name: Install dependencies
         working-directory: main_frontend/concert1
         run: npm ci
-      - name: Install Playwright browsers
-        working-directory: main_frontend/concert1
-        run: npx playwright install --with-deps chromium
       - name: Start Nuxt
         working-directory: main_frontend/concert1
         run: |
           npm run dev &
           echo $! > nuxt.pid
           for i in {1..60}; do if curl -sf http://localhost:3000/concert/ >/dev/null; then echo Frontend up; break; fi; sleep 2; done
-      - name: Run E2E Tests (headless)
+      - name: Run Cypress E2E
         working-directory: main_frontend/concert1
         run: npm run test:e2e
-        env:
-          PLAYWRIGHT_HEADLESS: 'true'
-          # Increase default timeout for first slow test if needed
-          PWTEST_TIMEOUT: '45000'
-      - name: Upload Playwright Report
+      - name: Upload Cypress Videos (if any)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: main_frontend/concert1/playwright-report
+          name: cypress-videos
+          path: main_frontend/concert1/cypress/videos
+          if-no-files-found: ignore
+      - name: Upload Cypress Screenshots (if any)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: main_frontend/concert1/cypress/screenshots
+          if-no-files-found: ignore
       - name: Stop Nuxt
         if: always()
         run: |

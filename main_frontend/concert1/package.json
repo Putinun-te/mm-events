@@ -8,9 +8,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "test:e2e": "playwright test --project=chromium --reporter=list",
-    "test:e2e:headless": "playwright test --project=chromium --reporter=list",
-    "test:e2e:headed": "playwright test --project=chromium --reporter=list --headed"
+    "test:e2e": "cypress run",
+    "test:e2e:headed": "cypress open"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.1.12",
@@ -21,6 +20,6 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "@playwright/test": "^1.55.1"
+    "cypress": "^13.13.0"
   }
 }

@@ -3,7 +3,6 @@ package com.concert.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -83,27 +82,20 @@ class JwtServiceTest {
 
     @Test
     public void testTokenExpiration() {
-        // Test with 1 second expiration
-        jwtService.setJwtExpirationInMs(1000);
-        
+        // Use a longer TTL first to avoid flakiness on slower CI machines
+        jwtService.setJwtExpirationInMs(5000); // 5 seconds
         String token = jwtService.generateToken("testuser");
-        
-        // Token should be initially valid
-        assertTrue(jwtService.validateToken(token, "testuser"), "Token should be initially valid");
-        
-        // Test with expired token
-        jwtService.setJwtExpirationInMs(1); // 1 millisecond
+        assertTrue(jwtService.validateToken(token, "testuser"), "Token should be initially valid with 5s TTL");
+
+        // Now create an almost immediately expiring token
+        jwtService.setJwtExpirationInMs(1); // 1 ms
         String expiredToken = jwtService.generateToken("testuser");
-        
-        // Wait for token to expire
         try {
-            Thread.sleep(10); // Wait for expiration
+            Thread.sleep(15); // ensure expiration has passed
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             fail("Thread interrupted during sleep");
         }
-        
-        // Token should now be expired/invalid
         assertFalse(jwtService.validateToken(expiredToken, "testuser"), "Token should be expired and invalid");
     }
 

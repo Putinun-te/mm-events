@@ -134,6 +134,12 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and Push Image
         run: |
-          IMAGE=ghcr.io/${{ github.repository_owner }}/concert-backend:$(echo $GITHUB_SHA | cut -c1-12)
-          docker build -t $IMAGE -f main_backend/Dockerfile main_backend
-          docker push $IMAGE
+          set -euo pipefail
+          OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-12)
+          IMAGE=ghcr.io/${OWNER_LC}/concert-backend:${SHORT_SHA}
+          docker build -t "$IMAGE" -f main_backend/Dockerfile main_backend
+          docker push "$IMAGE"
+          # Also push a 'latest' tag for convenience
+          docker tag "$IMAGE" ghcr.io/${OWNER_LC}/concert-backend:latest
+          docker push ghcr.io/${OWNER_LC}/concert-backend:latest

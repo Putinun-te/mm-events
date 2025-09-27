@@ -9,9 +9,13 @@ export default defineNuxtConfig({
     baseURL: '/concert/'
   },
   css: ['~/assets/css/main.css'],
-    vite: {
+  vite: {
     plugins: [
       tailwindcss(),
     ],
   },
+  components: [
+    { path: '~/components', pathPrefix: false },
+    { path: '~/app/components', pathPrefix: false } // transitional until files moved
+  ]
 })

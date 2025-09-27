@@ -56,8 +56,8 @@ const handleSubmit = async () => {
 };
 </script>
 <template>
-    <div class="flex items-center justify-center h-screen">
-        <form @submit.prevent="handleSubmit">
+    <div class="flex items-center justify-center h-screen" data-test="login-container">
+        <form @submit.prevent="handleSubmit" data-test="login-form">
             <div class="bg-white w-96 p-6 rounded shadow-sm">
                 <div class="flex items-center justify-center mb-4">
                     <img src="~/assets/img/apple.jpg" class="h-32"/>
@@ -73,6 +73,7 @@ const handleSubmit = async () => {
                 
                 <label class="text-grey-700">Email or Username</label>
                 <input 
+                  data-test="login-username-or-email"
                   v-model="email" 
                   type="text"
                   placeholder="Enter your email or username"
@@ -81,15 +82,17 @@ const handleSubmit = async () => {
                 />
                 <label class="text-grey-700">Password</label>
                 <input 
+                  data-test="login-password"
                   v-model="password" 
                   type="password"
                   placeholder="Enter your password"
                   class="w-full py-2 bg-gray-200 text-grey-500 px-1 outline-none mb-4"
                   :disabled="isLoading"
                 />
-                <input class="mb-4" type="checkbox" id="remember"/>
+                <input class="mb-4" type="checkbox" id="remember" />
                 <label class="text-gray-300" for="remember">Remember me</label>
                 <button 
+                  data-test="login-submit"
                   type="submit" 
                   :disabled="isLoading"
                   :class="[

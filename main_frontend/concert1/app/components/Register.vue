@@ -54,8 +54,8 @@ const handleSubmit = async () => {
 
 </script>
 <template>
-    <div class="flex items-center justify-center h-screen">
-        <form @submit.prevent="handleSubmit">
+    <div class="flex items-center justify-center h-screen" data-test="register-container">
+        <form @submit.prevent="handleSubmit" data-test="register-form">
             <div class="bg-white w-96 p-6 rounded shadow-sm">
                 <div class="flex items-center justify-center mb-4">
                     <img src="~/assets/img/apple.jpg" class="h-32"/>
@@ -71,6 +71,7 @@ const handleSubmit = async () => {
                 
                 <label class="text-grey-700">Username</label>
                 <input 
+                  data-test="register-username"
                   v-model="username" 
                   type="text"
                   placeholder="Enter your username"
@@ -79,6 +80,7 @@ const handleSubmit = async () => {
                 />
                 <label class="text-grey-700">Email</label>
                 <input 
+                  data-test="register-email"
                   v-model="email" 
                   type="email"
                   placeholder="Enter your email"
@@ -87,6 +89,7 @@ const handleSubmit = async () => {
                 />
                 <label class="text-grey-700">Password</label>
                 <input 
+                  data-test="register-password"
                   v-model="password" 
                   type="password"
                   placeholder="Enter your password"
@@ -94,6 +97,7 @@ const handleSubmit = async () => {
                   :disabled="isLoading"
                 />
                 <button 
+                  data-test="register-submit"
                   type="submit" 
                   :disabled="isLoading"
                   :class="[

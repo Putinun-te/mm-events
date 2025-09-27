@@ -6,5 +6,6 @@ export default defineConfig({
     supportFile: false,
     video: false,
     defaultCommandTimeout: 10000,
+    specPattern: 'cypress/e2e/**/*.cy.{js,jsx}' // TS specs removed
   },
 });

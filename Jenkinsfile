@@ -16,6 +16,7 @@ pipeline {
     BACKEND_IMAGE = 'concert-backend'
     BACKEND_IMAGE_TAG = "${env.BRANCH_NAME}-${env.BUILD_NUMBER}".replaceAll('[^A-Za-z0-9_.-]','-')
     NODE_VERSION = '20'
+    PLAYWRIGHT_BASE_URL = 'http://localhost:3000/concert/'
   }
 
   triggers {
@@ -38,6 +39,10 @@ pipeline {
           echo "== Wait for MySQL =="
           for i in {1..60}; do \
             if docker exec concert-mysql mysqladmin ping -h 127.0.0.1 -uroot -ppassword --silent; then echo UP; break; fi; sleep 2; done
+          if ! docker exec concert-mysql mysqladmin ping -h 127.0.0.1 -uroot -ppassword --silent; then
+            echo "MySQL did not become ready in time" >&2
+            exit 1
+          fi
           echo "== Run backend test container =="
           docker compose run --rm backend-tests bash -lc "mvn -B -T 1C -Djacoco.haltOnFailure=false test jacoco:report"
         '''
@@ -58,13 +63,28 @@ pipeline {
           cd main_frontend/concert1
           npm ci
           npx playwright install --with-deps chromium
-          # Start backend (if not already)
-          if ! curl -sf http://host.docker.internal:8080/actuator/health >/dev/null 2>&1; then
-            echo "Backend assumed running from earlier stage on host Docker daemon";
+
+          echo "== Check backend API readiness =="
+          # Try auth test endpoint (public) up to 60 * 2s = 120s
+          for i in {1..60}; do if curl -sf http://host.docker.internal:8080/api/auth/test >/dev/null; then echo Backend API up; break; fi; sleep 2; done
+          if ! curl -sf http://host.docker.internal:8080/api/auth/test >/dev/null; then
+            echo "Backend API not responding after timeout" >&2
+            exit 1
           fi
+
+          echo "== Start Nuxt dev =="
           npm run dev &
           NUXT_PID=$!
-          for i in {1..60}; do if curl -sf http://localhost:3000/concert/ >/dev/null; then echo Frontend up; break; fi; sleep 2; done
+
+          echo "== Wait for frontend ${PLAYWRIGHT_BASE_URL} =="
+          for i in {1..60}; do if curl -sf "${PLAYWRIGHT_BASE_URL}" >/dev/null; then echo Frontend up; break; fi; sleep 2; done
+          if ! curl -sf "${PLAYWRIGHT_BASE_URL}" >/dev/null; then
+            echo "Frontend did not become ready" >&2
+            kill $NUXT_PID || true
+            exit 1
+          fi
+
+          echo "== Run Playwright tests =="
           npm run test:e2e || EXIT_CODE=$?
           kill $NUXT_PID || true
           exit ${EXIT_CODE:-0}
@@ -72,7 +92,7 @@ pipeline {
       }
       post {
         always {
-          archiveArtifacts artifacts: 'main_frontend/concert1/playwright-report/**', allowEmptyArchive: true
+            archiveArtifacts artifacts: 'main_frontend/concert1/playwright-report/**', allowEmptyArchive: true
         }
       }
     }
@@ -97,7 +117,10 @@ pipeline {
             echo "== Docker login =="
             echo "$REG_PASS" | docker login "$REGISTRY" -u "$REG_USER" --password-stdin
             docker build -t $REGISTRY/$BACKEND_IMAGE:$BACKEND_IMAGE_TAG -f main_backend/Dockerfile main_backend
+            # Also tag latest for main
+            docker tag $REGISTRY/$BACKEND_IMAGE:$BACKEND_IMAGE_TAG $REGISTRY/$BACKEND_IMAGE:latest
             docker push $REGISTRY/$BACKEND_IMAGE:$BACKEND_IMAGE_TAG
+            docker push $REGISTRY/$BACKEND_IMAGE:latest
           '''
         }
       }
@@ -107,6 +130,15 @@ pipeline {
   post {
     success { echo 'Pipeline completed successfully.' }
     failure { echo 'Pipeline failed.' }
-    always  { sh 'docker compose down || true' }
+    always  {
+      sh '''
+        set +e
+        mkdir -p docker-logs
+        docker compose ps > docker-logs/ps.txt 2>&1 || true
+        docker compose logs --no-color > docker-logs/stack.log 2>&1 || true
+        docker compose down || true
+      '''
+      archiveArtifacts artifacts: 'docker-logs/**', allowEmptyArchive: true
+    }
   }
 }

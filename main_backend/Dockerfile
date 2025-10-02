@@ -1,26 +1,19 @@
 # Multi-stage build for optimized Spring Boot Docker image
 # Stage 1: Build stage
-FROM eclipse-temurin:21-jdk as builder
+FROM maven:3.9.9-eclipse-temurin-21 AS builder
 
-# Set working directory
 WORKDIR /app
 
-# Copy Maven wrapper and pom.xml for dependency caching
-COPY mvnw .
-COPY .mvn .mvn
+# Copy pom first for dependency layer caching
 COPY pom.xml .
+# Pre-fetch dependencies
+RUN mvn -B dependency:go-offline
 
-# Make mvnw executable
-RUN chmod +x ./mvnw
+# Copy source
+COPY src ./src
 
-# Download dependencies (cache layer)
-RUN ./mvnw dependency:go-offline -B
-
-# Copy source code
-COPY src src
-
-# Build the application (skip tests to avoid corrupted test files)
-RUN ./mvnw clean package -DskipTests -q
+# Build (skip tests for faster image build)
+RUN mvn -q clean package -DskipTests
 
 # Stage 2: Runtime stage
 FROM eclipse-temurin:21-jre
@@ -28,22 +21,18 @@ FROM eclipse-temurin:21-jre
 # Install curl for health checks
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 
-# Set working directory
 WORKDIR /app
 
-# Create non-root user for security
+# Non-root user
 RUN addgroup --system spring && adduser --system spring --ingroup spring
 USER spring:spring
 
-# Copy the built JAR from builder stage
+# Copy built jar
 COPY --from=builder /app/target/concert-backend-*.jar app.jar
 
-# Expose port
 EXPOSE 8080
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:8080/actuator/health || exit 1
 
-# Run the application with docker profile
 ENTRYPOINT ["java", "-Dspring.profiles.active=docker", "-Xmx512m", "-Xms256m", "-jar", "app.jar"]

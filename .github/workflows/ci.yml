@@ -1,0 +1,13 @@
+name: CI (placeholder)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  noop:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "No-op workflow. Use backend-ci.yml and frontend-e2e.yml for real checks."

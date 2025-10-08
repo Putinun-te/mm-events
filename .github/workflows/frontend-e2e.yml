@@ -2,9 +2,9 @@ name: Frontend E2E
 
 on:
   push:
-    branches: [ main, FE-Testing ]
+    branches: [ main, FE-Testing, BE_Testing_Midterm, BE_Testing_Final ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, BE_Testing_Midterm, BE_Testing_Final ]
 
 jobs:
   e2e:

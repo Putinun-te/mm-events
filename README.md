@@ -1,5 +1,23 @@
 # How to use
 
+## Introduction
+This monorepo contains:
+- **Backend**: Spring Boot REST API (Java 21) located in `main_backend/` (auth, users, JWT security, MySQL/Testcontainers).
+- **Frontend**: Nuxt 4 app in `main_frontend/concert1/` consuming the backend via server routes.
+- **Infrastructure & DevOps**: Docker Compose for local stack, multi‑stage backend Docker image, optional containerized test runner, CI pipelines (GitHub Actions, Jenkins, GitLab), and Playwright E2E tests.
+
+Goals:
+- Fast local iteration (run services directly or via Docker).
+- Deterministic tests (unit + integration + containerized MySQL via Testcontainers).
+- Clear separation of concerns (frontend SSR API calls, backend DTOs/controllers, infra scripts).
+- Extensible DevOps foundation for future IaC & deployment automation.
+
+Quick paths:
+- Start full stack: `docker compose up -d`
+- Backend unit/integration tests locally: see commands below (Java 21 required for coverage tooling).
+- Run backend tests inside container: `docker compose run --rm backend-tests`
+- Run frontend E2E tests: Playwright scripts under `main_frontend/concert1`.
+
 ## Start the app stack (no tests)
 ```bash
 docker compose up -d

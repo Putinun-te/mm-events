@@ -46,7 +46,8 @@ jobs:
       - name: Run backend tests in Docker (with JaCoCo)
         run: |
           set -euo pipefail
-          docker compose run --rm backend-tests bash -lc "mvn -B -T 1C -Djacoco.haltOnFailure=false test jacoco:report"
+          # Use profile to ensure service is available and capture logs
+          docker compose --profile tests run --rm backend-tests bash -lc "mvn -B -T 1C -Djacoco.haltOnFailure=false test jacoco:report" | tee backend-tests.log
 
       - name: Publish test run log
         if: always()
@@ -54,6 +55,7 @@ jobs:
         with:
           name: backend-tests-log
           path: backend-tests.log
+          if-no-files-found: ignore
 
       - name: Publish JaCoCo Report
         if: always()
@@ -61,6 +63,7 @@ jobs:
         with:
           name: jacoco-report
           path: main_backend/target/site/jacoco
+          if-no-files-found: ignore
 
       - name: Publish Surefire Reports
         if: always()
@@ -68,6 +71,7 @@ jobs:
         with:
           name: surefire-reports
           path: main_backend/target/surefire-reports
+          if-no-files-found: ignore
 
       - name: Generate JUnit test summary
         uses: dorny/test-reporter@v1
@@ -91,3 +95,4 @@ jobs:
         with:
           name: jacoco-xml
           path: main_backend/target/site/jacoco/jacoco.xml
+          if-no-files-found: ignore

@@ -9,7 +9,7 @@ on:
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -21,12 +21,6 @@ jobs:
           cache: 'npm'
           cache-dependency-path: main_frontend/concert1/package-lock.json
 
-      - name: Install deps
-        working-directory: main_frontend/concert1
-        run: |
-          npm ci
-          npx playwright install --with-deps chromium
-
       - name: Start backend stack (MySQL + backend)
         run: |
           docker compose up -d mysql backend
@@ -34,30 +28,29 @@ jobs:
           for i in {1..60}; do
             if curl -sf http://localhost:8080/actuator/health | grep 'UP'; then echo OK; break; fi; sleep 2; done
 
-      - name: Start frontend
-        working-directory: main_frontend/concert1
-        run: |
-          npm run dev &
-          echo $! > /tmp/nuxt.pid
-          for i in {1..60}; do
-            if curl -sf http://localhost:3000/concert/ >/dev/null; then echo "Frontend up"; break; fi; sleep 2; done
-
-      - name: Run Playwright tests
+      - name: Cypress run (Electron)
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: main_frontend/concert1
+          browser: electron
+          start: npm run dev
+          wait-on: 'http://localhost:3000/concert'
+          wait-on-timeout: 120
+          install-command: npm install
         env:
-          PLAYWRIGHT_BASE_URL: http://localhost:3000/concert
-        working-directory: main_frontend/concert1
-        run: npm run test:e2e
+          CYPRESS_baseUrl: http://localhost:3000/concert
 
-      - name: Upload Playwright report (if exists)
+      - name: Upload Cypress screenshots/videos (if exist)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
-          path: main_frontend/concert1/playwright-report
+          name: cypress-artifacts
+          path: |
+            main_frontend/concert1/cypress/screenshots
+            main_frontend/concert1/cypress/videos
           if-no-files-found: ignore
 
       - name: Cleanup
         if: always()
         run: |
-          if [ -f /tmp/nuxt.pid ]; then kill $(cat /tmp/nuxt.pid) || true; fi
           docker compose down

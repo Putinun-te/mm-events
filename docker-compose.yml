@@ -60,11 +60,6 @@ services:
     environment:
       - MAVEN_CONFIG=/root/.m2
       - MAVEN_OPTS=-XX:+UseParallelGC -Xmx1024m
-      - DOCKER_HOST=unix:///var/run/docker.sock
-      - TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock
-      - TESTCONTAINERS_HOST_OVERRIDE=host.docker.internal
-      - TESTCONTAINERS_RYUK_DISABLED=true
-      - TESTCONTAINERS_CHECKS_DISABLE=true
     volumes:
       - ./:/workspace
       - ./.cache/m2:/root/.m2

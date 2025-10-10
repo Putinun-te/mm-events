@@ -3,6 +3,8 @@ package com.concert.repository;
 import com.concert.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -15,7 +17,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.ZoneId;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -24,9 +25,12 @@ import static org.junit.jupiter.api.Assertions.*;
 @ActiveProfiles("docker")
 @Testcontainers
 @Transactional
+@Tag("docker")
+@EnabledIfEnvironmentVariable(named = "RUN_DOCKER_TESTS", matches = "true")
 public class UserRepositoryDockerTest {
 
     @Container
+    @SuppressWarnings("resource")
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("testdb")
             .withUsername("testuser")
@@ -46,15 +50,6 @@ public class UserRepositoryDockerTest {
     @BeforeEach
     protected void setUp() {
         userRepository.deleteAll();
-    }
-
-    private User createValidUser(String name, String username, String email, String password) {
-        User user = new User();
-        user.setName(name);
-        user.setUsername(username);
-        user.setEmail(email);
-        user.setPassword(password);
-        return user;
     }
 
     @Test

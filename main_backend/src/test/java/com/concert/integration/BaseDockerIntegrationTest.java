@@ -1,6 +1,7 @@
 package com.concert.integration;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
@@ -14,9 +15,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @ActiveProfiles("docker")
 @Testcontainers
 @Transactional
+@Tag("docker")
 public abstract class BaseDockerIntegrationTest {
 
     @Container
+    @SuppressWarnings("resource")
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
             .withDatabaseName("testdb")
             .withUsername("testuser")

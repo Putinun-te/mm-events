@@ -1,29 +1,68 @@
+<script setup lang="ts">
+import { onMounted } from 'vue'
+
+const route = useRoute()
+const productId = route.params.id
+const event = ref<any>(null)
+
+console.log(productId)
+
+function loadScript(src: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[src="${src}"]`)) {
+      resolve()
+      return
+    }
+
+    const script = document.createElement('script')
+    script.src = src
+    script.type = 'text/javascript'
+    script.async = true
+    script.onload = () => resolve()
+    script.onerror = () => reject(new Error(`Failed to load script: ${src}`))
+    document.head.appendChild(script)
+  })
+}
+
+onMounted(() => {
+  loadScript('https://api.longdo.com/map3/?key=REPLACE_WITH_MAP_API_KEY') // Replace with your key
+    .then(() => {
+      const map = new longdo.Map({
+        placeholder: document.getElementById('map'),
+        language: 'th'
+      });
+
+
+      var marker = new longdo.Marker({ 
+        lon: 100.56, 
+        lat: 13.74,
+        title: 'Rotate Marker',
+        rotate: 90
+      });
+
+      map.Overlays.add(marker);
+      map.Layers.add(longdo.Layers.THAICHOTE);
+    })
+    .catch(error => {
+      console.error("Failed to load Longdo Map script:", error);
+    });
+
+    event.value = window.history.state?.event ?? null
+    if (!event.value) {
+        console.log(event.value)
+    }
+});
+
+
+</script>
+
 <!-- <template>
-    <div class="flex flex-col justify-between lg:flex-row">
-        <div class="flex flex-col gap-6">
-            <img class="w-full h-full aspect-square object-cover rounded-xl" src="~/assets/img/apple.jpg" />
-            <div class="flex flex-row justify-between h-24">
-                <img class="w-24 h-24 rounded-md cursor-pointer" src="~/assets/img/apple.jpg" />
-                <img class="w-24 h-24 rounded-md cursor-pointer" src="~/assets/img/apple.jpg" />
-                <img class="w-24 h-24 rounded-md cursor-pointer" src="~/assets/img/apple.jpg" />
-                <img class="w-24 h-24 rounded-md cursor-pointer" src="~/assets/img/apple.jpg" />
-            </div>
-        </div>
-        <div class="flex flex-col">
-            <div class="">
-                <span class="text-violet-600">Good Day</span>
-                <h1 class="text-3xl font-bold">Great day</h1>
-            </div>
-            <p class="text-gray-700">
-                [4:43:32 PM] ℹ hmr update /pages/ProductPageDetail.v
-                ue, /assets/css/main.css?direct, /assets/css/main.css
-                , /pages/ProductPageDetail.vue?macro=true, /@id/virtual:nuxt:D%3A%
-                2Fstudy%2Fsubject%2Fdevops%2Fconcert%2Fconcert1%2F.nuxt%2Froutes.mjs
-            </p>
-            <h6 class="text-2xl font-semibold text-green-600">20</h6>
-        </div>
-    </div>
+  <div>
+    <h1>This is for testing map</h1>
+    <div id="map" style="width: 100%; height: 500px;"></div>
+  </div>
 </template> -->
+
 
 <template>
     <div class="bg-gray-50 min-h-screen">
@@ -37,11 +76,10 @@
                         </div>
                         
                         <!--for more image below-->
-                        <div class="grid grid-cols-4 gap-3">
-                            <img src="~/assets/img/apple.jpg"/>
-                            <img src="~/assets/img/apple.jpg"/> 
-                            <img src="~/assets/img/apple.jpg"/> 
-                            <img src="~/assets/img/apple.jpg"/> 
+                        <div class="grid">
+                            <div>
+                                <div id="map" style="width: 100%; height: 500px;"></div>
+                            </div>
                         </div>
                     </div>
 
@@ -56,11 +94,12 @@
                             
                             <h1 class="text-4xl lg:text-5xl font-bold text-gray-900 leading-tight">
                                 Premium Fresh Apples
+                                <!-- {{ event.name }} -->
                             </h1>
                             
                             <p class="text-lg text-gray-600 leading-relaxed">
-                                Crisp, juicy, and bursting with natural sweetness. Our premium apples are hand-picked from the finest orchards, 
-                                ensuring you get the best quality fruit with every bite. Perfect for snacking, baking, or adding to your favorite recipes.
+                                information
+                                <!-- {{ event.description }} -->
                             </p>
                         </div>
                         <div class="space-y-6">
@@ -72,7 +111,7 @@
                             
                             <div class="flex items-center gap-3">
                                 <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                <span class="text-green-600 font-semibold">In Stock - Ready to Ship</span>
+                                <span class="text-green-600 font-semibold">Available Seat</span>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-4">
@@ -95,25 +134,25 @@
                         </div>
                         <div class="space-y-6">
                             <div class="flex items-center gap-4">
-                                <label class="text-gray-700 font-semibold">Quantity:</label>
+                                <label class="text-gray-700 font-semibold">Person:</label>
                                 <div class="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden">
                                     <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors" onclick="changeQuantity(-1)">-</button>
                                     <span id="quantity" class="px-6 py-2 bg-white font-semibold">1</span>
                                     <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors" onclick="changeQuantity(1)">+</button>
                                 </div>
-                                <span class="text-gray-500">kg</span>
+                                <!-- <span class="text-gray-500">kg</span> -->
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-4">
                                 <button class="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
                                     🛒 Add to Cart
                                 </button>
-                                <button class="flex-1 border-2 border-violet-600 text-violet-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-50 transition-all duration-200">
+                                <!-- <button class="flex-1 border-2 border-violet-600 text-violet-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-50 transition-all duration-200">
                                     ❤️ Add to Wishlist
-                                </button>
+                                </button> -->
                             </div>
                         </div>
-                        <div class="border-t pt-6">
+                        <!-- <div class="border-t pt-6">
                             <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-600">
                                 <div class="flex items-center gap-2">
                                     <span class="text-green-500">✓</span>
@@ -128,7 +167,7 @@
                                     Secure payment
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>

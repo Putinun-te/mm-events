@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref,reactive } from 'vue'
-import { registerCheck } from '~~/server/register/registerCheck'
+import { registerCheck } from '~~/server/api/register/registerCheck'
 
 // let userLst = reactive([])
 type user = {

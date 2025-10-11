@@ -3,6 +3,8 @@ import axios from "axios";
 const BASE_URL = process.env.BACKEND_BASE_URL || "http://localhost:8080";
 const API_URL = `${BASE_URL}/api/auth`;
 
+// let data = [{'abc': '123'}, {'testing': '123'}]
+
 export const login = async (credentials: { usernameOrEmail: string; password: string }) => {
   try {
     const response = await axios.post(`${API_URL}/login`, credentials);

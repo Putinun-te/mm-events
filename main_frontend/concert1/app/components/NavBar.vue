@@ -1,9 +1,25 @@
 <script setup lang="ts">
+import { ref } from 'vue';
+import Login from './Login.vue';
+
+let user = ref('')
+
 const pages = ref([
+    { text: 'Home', value: '/'},
     { text: 'Mapping', value: 'MapTestingPage'},
-    { text: 'Homepage', value: '/'},
-    { text: 'About us', value:'AboutUS'}
+    { text: 'Account', value: 'AccountPage'},
+    { text: 'Contact', value:''}
 ])
+
+const pagess = ref([
+    { text: 'Create Event', value: 'CreateEventPage'},
+    { text: 'Cart', value: 'CartPage'},
+    { text: '', value: 'AccountPage'},
+    { text: 'Login', value: 'LoginPage'},
+    { text: 'Register', value: 'RegisterPage'},
+    { text: 'Profile', value:'AboutUS'}
+])
+
 </script>
 
 <template>
@@ -17,6 +33,16 @@ const pages = ref([
                     <NuxtLink :to="`${page.value}`" :class="[' hover:text-blue-400 p-3']">{{ page.text }}</NuxtLink>
                 </li>
             </ul>
+
+            <ul class="flex flex-row">
+                <li v-for="page in pagess" :key="page.value">
+                    <NuxtLink :to="`${page.value}`" :class="[' hover:text-blue-400 p-3']">{{ page.text }}</NuxtLink>
+                </li>
+            </ul>
+            <!-- for account and when login complete-->
+            <!-- <ul class="flex flex-row">
+                <NuxtLink to="/ProductPageDetail" :class="[' hover:text-blue-400 p-3']"></NuxtLink>
+            </ul>                       -->
         </div>
     </nav>
 </template>

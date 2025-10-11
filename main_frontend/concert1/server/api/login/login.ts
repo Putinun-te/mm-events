@@ -1,30 +1,17 @@
 import axios from "axios";
 
-const BASE_URL = process.env.BACKEND_BASE_URL || "http://localhost:8080";
-const API_URL = `${BASE_URL}/api/auth`;
+export type AuthResponse = { token?: string; username?: string; email?: string; message?: string };
 
-// let data = [{'abc': '123'}, {'testing': '123'}]
-
-export const login = async (credentials: { usernameOrEmail: string; password: string }) => {
-  try {
-    const response = await axios.post(`${API_URL}/login`, credentials);
-    return response.data;
-  } catch (error) {
-    console.error("Login failed:", error);
-    throw error;
-  }
+export const login = async (credentials: { usernameOrEmail: string; password: string }): Promise<AuthResponse> => {
+  const response = await axios.post<AuthResponse>(`/api/auth/login`, credentials);
+  return response.data;
 };
 
 export const getCurrentUser = async (token: string) => {
-  try {
-    const response = await axios.get(`${API_URL}/me`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    return response.data;
-  } catch (error) {
-    console.error("Get current user failed:", error);
-    throw error;
-  }
+  const response = await axios.get(`/api/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
 };

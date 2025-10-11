@@ -5,8 +5,6 @@ const route = useRoute()
 const productId = route.params.id
 const event = ref<any>(null)
 
-console.log(productId)
-
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
@@ -24,36 +22,21 @@ function loadScript(src: string): Promise<void> {
   })
 }
 
-onMounted(() => {
-  loadScript('https://api.longdo.com/map3/?key=REPLACE_WITH_MAP_API_KEY') // Replace with your key
-    .then(() => {
-      const map = new longdo.Map({
-        placeholder: document.getElementById('map'),
-        language: 'th'
-      });
+onMounted(async () => {
+  loadScript('https://api.longdo.com/map3/?key=REPLACE_WITH_MAP_API_KEY')
+    .catch(error => console.error("Failed to load Longdo Map script:", error))
 
-
-      var marker = new longdo.Marker({ 
-        lon: 100.56, 
-        lat: 13.74,
-        title: 'Rotate Marker',
-        rotate: 90
-      });
-
-      map.Overlays.add(marker);
-      map.Layers.add(longdo.Layers.THAICHOTE);
-    })
-    .catch(error => {
-      console.error("Failed to load Longdo Map script:", error);
-    });
-
-    event.value = window.history.state?.event ?? null
-    if (!event.value) {
-        console.log(event.value)
-    }
+  event.value = window.history.state?.event ?? null
+  if (!event.value) {
+    const { data } = await useFetch(`/api/product/${productId}`)
+    event.value = data.value
+  }
 });
 
-
+function addToCart() {
+  // TODO: implement cart store; placeholder logs for now
+  console.log('Add to cart', event.value?.id)
+}
 </script>
 
 <!-- <template>
@@ -144,7 +127,7 @@ onMounted(() => {
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-4">
-                                <button class="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200">
+                                <button class="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200" @click="addToCart">
                                     🛒 Add to Cart
                                 </button>
                                 <!-- <button class="flex-1 border-2 border-violet-600 text-violet-600 px-8 py-4 rounded-xl font-semibold text-lg hover:bg-violet-50 transition-all duration-200">

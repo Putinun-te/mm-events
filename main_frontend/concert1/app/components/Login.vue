@@ -1,21 +1,27 @@
 <script setup lang="ts">
-import { ref } from "vue";
-import { login } from "~~/server/api/login/login";
+import { ref, onMounted } from "vue";
+import { useAuth } from "~/composables/useAuth";
+
+const { saveAuth, loadFromStorage, shouldCompleteProfile } = useAuth()
 
 const email = ref('')
 const password = ref('')
-const term = ref(false)
+const rememberMe = ref(false)
 const isLoading = ref(false)
 const message = ref('')
 const isSuccess = ref(false)
 
-
-// const handleSubmit = () => {
-//   console.log("Email:", email.value);
-//   console.log("Password:", password.value);
-// };
-
-console.log(term)
+onMounted(() => {
+  if (process.client) {
+    loadFromStorage()
+    const remembered = localStorage.getItem('remember_me') === 'true'
+    if (remembered) {
+      rememberMe.value = true
+      const savedEmail = localStorage.getItem('user_email') || ''
+      if (savedEmail) email.value = savedEmail
+    }
+  }
+})
 
 const handleSubmit = async () => {
   if (!email.value || !password.value) {
@@ -28,37 +34,31 @@ const handleSubmit = async () => {
   message.value = '';
 
   try {
-    const res = await login({
-      usernameOrEmail: email.value,
-      password: password.value,
-    });
-    console.log("Login Success:", res);
-    
-    if (res.token) {
+    const res: any = await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: { usernameOrEmail: email.value, password: password.value }
+    })
+
+    if (res?.token) {
       message.value = `Login successful! Welcome back ${res.username}!`;
       isSuccess.value = true;
-      // Store token in localStorage
-      localStorage.setItem('jwt_token', res.token);
-      localStorage.setItem('user_email', res.email);
-      localStorage.setItem('username', res.username);
-      
-      // Clear form
-      email.value = '';
-      password.value = '';
-      
-      // Redirect or update UI as needed
-      setTimeout(() => {
-        // You can navigate to dashboard or home page here
-        console.log("Redirecting to dashboard...");
-        
-      }, 2000);
-    } else if (res.message) {
+
+      if (process.client) {
+        saveAuth({ token: res.token, email: res.email, username: res.username }, rememberMe.value)
+      }
+
+      password.value = ''
+
+      // Redirect: if first time, go to AccountPage to complete profile
+      if (shouldCompleteProfile()) await navigateTo('/AccountPage')
+      else console.log('Logged in, staying on page or redirect to home...')
+    } else if (res?.message) {
       message.value = res.message;
       isSuccess.value = false;
     }
   } catch (err: any) {
     console.error("Login error:", err);
-    message.value = err.response?.data?.message || "Login failed!";
+    message.value = err?.data?.message || err?.response?.data?.message || err?.message || "Login failed!";
     isSuccess.value = false;
   } finally {
     isLoading.value = false;
@@ -109,16 +109,15 @@ const handleSubmit = async () => {
         <div class="flex items-start mt-6">
           <div class="flex items-center h-5">
             <input
-              v-model="term"
-              id="terms" 
+              v-model="rememberMe"
+              id="rememberMe" 
               type="checkbox" 
               class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
             />
           </div>
           <div class="ml-3 text-sm">
-            <label for="terms" class="font-medium text-gray-700">
-              I agree to the 
-              <a href="#" class="text-indigo-600 hover:underline">Terms and Conditions</a>
+            <label for="rememberMe" class="font-medium text-gray-700">
+              Remember me
             </label>
           </div>
         </div>
@@ -128,15 +127,15 @@ const handleSubmit = async () => {
             type="submit" 
             class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
           >
-            Register
+            Login
           </button>
         </div>
         
         <p class="mt-8 text-center text-sm text-gray-600">
           Create account
-          <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
+          <NuxtLink to="/RegisterPage" class="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
             Register
-          </a>
+          </NuxtLink>
         </p>
       </div>
     </form>

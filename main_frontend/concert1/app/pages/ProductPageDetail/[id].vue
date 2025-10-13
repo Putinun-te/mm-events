@@ -94,17 +94,12 @@ onMounted(async () => {
   loading.value = false
 })
 
-function changeQuantity(delta: number) {
-  const newQty = quantity.value + delta
-  const maxAllowed = Math.min(availableSeats.value || 999, maxQuantityPerBooking)
-  console.log('changeQuantity called:', { delta, current: quantity.value, newQty, maxAllowed })
-  if (newQty >= 1 && newQty <= maxAllowed) {
-    quantity.value = newQty
-    console.log('quantity updated to:', quantity.value)
-  } else {
-    console.log('quantity change rejected:', { newQty, min: 1, max: maxAllowed })
-  }
-}
+const changeQuantity = (delta: number) => {
+    const newQuantity = quantity.value + delta;
+    if (newQuantity >= 1 && newQuantity <= 10) {
+        quantity.value = newQuantity;
+    }
+};
 
 async function addToCart() {
   if (!isLoggedIn.value) {
@@ -121,7 +116,7 @@ async function addToCart() {
   }
 
   try {
-    // Create booking
+    // Step 1: Create booking
     await $fetch('/api/bookings', {
       method: 'POST',
       body: {
@@ -135,26 +130,44 @@ async function addToCart() {
       headers: { Authorization: `Bearer ${token}` }
     })
     
-    // Get user info
-    const userProfile: any = await $fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    // Step 2: Get user info (non-blocking - don't fail booking if this fails)
+    let userId = null
+    let userName = 'Anonymous'
+    try {
+      const userProfile: any = await $fetch('/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      userId = userProfile.id
+      userName = userProfile.name || userProfile.username || userProfile.email
+    } catch (profileError) {
+      console.warn('Failed to fetch user profile, using fallback:', profileError)
+    }
     
-    // Add user to event participants
-    await $fetch(`/api/events/json/${event.value.id}/add-participant`, {
-      method: 'POST',
-      body: {
-        userId: userProfile.id,
-        userName: userProfile.name || userProfile.username || userProfile.email,
-        ticketCount: quantity.value
+    // Step 3: Add user to event participants (non-blocking)
+    if (userId) {
+      try {
+        await $fetch(`/api/events/json/${event.value.id}/add-participant`, {
+          method: 'POST',
+          body: {
+            userId,
+            userName,
+            ticketCount: quantity.value
+          }
+        })
+        
+        // Step 4: Reload event data to show updated participant count
+        try {
+          const updatedEvent = await $fetch(`/api/events/json/${event.value.id}`)
+          event.value = updatedEvent
+        } catch (reloadError) {
+          console.warn('Failed to reload event data:', reloadError)
+        }
+      } catch (participantError) {
+        console.warn('Failed to add participant, but booking was successful:', participantError)
       }
-    })
+    }
     
     success(`Successfully booked ${quantity.value} ticket(s)!`, 'Booking Confirmed')
-    
-    // Reload event data to show updated participant count
-    const updatedEvent = await $fetch(`/api/events/json/${event.value.id}`)
-    event.value = updatedEvent
     
     // Redirect to bookings page
     setTimeout(() => router.push('/MyBookingsPage'), 1500)

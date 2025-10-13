@@ -64,12 +64,12 @@ onMounted(async () => {
     .catch(error => console.error("Failed to load Longdo Map script:", error))
 
   loading.value = true
-  // Try history state first, then fetch from backend
+  // Try history state first, then fetch from JSON
   event.value = window.history.state?.event ?? null
   if (!event.value) {
     try {
-      const { data } = await useFetch(`/api/events/${productId}`)
-      event.value = data.value
+      const data = await $fetch(`/api/events/json/${productId}`)
+      event.value = data
     } catch (e) {
       console.error('Failed to load event', e)
       toast('Failed to load event details', 'error')

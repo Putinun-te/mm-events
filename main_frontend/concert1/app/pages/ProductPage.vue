@@ -51,12 +51,12 @@ async function loadEvents() {
   loading.value = true
   message.value = ''
   try {
-    const { data } = await useFetch<EventItem[]>(`/api/events`, {
-      query: { page: page.value, size: size.value }
-    })
-    events.value = data.value || []
+    // Load events from JSON file
+    const data = await $fetch<EventItem[]>('/api/events/json')
+    events.value = data || []
   } catch (e: any) {
     message.value = e?.statusMessage || 'Failed to load events.'
+    console.error('Error loading events:', e)
   } finally {
     loading.value = false
   }

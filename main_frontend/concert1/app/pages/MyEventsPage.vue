@@ -59,7 +59,7 @@ async function fetchEvents() {
       router.push('/LoginPage')
       return
     }
-    const res: any = await $fetch('/api/events/me', {
+    const res: any = await $fetch('/api/events/json/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
     events.value = Array.isArray(res) ? res : []

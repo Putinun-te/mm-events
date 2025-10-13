@@ -95,13 +95,16 @@ async function handleSubmit() {
       category: form.category || null,
       location: form.location || null
     }
-    await $fetch('/api/events', {
+    
+    // Save to JSON file
+    await $fetch('/api/events/json', {
       method: 'POST',
       body: payload,
       headers: { Authorization: `Bearer ${token}` }
     })
-    toast('Event created successfully.', 'success')
-    router.push('/MyEventsPage')
+    
+    toast('Event created successfully and saved to JSON!', 'success')
+    router.push('/ProductPage')
   } catch (e: any) {
     const message = e?.statusMessage || e?.data?.message || 'Failed to create event.'
     toast(message, 'error')

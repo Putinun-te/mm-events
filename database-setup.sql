@@ -77,8 +77,8 @@ CREATE TABLE orders (
     card_exp VARCHAR(10),
     cvv2 VARCHAR(10),
     tax DECIMAL(10,2),
-    total_price DECIMAL(10,2),
-    status VARCHAR(50) DEFAULT 'PENDING',
+    total_price DECIMAL NOT NULL(10,2),
+    status VARCHAR(50) DEFAULT 'PENDING' NOT NULL,
     order_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     quantity INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -169,7 +169,7 @@ SELECT 'Default password for all users is: password123' as note;
 
 -- Create MySQL user for testing
 CREATE USER IF NOT EXISTS 'username'@'%' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON devop_db.* TO 'username'@'%';
+GRANT ALL PRIVILEGES ON concert_db.* TO 'username'@'%';
 FLUSH PRIVILEGES;
 
 -- Display user creation message

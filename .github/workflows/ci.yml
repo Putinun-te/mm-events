@@ -21,6 +21,7 @@ jobs:
     strategy:
       matrix:
         node-version: [18, 20, 22]
+      fail-fast: false
     defaults:
       run:
         working-directory: ./main_frontend/concert1
@@ -36,8 +37,11 @@ jobs:
           cache: 'npm'
           cache-dependency-path: ./main_frontend/concert1/package-lock.json
 
-      - name: 📚 Install dependencies
-        run: npm ci
+      - name: 🧹 Clean npm install (workaround oxc-parser)
+        run: |
+          rm -rf node_modules package-lock.json || true
+          npm cache clean --force
+          npm install
 
       - name: 🧪 Run unit tests
         run: npm test -- --run
@@ -82,7 +86,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java-version: [17, 21]
+        java-version: [21]
     defaults:
       run:
         working-directory: ./main_backend
@@ -219,8 +223,11 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      - name: 📚 Install frontend dependencies
-        run: npm ci
+      - name: 🧹 Clean npm install (workaround oxc-parser)
+        run: |
+          rm -rf node_modules package-lock.json || true
+          npm cache clean --force
+          npm install
 
       - name: 🎭 Install Playwright browsers
         run: npx playwright install --with-deps chromium

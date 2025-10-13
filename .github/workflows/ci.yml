@@ -271,12 +271,132 @@ jobs:
           if [ -f ../main_backend/backend.pid ]; then kill $(cat ../main_backend/backend.pid) || true; fi
 
   # ============================================
+  # Cypress E2E Tests
+  # ============================================
+  cypress-test:
+    name: Cypress E2E Tests
+    runs-on: ubuntu-latest
+    needs: [frontend-test, backend-test]
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root_password
+          MYSQL_DATABASE: concert_db
+          MYSQL_USER: concert_user
+          MYSQL_PASSWORD: concert_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: ☕ Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 📦 Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ./main_frontend/concert1/package-lock.json
+
+      - name: 📥 Install frontend dependencies
+        working-directory: ./main_frontend/concert1
+        run: |
+          rm -rf node_modules package-lock.json || true
+          npm cache clean --force
+          npm install
+
+      - name: 🧪 Verify Cypress installation
+        working-directory: ./main_frontend/concert1
+        run: npx cypress verify
+
+      - name: 🚀 Start backend server
+        working-directory: ./main_backend
+        run: |
+          ./mvnw spring-boot:run -Dspring-boot.run.profiles=test &
+          echo $! > backend.pid
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: concert_user
+          SPRING_DATASOURCE_PASSWORD: concert_password
+          JWT_SECRET: test-only-jwt-secret-used-by-unit-tests-test-only-jwt-secret-used-by-unit-tests
+
+      - name: ⏳ Wait for backend to be ready
+        run: |
+          for i in {1..60}; do
+            if curl -f http://localhost:8080/actuator/health 2>/dev/null || curl -f http://localhost:8080/api/auth/test 2>/dev/null; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Waiting for backend... ($i/60)"
+            sleep 2
+          done
+
+      - name: 🚀 Start frontend server
+        working-directory: ./main_frontend/concert1
+        run: |
+          npm run dev &
+          echo $! > frontend.pid
+
+      - name: ⏳ Wait for frontend to be ready
+        working-directory: ./main_frontend/concert1
+        run: |
+          for i in {1..60}; do
+            if curl -f http://localhost:3000 2>/dev/null; then
+              echo "Frontend is ready!"
+              break
+            fi
+            echo "Waiting for frontend... ($i/60)"
+            sleep 2
+          done
+
+      - name: 🌲 Run Cypress tests
+        working-directory: ./main_frontend/concert1
+        run: npm run cypress:headless
+
+      - name: 📸 Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: ./main_frontend/concert1/cypress/screenshots/
+          retention-days: 7
+
+      - name: 🎥 Upload Cypress videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: ./main_frontend/concert1/cypress/videos/
+          retention-days: 7
+
+      - name: 🛑 Stop servers
+        if: always()
+        working-directory: ./main_frontend/concert1
+        run: |
+          if [ -f frontend.pid ]; then kill $(cat frontend.pid) || true; fi
+          if [ -f ../main_backend/backend.pid ]; then kill $(cat ../main_backend/backend.pid) || true; fi
+
+  # ============================================
   # Docker Build & Test
   # ============================================
   docker-build:
     name: Docker Build & Integration Test
     runs-on: ubuntu-latest
-    needs: [frontend-test, backend-test]
+    needs: [frontend-test, backend-test, cypress-test]
     
     steps:
       - name: 📥 Checkout code

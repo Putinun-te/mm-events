@@ -11,7 +11,7 @@ let items = ref(98)
             <div class="p-6 md:p-8">
                 <h1 class="text-3xl font-bold text-gray-900">Your Cart</h1>
 
-                <div v-for="i in 5" key="i">
+                <div v-for="i in 5" :key="i">
                     <div class="flex justify-between pb-3">
                         <p class="pt-5">items {{ i }}</p>
                         <input

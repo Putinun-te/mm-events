@@ -2,22 +2,43 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-interface Event {
-  id: string;
-  name: string;
-  datestart: string;
-  dateend:string;
-  personlimit: number;
-  description: string;
+type LegacyEvent = {
+  id: string | number
+  name: string
+  datestart: string // epoch seconds string
+  dateend: string // epoch seconds string
+  personlimit: number
+  description: string
 }
 
-const props = defineProps<{
-  event: Event
-}>();
+type ApiEvent = {
+  id: string | number
+  title: string
+  description?: string
+  startDate: string // ISO local date-time
+  endDate: string // ISO local date-time
+  personLimit?: number
+}
+
+const props = defineProps<{ event: LegacyEvent | ApiEvent }>()
 const router = useRouter()
 
-const formatEventDateMn = (timestamp: string) => {
-  const date = new Date(parseInt(timestamp) * 1000); 
+function toDate(val: any): Date {
+  // supports epoch seconds string or ISO string
+  if (typeof val === 'string' && /^\d+$/.test(val)) {
+    return new Date(parseInt(val, 10) * 1000)
+  }
+  return new Date(val)
+}
+
+const displayName = computed(() => (props.event as any).name || (props.event as any).title || 'Untitled')
+const displayDescription = computed(() => (props.event as any).description || '')
+const startRaw = computed(() => (props.event as any).datestart || (props.event as any).startDate)
+const endRaw = computed(() => (props.event as any).dateend || (props.event as any).endDate)
+const capacity = computed(() => (props.event as any).personlimit ?? (props.event as any).personLimit ?? 0)
+
+const formatEventDateMn = (raw: string) => {
+  const date = toDate(raw)
   return date.toLocaleString('en-US', {
     month: 'short',
     day: 'numeric',
@@ -25,8 +46,8 @@ const formatEventDateMn = (timestamp: string) => {
   });
 };
 
-const formatEventDateTime = (timestamp: string) => {
-  const date = new Date(parseInt(timestamp) * 1000); 
+const formatEventDateTime = (raw: string) => {
+  const date = toDate(raw)
   return date.toLocaleString('en-US', {
     hour: '2-digit',
     minute: '2-digit',
@@ -70,9 +91,9 @@ function join () {
     </div>  
 
     <div class="text-center">
-      <h2 class="text-2xl font-bold text-slate-800 tracking-tight">{{ event.name }}</h2>
+      <h2 class="text-2xl font-bold text-slate-800 tracking-tight">{{ displayName }}</h2>
       <p class="mt-2 text-slate-600 text-sm leading-relaxed">
-        {{ event.description }}
+        {{ displayDescription }}
       </p>
     </div>
 
@@ -80,19 +101,19 @@ function join () {
       <ul class="space-y-3 text-slate-600 text-sm">
         <li class="flex items-center gap-3">
             <path stroke-linecap="round" stroke-linejoin="round"/>
-          <span class="font-semibold text-slate-700">Date:</span>{{ formatEventDateMn(event.datestart) }}
+          <span class="font-semibold text-slate-700">Date:</span>{{ formatEventDateMn(startRaw as any) }}
         </li>        
         <li class="flex items-center gap-3">
             <path stroke-linecap="round" stroke-linejoin="round"/>
-          <span class="font-semibold text-slate-700">Starts:</span>{{ formatEventDateTime(event.datestart) }}
+          <span class="font-semibold text-slate-700">Starts:</span>{{ formatEventDateTime(startRaw as any) }}
         </li>
         <li class="flex items-center gap-3">
             <path stroke-linecap="round" stroke-linejoin="round" />
-          <span class="font-semibold text-slate-700">Ends:</span>{{ formatEventDateTime(event.dateend) }}
+          <span class="font-semibold text-slate-700">Ends:</span>{{ formatEventDateTime(endRaw as any) }}
         </li>
         <li class="flex items-center gap-3">
             <path stroke-linecap="round" stroke-linejoin="round" />
-          <span class="font-semibold text-slate-700">Remain:</span>{{ event.personlimit }} seat
+          <span class="font-semibold text-slate-700">Remain:</span>{{ capacity }} seat
         </li>
       </ul>
     </div>

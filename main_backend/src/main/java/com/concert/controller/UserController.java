@@ -1,6 +1,7 @@
 package com.concert.controller;
 
 import com.concert.dto.UpdateProfileRequest;
+import com.concert.dto.UserProfileResponse;
 import com.concert.model.User;
 import com.concert.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +59,23 @@ public class UserController {
                         if (req.getCompany() != null) user.setCompany(req.getCompany());
                         if (req.getWebsite() != null) user.setWebsite(req.getWebsite());
                         User saved = userRepository.save(user);
-                        return ResponseEntity.ok(saved);
+                        
+                        // Return full profile response
+                        UserProfileResponse profile = new UserProfileResponse(
+                            saved.getId(),
+                            saved.getUsername(),
+                            saved.getEmail(),
+                            saved.getName(),
+                            saved.getPhone(),
+                            saved.getAddress(),
+                            saved.getCity(),
+                            saved.getCountry(),
+                            saved.getPincode(),
+                            saved.getProfilePhoto(),
+                            saved.getCompany(),
+                            saved.getWebsite()
+                        );
+                        return ResponseEntity.ok(profile);
                     })
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {

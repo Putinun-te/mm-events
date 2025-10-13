@@ -3,6 +3,7 @@ package com.concert.controller;
 import com.concert.dto.AuthResponse;
 import com.concert.dto.LoginRequest;
 import com.concert.dto.RegisterRequest;
+import com.concert.dto.UserProfileResponse;
 import com.concert.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,14 +58,18 @@ public class AuthController {
     }
     
     @GetMapping("/me")
-    public ResponseEntity<AuthResponse> getCurrentUser(Authentication authentication) {
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
         try {
             String username = authentication.getName();
-            AuthResponse response = authService.getCurrentUser(username);
-            return ResponseEntity.ok(response);
+            UserProfileResponse profile = authService.getUserProfile(username);
+            if (profile == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("User not found");
+            }
+            return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new AuthResponse("Failed to get user profile: " + e.getMessage()));
+                    .body("Failed to get user profile: " + e.getMessage());
         }
     }
 }

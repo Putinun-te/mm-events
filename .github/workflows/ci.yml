@@ -319,6 +319,13 @@ jobs:
           npm cache clean --force
           npm install
 
+      - name: 🔍 Verify TypeScript installation
+        working-directory: ./main_frontend/concert1
+        run: |
+          echo "Checking TypeScript installation..."
+          npx tsc --version
+          npm list typescript
+
       - name: 🧪 Verify Cypress installation
         working-directory: ./main_frontend/concert1
         run: npx cypress verify

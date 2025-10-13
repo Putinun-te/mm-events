@@ -15,7 +15,7 @@ DROP TABLE IF EXISTS users;
 
 -- Create users table
 CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -43,7 +43,7 @@ CREATE TABLE events (
     start_date DATETIME NOT NULL,
     end_date DATETIME,
     banner_image VARCHAR(255),
-    user_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -55,7 +55,7 @@ CREATE TABLE events (
 -- Create tickets table
 CREATE TABLE tickets (
     tk_id INT AUTO_INCREMENT PRIMARY KEY,
-    event_id INT NOT NULL,
+    event_id BIGINT NOT NULL,
     tk_types VARCHAR(50),
     price DECIMAL(10,2) NOT NULL,
     quantity INT NOT NULL,
@@ -68,9 +68,9 @@ CREATE TABLE tickets (
 -- Create orders table
 CREATE TABLE orders (
     order_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    event_id INT NOT NULL,
-    tk_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
+    tk_id BIGINT NOT NULL,
     card_type VARCHAR(50),
     card_number VARCHAR(50),
     card_holder_name VARCHAR(100),
@@ -92,8 +92,8 @@ CREATE TABLE orders (
 
 -- Create favorites table
 CREATE TABLE favs (
-    user_id INT NOT NULL,
-    event_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, event_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -103,8 +103,8 @@ CREATE TABLE favs (
 -- Create bookings table (for the new booking system)
 CREATE TABLE bookings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    event_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
     quantity INT NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'PENDING',

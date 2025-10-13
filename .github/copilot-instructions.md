@@ -69,4 +69,117 @@ Purpose: Enable AI agents to be productive quickly in this monorepo by following
 - Frontend auth UI and calls: `app/components/{Login.vue,Register.vue}`, `server/{login,register}/*.ts`.
 - Test examples: `src/test/java/com/concert/controller/*Test.java`, `repository/*DockerTest.java`.
 
-If anything here seems outdated or unclear, ask which part to refine and I’ll update these instructions.
+If anything here seems outdated or unclear, ask which part to refine and I'll update these instructions.
+
+---
+
+## 🚨 CRITICAL SECURITY RULES
+
+**NEVER put real API keys, tokens, passwords, or secrets in any files tracked by Git!**
+
+### Safe Locations for Secrets
+
+**Gitignored (safe):**
+- `backend/.env`
+- `frontend/.env`
+- `.env` (root level)
+- `.azure-secrets.local.txt`
+- Any `*.local.*` files
+
+**External (safe):**
+- GitHub Secrets (via web UI)
+- Azure Key Vault
+- Environment variables in deployment platforms
+
+**Never (unsafe):**
+- Any `.md` files
+- Any tracked configuration files
+- Commit messages
+- Code comments
+- Any files not in `.gitignore`
+
+### AI Assistant Security Rules
+
+When user provides secrets:
+1. ✅ Store ONLY in `.env` files (gitignored)
+2. ✅ Use placeholders in all documentation
+3. ✅ Never echo back the actual secret
+4. ✅ Remind user about security best practices
+
+Example placeholders:
+```bash
+API_KEY=[YOUR_API_KEY_HERE]
+API_KEY=your_key_here
+API_KEY=${YOUR_KEY}
+DATABASE_PASSWORD=<your-password>
+JWT_SECRET=<generate-a-secure-random-string>
+```
+
+---
+
+## 📁 File Organization Rules
+
+**Documentation files (.md) belong in organized locations:**
+
+### Correct Locations:
+- `docs/` - General documentation
+- `docs/deployment/` - Deployment guides
+- `docs/guides/` - How-to guides
+- `docs/reports/` - Reports and summaries
+- `.github/` - GitHub-specific files (workflows, templates)
+- Root - ONLY: README.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, LICENSE.md
+
+### Wrong Location:
+- ❌ Random .md files in project root
+- ❌ Documentation mixed with code
+- ❌ Guides in root directory
+
+**When creating .md files**:
+1. ✅ Create in appropriate docs/ subdirectory
+2. ✅ If unsure, ask user for preferred location
+3. ✅ Move root .md files to docs/ when organizing
+4. ✅ Update any references/links after moving
+
+---
+
+## 🔄 Consistency Rules
+
+**CRITICAL: After creating/modifying ANY file:**
+1. ✅ Review ALL related documentation for consistency
+2. ✅ Update outdated references across the project
+3. ✅ Check code patterns match across all files
+4. ✅ Verify naming conventions are consistent
+5. ✅ Update related files that reference changed content
+
+**Examples:**
+- Created new deployment guide? → Update other deployment docs + README
+- Changed API endpoint? → Update all docs that reference it + frontend code
+- Added new secret? → Update all setup guides + security docs
+- Modified workflow? → Update deployment guides + troubleshooting docs
+
+**Never leave inconsistencies:**
+- ❌ Old instructions in some docs, new in others
+- ❌ Different code patterns in similar files
+- ❌ Broken links or outdated references
+- ❌ Inconsistent naming/terminology
+
+---
+
+## ✅ Quick Checks Before Suggesting Code
+
+- [ ] No hardcoded secrets?
+- [ ] Using environment variables?
+- [ ] Documentation uses placeholders?
+- [ ] User reminded about `.env` setup?
+- [ ] New .md files created in correct location (docs/ folder)?
+- [ ] Links updated if files were moved?
+- [ ] All related docs checked for consistency?
+- [ ] Code patterns consistent across project?
+- [ ] References to changed content updated everywhere?
+
+---
+
+**Remember**: 
+- 🔐 Prevention is better than detection!
+- 📁 Organization matters - keep docs in docs/!
+- 🔄 Consistency is key - update ALL related files!

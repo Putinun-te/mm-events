@@ -1,0 +1,42 @@
+# Build and dependency directories
+.cache/
+node_modules/
+target/
+dist/
+.output/
+.nuxt/
+
+# IDE and editor files
+.idea/
+.vscode/
+.history/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.*.local
+.azure-secrets.local.txt
+
+# Maven wrapper
+.mvn/
+
+# Test coverage
+coverage/
+*.lcov
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Temporary files
+*.tmp
+*.temp

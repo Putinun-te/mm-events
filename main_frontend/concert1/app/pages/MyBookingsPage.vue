@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
+import { useToast } from '~/composables/useToast'
 import { $fetch } from 'ofetch'
 
 interface Booking {
@@ -18,6 +19,7 @@ interface Booking {
 
 const router = useRouter()
 const { loadFromStorage, isLoggedIn } = useAuth()
+const { success, error } = useToast()
 
 const bookings = ref<Booking[]>([])
 const loading = ref(true)
@@ -95,11 +97,12 @@ async function confirmCancelBooking() {
     }
 
     closeCancelModal()
-    message.value = 'Booking cancelled successfully!'
-    setTimeout(() => { message.value = '' }, 3000)
-  } catch (error: any) {
-    console.error('Cancel booking error', error)
-    alert(error?.data?.message || 'Failed to cancel booking. Please try again.')
+    success('Booking cancelled successfully!', 'Booking Cancelled')
+    
+    // Stay on the page - user can see their cancelled bookings
+  } catch (err: any) {
+    console.error('Cancel booking error', err)
+    error(err?.data?.message || 'Failed to cancel booking. Please try again.', 'Cancellation Failed')
   } finally {
     cancelling.value = null
   }

@@ -13,7 +13,6 @@ const productId = route.params.id
 const event = ref<any>(null)
 const loading = ref(true)
 const quantity = ref(1)
-const maxQuantityPerBooking = 10 // Maximum tickets per booking
 
 // Computed total price
 const totalPrice = computed(() => {
@@ -67,7 +66,7 @@ const isEventFull = computed(() => {
 // Calculate actual available seats for booking
 const actualAvailableSeats = computed(() => {
   const limit = availableSeats.value
-  if (limit <= 0) return maxQuantityPerBooking // Unlimited
+  if (limit <= 0) return 999 // Unlimited - set to high number
   const remaining = limit - participantsCount.value
   return remaining > 0 ? remaining : 0
 })
@@ -111,7 +110,7 @@ onMounted(async () => {
 
 const changeQuantity = (delta: number) => {
     const newQuantity = quantity.value + delta;
-    const maxAllowed = Math.min(actualAvailableSeats.value, maxQuantityPerBooking);
+    const maxAllowed = actualAvailableSeats.value;
     if (newQuantity >= 1 && newQuantity <= maxAllowed) {
         quantity.value = newQuantity;
     }
@@ -330,19 +329,19 @@ async function addToCart() {
                                             type="number"
                                             v-model.number="quantity"
                                             :min="1"
-                                            :max="Math.min(actualAvailableSeats, maxQuantityPerBooking)"
-                                            class="w-20 text-center py-3 font-semibold text-lg border-0 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                            :max="actualAvailableSeats"
+                                            class="w-20 text-center py-3 font-semibold text-lg border-0 focus:outline-none focus:none focus:ring-2 focus:ring-violet-500"
                                         />
                                         <button 
                                             type="button"
                                             class="px-6 py-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xl"
                                             @click="changeQuantity(1)"
-                                            :disabled="quantity >= Math.min(actualAvailableSeats, maxQuantityPerBooking)"
+                                            :disabled="quantity >= actualAvailableSeats"
                                             style="z-index: 100; position: relative;"
                                         >+</button>
                                     </div>
                                     <span class="text-sm text-gray-500">
-                                        Max {{ Math.min(actualAvailableSeats, maxQuantityPerBooking) }} per booking
+                                        Max {{ actualAvailableSeats }} per booking
                                     </span>
                                 </div>
                             </div>

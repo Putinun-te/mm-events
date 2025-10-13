@@ -15,7 +15,7 @@ DROP TABLE IF EXISTS users;
 
 -- Create users table
 CREATE TABLE users (
-    user_id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
     email VARCHAR(150) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE users (
 
 -- Create events table
 CREATE TABLE events (
-    event_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     category VARCHAR(100),
     description TEXT,
@@ -43,7 +43,7 @@ CREATE TABLE events (
     start_date DATETIME NOT NULL,
     end_date DATETIME,
     banner_image VARCHAR(255),
-    user_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -54,8 +54,8 @@ CREATE TABLE events (
 
 -- Create tickets table
 CREATE TABLE tickets (
-    tk_id INT AUTO_INCREMENT PRIMARY KEY,
-    event_id INT NOT NULL,
+    tk_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    event_id BIGINT NOT NULL,
     tk_types VARCHAR(50),
     price DECIMAL(10,2) NOT NULL,
     quantity INT NOT NULL,
@@ -67,18 +67,18 @@ CREATE TABLE tickets (
 
 -- Create orders table
 CREATE TABLE orders (
-    order_id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    event_id INT NOT NULL,
-    tk_id INT NOT NULL,
+    order_id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
+    tk_id BIGINT NOT NULL,
     card_type VARCHAR(50),
     card_number VARCHAR(50),
     card_holder_name VARCHAR(100),
     card_exp VARCHAR(10),
     cvv2 VARCHAR(10),
     tax DECIMAL(10,2),
-    total_price DECIMAL(10,2),
-    status VARCHAR(50) DEFAULT 'PENDING',
+    total_price DECIMAL(10,2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'PENDING' NOT NULL,
     order_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     quantity INT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -92,8 +92,8 @@ CREATE TABLE orders (
 
 -- Create favorites table
 CREATE TABLE favs (
-    user_id INT NOT NULL,
-    event_id INT NOT NULL,
+    user_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, event_id),
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
@@ -105,11 +105,16 @@ CREATE TABLE favs (
 -- Event details (title, location, date) are stored directly in bookings for display
 CREATE TABLE bookings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+<<<<<<< HEAD
     user_id INT NOT NULL,
     event_id VARCHAR(255) NOT NULL,
     event_title VARCHAR(500),
     event_location VARCHAR(500),
     event_start_date DATETIME,
+=======
+    user_id BIGINT NOT NULL,
+    event_id BIGINT NOT NULL,
+>>>>>>> 6f892ee311a05154c15d2db8e267d877780ae5d8
     quantity INT NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'PENDING',
@@ -173,7 +178,7 @@ SELECT 'Default password for all users is: password123' as note;
 
 -- Create MySQL user for testing
 CREATE USER IF NOT EXISTS 'username'@'%' IDENTIFIED BY 'password';
-GRANT ALL PRIVILEGES ON devop_db.* TO 'username'@'%';
+GRANT ALL PRIVILEGES ON concert_db.* TO 'username'@'%';
 FLUSH PRIVILEGES;
 
 -- Display user creation message

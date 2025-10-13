@@ -1,6 +1,6 @@
 package com.concert.controller;
 
-import com.concert.dto.AuthResponse;
+import com.concert.dto.UserProfileResponse;
 import com.concert.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthControllerUnitTest {
@@ -35,26 +35,34 @@ class AuthControllerUnitTest {
 
     @Test
     void testGetCurrentUserSuccess() {
-        AuthResponse response = new AuthResponse("jwt-token", username, "test@example.com");
-        when(authService.getCurrentUser(username)).thenReturn(response);
+        UserProfileResponse profile = new UserProfileResponse(
+            1L, username, "test@example.com", "Test User", 
+            "1234567890", "123 Test St", "Test City", "Test Country",
+            "12345", null, null, null
+        );
+        when(authService.getUserProfile(username)).thenReturn(profile);
 
-        ResponseEntity<AuthResponse> result = authController.getCurrentUser(authentication);
+        ResponseEntity<?> result = authController.getCurrentUser(authentication);
 
         assertEquals(200, result.getStatusCode().value());
         assertNotNull(result.getBody());
-        assertEquals("jwt-token", result.getBody().getToken());
-        assertEquals(username, result.getBody().getUsername());
-        assertEquals("test@example.com", result.getBody().getEmail());
+        assertTrue(result.getBody() instanceof UserProfileResponse);
+        UserProfileResponse body = (UserProfileResponse) result.getBody();
+        assertNotNull(body);
+        assertEquals(username, body.getUsername());
+        assertEquals("test@example.com", body.getEmail());
     }
 
     @Test
     void testGetCurrentUserServiceException() {
-        when(authService.getCurrentUser(username)).thenThrow(new RuntimeException("User profile service error"));
+        when(authService.getUserProfile(username)).thenThrow(new RuntimeException("User profile service error"));
 
-        ResponseEntity<AuthResponse> result = authController.getCurrentUser(authentication);
+        ResponseEntity<?> result = authController.getCurrentUser(authentication);
 
         assertEquals(500, result.getStatusCode().value());
-        assertNotNull(result.getBody());
-        assertTrue(result.getBody().getMessage().contains("Failed to get user profile: User profile service error"));
+        Object body = result.getBody();
+        assertNotNull(body);
+        String bodyStr = body.toString();
+        assertTrue(bodyStr.contains("Failed to get user profile"));
     }
 }

@@ -3,6 +3,7 @@ package com.concert.service;
 import com.concert.dto.AuthResponse;
 import com.concert.dto.LoginRequest;
 import com.concert.dto.RegisterRequest;
+import com.concert.dto.UserProfileResponse;
 import com.concert.model.User;
 import com.concert.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,5 +88,29 @@ public class AuthService {
         
         User user = userOptional.get();
         return new AuthResponse(null, user.getUsername(), user.getEmail());
+    }
+    
+    public UserProfileResponse getUserProfile(String username) {
+        Optional<User> userOptional = userRepository.findByUsername(username);
+        
+        if (userOptional.isEmpty()) {
+            return null;
+        }
+        
+        User user = userOptional.get();
+        return new UserProfileResponse(
+            user.getId(),
+            user.getUsername(),
+            user.getEmail(),
+            user.getName(),
+            user.getPhone(),
+            user.getAddress(),
+            user.getCity(),
+            user.getCountry(),
+            user.getPincode(),
+            user.getProfilePhoto(),
+            user.getCompany(),
+            user.getWebsite()
+        );
     }
 }

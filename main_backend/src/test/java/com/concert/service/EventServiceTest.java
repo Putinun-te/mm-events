@@ -1,6 +1,7 @@
 package com.concert.service;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -16,6 +17,7 @@ public class EventServiceTest {
     private final String PASSWORD = "password";
 
     @Test
+    @Disabled("Requires manual database setup - use Docker tests instead")
     void testInsertEvent() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
              Statement stmt = conn.createStatement()) {
@@ -29,6 +31,7 @@ public class EventServiceTest {
     }
 
     @Test
+    @Disabled("Requires manual database setup - use Docker tests instead")
     void testEventsTableNotEmpty() throws Exception {
         try (Connection conn = DriverManager.getConnection(URL, USER, PASSWORD);
              Statement stmt = conn.createStatement()) {

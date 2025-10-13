@@ -3,6 +3,7 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 
+<<<<<<< HEAD
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 
@@ -119,6 +120,36 @@ function resetForm() {
   isSuccess.value = false
   message.value = ''
 }
+=======
+interface event {
+  id: string;
+  eventname: string;
+  datestart: string;
+  dateend:string;
+  personlimit: number;
+  description: string;
+}
+
+const eventData = reactive<event>({
+  id: "",
+  eventname: "",
+  datestart: "",
+  dateend: "",
+  personlimit: 0,
+  description: ""
+})
+
+function handleSubmit () {
+  console.log('tests')
+  if (!eventData.eventname.trim()) {
+    alert('fill in the event name')
+    return
+  }
+  console.log(eventData)
+  
+}
+
+>>>>>>> bf800c10c9ae75be8da0eff075705c9ff5e6f654
 </script>
 
 <template>
@@ -184,6 +215,7 @@ function resetForm() {
           <h2 class="text-xl font-semibold text-gray-800">Date & Time</h2>
           <p class="mt-2 text-sm text-gray-500">Let attendees know when the event happens.</p>
 
+<<<<<<< HEAD
           <div class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
               <label class="input-label" for="startDate">Start date *</label>
@@ -225,6 +257,37 @@ function resetForm() {
               <label class="input-label" for="country">Country</label>
               <input v-model="form.country" id="country" type="text" placeholder="Country" class="input-control" />
             </div>
+=======
+          <div class="mt-10">
+            <h2 class="text-xl font-semibold leading-7 text-gray-800">Event Details</h2>
+            <p class="mt-1 text-sm text-gray-500">Our team will carefully consider them and get back to you within 24 hours.</p>
+            <div class="mt-6 space-y-4">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 items-center">
+                <label for="event name" class="text-sm font-medium text-gray-700">Event Name</label>
+                <input v-model="eventData.eventname" type="text" placeholder="Enter Event name" class="md:col-span-2 mt-1 md:mt-0 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 items-center">
+                <label for="description" class="text-sm font-medium text-gray-700">Description</label>
+                <input v-model="eventData.description" type="text" placeholder="Enter address phone number and another information" class="md:col-span-2 mt-1 md:mt-0 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 items-center">
+                <label for="limit people" class="text-sm font-medium text-gray-700">People</label>
+                <input v-model = "eventData.personlimit" type="number" placeholder="Enter Limit People" class="md:col-span-2 mt-1 md:mt-0 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              </div>              
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 items-center">
+                <label for="event start" class="text-sm font-medium text-gray-700">Date event start</label>
+                <input v-model = "eventData.datestart" type="date" placeholder="Enter when the event start" class="md:col-span-2 mt-1 md:mt-0 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              </div>                          
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 items-center">
+                <label for="event end" class="text-sm font-medium text-gray-700">Date event end</label>
+                <input v-model = "eventData.dateend" type="date" placeholder="Enter when the event end" class="md:col-span-2 mt-1 md:mt-0 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+              </div>              
+            </div>
+          </div>
+          
+          <div class="mt-10">
+            <button type="submit" class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white transition-colors" style="background-color: #362e54;" onmouseover="this.style.backgroundColor='#4a3f70'" onmouseout="this.style.backgroundColor='#362e54'">Send</button>
+>>>>>>> bf800c10c9ae75be8da0eff075705c9ff5e6f654
           </div>
         </section>
 

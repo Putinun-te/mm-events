@@ -28,9 +28,44 @@
         "userName": "jkahjdajkdashjkdhjkasdhjka kasjasjkhdahjkdajkhd",
         "ticketCount": 1,
         "joinedAt": "2025-10-13T13:55:30.005Z"
+      },
+      {
+        "userId": 25,
+        "userName": "Yeen",
+        "ticketCount": 57,
+        "joinedAt": "2025-10-13T14:52:20.178Z",
+        "lastBookedAt": "2025-10-13T15:02:44.680Z"
       }
     ],
-    "participantsCount": 2,
+    "participantsCount": 59,
     "updatedAt": "2025-10-13T13:55:21.800Z"
+  },
+  {
+    "id": 1760367448975,
+    "title": "Yeen",
+    "description": "dsad",
+    "personLimit": 10,
+    "startDate": "2025-10-13T21:57:00",
+    "endDate": "2025-10-16T22:57:00",
+    "ticketPrice": null,
+    "address": null,
+    "city": null,
+    "country": null,
+    "phone": null,
+    "category": null,
+    "location": null,
+    "userId": 25,
+    "userName": "Yeen",
+    "createdAt": "2025-10-13T14:57:28.975Z",
+    "updatedAt": "2025-10-13T14:57:41.371Z",
+    "participants": [
+      {
+        "userId": 25,
+        "userName": "Yeen",
+        "ticketCount": 10,
+        "joinedAt": "2025-10-13T14:58:14.810Z"
+      }
+    ],
+    "participantsCount": 10
   }
 ]

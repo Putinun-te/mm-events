@@ -49,9 +49,12 @@ const handleSubmit = async () => {
 
       password.value = ''
 
-      // Redirect: if first time, go to AccountPage to complete profile
-      if (shouldCompleteProfile()) await navigateTo('/AccountPage')
-      else console.log('Logged in, staying on page or redirect to home...')
+      // Redirect after successful login
+      if (shouldCompleteProfile()) {
+        await navigateTo('/AccountPage')
+      } else {
+        await navigateTo('/')  // Redirect to home page
+      }
     } else if (res?.message) {
       message.value = res.message;
       isSuccess.value = false;

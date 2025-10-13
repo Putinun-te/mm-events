@@ -56,23 +56,18 @@ const formatEventDateTime = (raw: string) => {
 };
 
 function more () {
-  // router.push(`/ProductPageDetail/${props.event.id}`)
-    router.push({
+  router.push({
     path: `/ProductPageDetail/${props.event.id}`,
     state: { event: props.event }
   })
-  // router.push({
-  //   path: `/productdetail/${props.event.id}`,
-  //   query: {
-  //     name: props.event.name,
-  //     description: props.event.description,
-  //     personlimit: props.event.personlimit
-  //   }
-  // })
 }
+
 function join () {
-  console.log('this is join')
-  console.log(props.event.id)
+  // Navigate to detail page for booking
+  router.push({
+    path: `/ProductPageDetail/${props.event.id}`,
+    state: { event: props.event }
+  })
 }
 
 // const imageUrl = computed(() => {

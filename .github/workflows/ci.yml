@@ -52,13 +52,14 @@ jobs:
 
       - name: 📈 Upload coverage to Codecov
         if: matrix.node-version == 20
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./main_frontend/concert1/coverage/coverage-final.json
           flags: frontend
           name: frontend-coverage
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: MorningMores/develop
 
       - name: 💾 Upload coverage artifacts
         if: matrix.node-version == 20
@@ -117,13 +118,14 @@ jobs:
 
       - name: 📈 Upload coverage to Codecov
         if: matrix.java-version == 21
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           files: ./main_backend/target/site/jacoco/jacoco.xml
           flags: backend
           name: backend-coverage
           fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
+          slug: MorningMores/develop
 
       - name: 💾 Upload JaCoCo coverage artifacts
         if: matrix.java-version == 21

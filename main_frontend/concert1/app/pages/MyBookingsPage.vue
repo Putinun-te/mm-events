@@ -81,14 +81,24 @@ async function confirmCancelBooking() {
   try {
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     if (!token) {
+      error('Session expired. Please login again.', 'Authentication Required')
       router.push('/LoginPage')
       return
     }
 
-    await $fetch(`/api/bookings/${bookingId}`, {
+    // Use native fetch to handle DELETE properly
+    const response = await fetch(`/api/bookings/${bookingId}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { 
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || `Failed with status ${response.status}`)
+    }
 
     // Update the booking status locally
     const booking = bookings.value.find(b => b.id === bookingId)
@@ -97,12 +107,17 @@ async function confirmCancelBooking() {
     }
 
     closeCancelModal()
-    success('Booking cancelled successfully!', 'Booking Cancelled')
+    success('Booking cancelled successfully! Participants reduced.', 'Booking Cancelled')
     
-    // Stay on the page - user can see their cancelled bookings
+    // Refresh bookings to ensure data consistency
+    setTimeout(() => {
+      fetchBookings()
+    }, 1000)
+    
   } catch (err: any) {
-    console.error('Cancel booking error', err)
-    error(err?.data?.message || 'Failed to cancel booking. Please try again.', 'Cancellation Failed')
+    console.error('Cancel booking error:', err)
+    const errorMessage = err?.message || err?.data?.message || 'Failed to cancel booking. Please try again.'
+    error(errorMessage, 'Cancellation Failed')
   } finally {
     cancelling.value = null
   }

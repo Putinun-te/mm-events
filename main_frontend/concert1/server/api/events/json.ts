@@ -41,7 +41,7 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
       let userId = null
       let userName = null
       
-      // Try to get user info from backend
+      // Try to get user info from backend (optional - won't fail if backend is down)
       const config = useRuntimeConfig()
       const backend = (config.public as any)?.backendBaseUrl || process.env.BACKEND_BASE_URL || 'http://localhost:8080'
       
@@ -52,8 +52,9 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
           })
           userId = userProfile.id
           userName = userProfile.name || userProfile.username
-        } catch (e) {
-          console.error('Failed to get user info:', e)
+        } catch (e: any) {
+          // User info fetch failed - this is OK, we'll create event without user info
+          console.warn('Could not fetch user info (backend may be unavailable):', e?.message || e)
         }
       }
       

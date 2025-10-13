@@ -1,99 +1,116 @@
 # Concert Management System
 
 [![CI/CD Pipeline](https://github.com/MorningMores/develop/actions/workflows/ci.yml/badge.svg)](https://github.com/MorningMores/develop/actions/workflows/ci.yml)
-[![Frontend Coverage](https://img.shields.io/badge/Frontend%20Coverage-93.36%25-brightgreen)](./docs/reports/test-coverage-summary.md)
-[![Backend Coverage](https://img.shields.io/badge/Backend%20Coverage-Check%20CI-blue)](./main_backend/target/site/jacoco/index.html)
+[![Codecov](https://img.shields.io/badge/Codecov-coverage-blue)](https://app.codecov.io/gh/MorningMores/develop)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-> Full-stack web application for concert and event management with Spring Boot backend and Nuxt 4 frontend
+A full-stack application for managing concerts and events.
+
+- Backend: Spring Boot 3.5 (Java 21), MySQL, JWT auth
+- Frontend: Nuxt 4, Tailwind v4, Vitest unit tests, Playwright E2E
+- CI: GitHub Actions (unit + coverage + E2E + Docker smoke)
 
 ---
 
-## How to use
+## Features
 
-## Start the app stack (no tests)
+- User registration/login with JWT
+- Event creation, tickets, orders, and favorites
+- REST API with DTOs and Spring Security
+- SSR frontend (Nuxt) wired to backend via server routes
+
+## Getting started
+
+Prerequisites
+
+- Java 21 (Temurin recommended)
+- Node.js 20+
+- Docker Desktop (for optional stack and Testcontainers)
+
+Clone and setup
+```bash
+git clone https://github.com/MorningMores/develop.git
+cd develop
+cp .env.example .env  # fill in values (generate a strong JWT_SECRET)
+```
+
+### Run with Docker (recommended for local dev)
 ```bash
 docker compose up -d
 ```
-- Backend: http://localhost:8080
-- Frontend (Nuxt dev): http://localhost:3000
 
-## Run tests on demand
+- Backend: <http://localhost:8080>
+- Frontend: <http://localhost:3000>
+
+Stop/clean
 ```bash
-docker compose run --rm backend-tests
+docker compose stop             # stop only
+docker compose down             # remove containers
+docker compose down -v          # remove containers + volumes
 ```
 
-## Run backend tests with coverage
-
-Local (macOS, use JDK 21 for tests):
+### Backend (local)
 ```bash
-JAVA_HOME=$(/usr/libexec/java_home -v 21) mvn -DforkCount=1 -DreuseForks=false test jacoco:report -f main_backend/pom.xml
+cd main_backend
+./mvnw spring-boot:run
 ```
-
-Docker (uses Maven JDK 21 image):
+Tests + coverage
 ```bash
-docker compose run --rm backend-tests
-# or, if you prefer profiles
-# docker compose --profile tests run --rm backend-tests
+./mvnw -DforkCount=1 -DreuseForks=false clean test jacoco:report
+# HTML: main_backend/target/site/jacoco/index.html
 ```
 
-Open the HTML coverage report:
-```
-main_backend/target/site/jacoco/index.html
-```
-
-## Frontend E2E tests (Playwright)
-
-Local run (headed Chromium):
+### Frontend (local)
 ```bash
 cd main_frontend/concert1
-npm ci
-npx playwright install --with-deps chromium
-npm run dev &
-NUXT_PID=$!
-# wait for dev server
-for i in {1..40}; do curl -sf http://localhost:3000/concert/ >/dev/null && break || sleep 2; done
-npm run test:e2e
-kill $NUXT_PID || true
+npm install
+npm run dev
 ```
-Headless (CI style):
+Unit tests + coverage
 ```bash
+npm test -- --run
+npm test -- --coverage --run
+```
+
+### E2E (Playwright)
+```bash
+cd main_frontend/concert1
+npx playwright install --with-deps chromium
 npm run test:e2e:headless
 ```
-GitHub Actions workflow: `.github/workflows/frontend-e2e.yml` runs automatically on pushes/PRs to `main` or `FE-Testing`.
 
-## Shut down
-- Stop containers (keep for quick restart):
-  ```bash
-  docker compose stop
-  ```
-- Stop and remove containers + network:
-  ```bash
-  docker compose down
-  ```
-- Also remove DB volume (wipe data):
-  ```bash
-  docker compose down -v
-  ```
-- Stop specific services only:
-  ```bash
-  docker compose stop backend frontend
-  ```
-- If running locally with Spring Boot:
-  ```
-  Press Ctrl+C in the terminal running: mvn spring-boot:run
-  ```
+## CI/CD
+Unified workflow: `.github/workflows/ci.yml`
+- Frontend (Node 20, 22): unit tests + coverage → Codecov
+- Backend (JDK 21): unit tests + JaCoCo → Codecov
+- E2E: Playwright against services
+- Docker: Build and smoke test stack
 
-## Status (27 Sep)
-- [x] Backend CI (GitHub Actions) `.github/workflows/backend-ci.yml`
-- [x] Initial E2E framework (Playwright) added
-- [x] Frontend E2E GitHub Action workflow stub `.github/workflows/frontend-e2e.yml`
-- [x] Jenkins pipeline added `Jenkinsfile`
-- [x] GitLab CI pipeline added `.gitlab-ci.yml`
-- [ ] Expand E2E tests to cover all user stories (add real selectors & flows)
-- [ ] Jenkins / GitLab pipeline templates (future)
+Add repo secrets before enabling required checks:
+- `CODECOV_TOKEN` (from Codecov)
+- Optional Docker Hub: `DOCKER_USERNAME`, `DOCKER_PASSWORD`
 
-## Notes
-- Tests are not run automatically on `docker compose up`. The `backend-tests` service is behind the `tests` profile and must be invoked explicitly as shown above.
+Branch protection and Codecov setup guide: `docs/deployment/github-branch-protection-setup.md`
+
+## Configuration
+Backend properties are env-driven. See `main_backend/src/main/resources/application.properties` and `.env.example`.
+- JWT_SECRET must be at least 256 bits for HMAC-SHA (e.g., HS256). Generate with `openssl rand -hex 32`.
+
+## Documentation
+- Project roadmap: `docs/IMPLEMENTATION_ROADMAP.md`
+- Testing plans:
+  - Controllers coverage: `docs/guides/controller-coverage-improvement-plan.md`
+  - E2E enhancements: `docs/guides/e2e-test-enhancement-plan.md`
+- Branch protection & Codecov: `docs/deployment/github-branch-protection-setup.md`
+- Local Docker summary: `docs/LOCAL-DOCKER-TESTING-SUMMARY.md`
+
+## Contributing
+See `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`. Issues and PR templates are provided under `.github/`.
+
+## Security
+Please report vulnerabilities as described in `SECURITY.md`. Never commit real secrets. Use `.env` files (gitignored).
+
+## License
+MIT © Contributors. See `LICENSE`.
 
 

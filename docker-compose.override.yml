@@ -1,0 +1,5 @@
+version: '3.8'
+# Intentionally minimal. Use this file for local developer overrides if needed.
+# Example: mount extra volumes or tweak resource limits.
+# This file is optional and safe to keep empty.
+services: {}

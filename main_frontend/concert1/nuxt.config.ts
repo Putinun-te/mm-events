@@ -8,6 +8,11 @@ export default defineNuxtConfig({
   app: {
     baseURL: '/concert/'
   },
+  runtimeConfig: {
+    public: {
+      backendBaseUrl: process.env.BACKEND_BASE_URL || 'http://localhost:8080'
+    }
+  },
   css: ['~/assets/css/main.css'],
     vite: {
     plugins: [

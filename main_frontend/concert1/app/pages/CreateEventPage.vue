@@ -3,7 +3,6 @@ import { reactive, ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 
-<<<<<<< HEAD
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 
@@ -120,36 +119,6 @@ function resetForm() {
   isSuccess.value = false
   message.value = ''
 }
-=======
-interface event {
-  id: string;
-  eventname: string;
-  datestart: string;
-  dateend:string;
-  personlimit: number;
-  description: string;
-}
-
-const eventData = reactive<event>({
-  id: "",
-  eventname: "",
-  datestart: "",
-  dateend: "",
-  personlimit: 0,
-  description: ""
-})
-
-function handleSubmit () {
-  console.log('tests')
-  if (!eventData.eventname.trim()) {
-    alert('fill in the event name')
-    return
-  }
-  console.log(eventData)
-  
-}
-
->>>>>>> bf800c10c9ae75be8da0eff075705c9ff5e6f654
 </script>
 
 <template>

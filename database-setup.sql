@@ -35,7 +35,7 @@ CREATE TABLE users (
 
 -- Create events table
 CREATE TABLE events (
-    event_id INT AUTO_INCREMENT PRIMARY KEY,
+    event_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(200) NOT NULL,
     category VARCHAR(100),
     description TEXT,
@@ -54,7 +54,7 @@ CREATE TABLE events (
 
 -- Create tickets table
 CREATE TABLE tickets (
-    tk_id INT AUTO_INCREMENT PRIMARY KEY,
+    tk_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     event_id BIGINT NOT NULL,
     tk_types VARCHAR(50),
     price DECIMAL(10,2) NOT NULL,
@@ -67,7 +67,7 @@ CREATE TABLE tickets (
 
 -- Create orders table
 CREATE TABLE orders (
-    order_id INT AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
     event_id BIGINT NOT NULL,
     tk_id BIGINT NOT NULL,
@@ -77,7 +77,7 @@ CREATE TABLE orders (
     card_exp VARCHAR(10),
     cvv2 VARCHAR(10),
     tax DECIMAL(10,2),
-    total_price DECIMAL NOT NULL(10,2),
+    total_price DECIMAL(10,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'PENDING' NOT NULL,
     order_created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     quantity INT NOT NULL,

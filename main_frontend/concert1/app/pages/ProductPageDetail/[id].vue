@@ -57,6 +57,21 @@ const spotsRemaining = computed(() => {
   return remaining > 0 ? remaining : 0
 })
 
+// Check if event is full
+const isEventFull = computed(() => {
+  const limit = availableSeats.value
+  if (limit <= 0) return false // Unlimited capacity
+  return participantsCount.value >= limit
+})
+
+// Calculate actual available seats for booking
+const actualAvailableSeats = computed(() => {
+  const limit = availableSeats.value
+  if (limit <= 0) return maxQuantityPerBooking // Unlimited
+  const remaining = limit - participantsCount.value
+  return remaining > 0 ? remaining : 0
+})
+
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
@@ -96,12 +111,26 @@ onMounted(async () => {
 
 const changeQuantity = (delta: number) => {
     const newQuantity = quantity.value + delta;
-    if (newQuantity >= 1 && newQuantity <= 10) {
+    const maxAllowed = Math.min(actualAvailableSeats.value, maxQuantityPerBooking);
+    if (newQuantity >= 1 && newQuantity <= maxAllowed) {
         quantity.value = newQuantity;
     }
 };
 
 async function addToCart() {
+  // Check if event is full
+  if (isEventFull.value) {
+    error('This event is full. No more tickets available.', 'Event Full')
+    return
+  }
+
+  // Check if requested quantity exceeds available seats
+  if (quantity.value > actualAvailableSeats.value) {
+    error(`Only ${actualAvailableSeats.value} seat${actualAvailableSeats.value !== 1 ? 's' : ''} remaining. Please reduce your quantity.`, 'Insufficient Seats')
+    quantity.value = actualAvailableSeats.value
+    return
+  }
+
   if (!isLoggedIn.value) {
     error('Please login to book tickets', 'Authentication Required')
     router.push('/LoginPage')
@@ -249,9 +278,17 @@ async function addToCart() {
                                 <span class="text-gray-500">per ticket</span>
                             </div>
                             
-                            <div class="flex items-center gap-3">
+                            <div v-if="isEventFull" class="flex items-center gap-3">
+                                <div class="w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
+                                <span class="text-red-600 font-semibold">Event Full - No seats available</span>
+                            </div>
+                            <div v-else-if="actualAvailableSeats < 10" class="flex items-center gap-3">
+                                <div class="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+                                <span class="text-orange-600 font-semibold">Only {{ actualAvailableSeats }} seat{{ actualAvailableSeats !== 1 ? 's' : '' }} left!</span>
+                            </div>
+                            <div v-else class="flex items-center gap-3">
                                 <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                                <span class="text-green-600 font-semibold">{{ availableSeats }} seats available</span>
+                                <span class="text-green-600 font-semibold">{{ actualAvailableSeats }} seats available</span>
                             </div>
                             
                             <div class="bg-violet-50 rounded-xl p-4 space-y-2">
@@ -261,12 +298,16 @@ async function addToCart() {
                                 </div>
                                 <div v-if="spotsRemaining !== 'Unlimited'" class="w-full bg-gray-200 rounded-full h-2">
                                     <div 
-                                        class="bg-gradient-to-r from-violet-500 to-purple-500 h-2 rounded-full transition-all duration-300"
-                                        :style="{ width: `${(participantsCount / availableSeats) * 100}%` }"
+                                        class="h-2 rounded-full transition-all duration-300"
+                                        :class="isEventFull ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-violet-500 to-purple-500'"
+                                        :style="{ width: `${Math.min((participantsCount / availableSeats) * 100, 100)}%` }"
                                     ></div>
                                 </div>
-                                <p v-if="spotsRemaining !== 'Unlimited'" class="text-sm text-gray-600">
-                                    {{ spotsRemaining }} spots remaining
+                                <p v-if="isEventFull" class="text-sm font-semibold text-red-600">
+                                    🚫 Event is full
+                                </p>
+                                <p v-else-if="spotsRemaining !== 'Unlimited'" class="text-sm text-gray-600">
+                                    {{ spotsRemaining }} spot{{ spotsRemaining !== 1 ? 's' : '' }} remaining
                                 </p>
                                 <p v-else class="text-sm text-gray-600">Unlimited spots available</p>
                             </div>
@@ -274,7 +315,7 @@ async function addToCart() {
 
                         <div class="space-y-6">
                             <!-- Quantity Selector with better click handling -->
-                            <div class="space-y-2">
+                            <div v-if="!isEventFull" class="space-y-2">
                                 <label class="text-gray-700 font-semibold block">Number of Tickets:</label>
                                 <div class="flex items-center gap-4">
                                     <div class="flex items-center border-2 border-gray-300 rounded-lg bg-white shadow-sm">
@@ -289,25 +330,25 @@ async function addToCart() {
                                             type="number"
                                             v-model.number="quantity"
                                             :min="1"
-                                            :max="Math.min(availableSeats || 999, maxQuantityPerBooking)"
+                                            :max="Math.min(actualAvailableSeats, maxQuantityPerBooking)"
                                             class="w-20 text-center py-3 font-semibold text-lg border-0 focus:outline-none focus:ring-2 focus:ring-violet-500"
                                         />
                                         <button 
                                             type="button"
                                             class="px-6 py-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xl"
                                             @click="changeQuantity(1)"
-                                            :disabled="quantity >= Math.min(availableSeats || 999, maxQuantityPerBooking)"
+                                            :disabled="quantity >= Math.min(actualAvailableSeats, maxQuantityPerBooking)"
                                             style="z-index: 100; position: relative;"
                                         >+</button>
                                     </div>
                                     <span class="text-sm text-gray-500">
-                                        Max {{ Math.min(availableSeats || maxQuantityPerBooking, maxQuantityPerBooking) }} per booking
+                                        Max {{ Math.min(actualAvailableSeats, maxQuantityPerBooking) }} per booking
                                     </span>
                                 </div>
                             </div>
 
                             <!-- Total Price Display -->
-                            <div class="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-4 border-2 border-green-200">
+                            <div v-if="!isEventFull" class="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-4 border-2 border-green-200">
                                 <div class="flex justify-between items-center">
                                     <div>
                                         <p class="text-sm text-gray-600">Total Price</p>
@@ -321,13 +362,27 @@ async function addToCart() {
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-4">
-                                <button class="flex-1 bg-gradient-to-r from-green-600 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200" @click="addToCart">
+                                <button 
+                                    v-if="isEventFull"
+                                    disabled
+                                    class="flex-1 bg-gray-400 text-white px-8 py-4 rounded-xl font-semibold text-lg cursor-not-allowed opacity-60"
+                                >
+                                    🚫 Event Full - No Seats Available
+                                </button>
+                                <button 
+                                    v-else
+                                    class="flex-1 bg-gradient-to-r from-green-600 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200" 
+                                    @click="addToCart"
+                                >
                                     🎫 Book {{ quantity }} Ticket{{ quantity > 1 ? 's' : '' }} - ${{ totalPrice }}
                                 </button>
                             </div>
                             
-                            <p class="text-sm text-gray-500 text-center">
+                            <p v-if="!isEventFull" class="text-sm text-gray-500 text-center">
                                 💡 Need more tickets? You can book multiple times!
+                            </p>
+                            <p v-else class="text-sm text-red-500 text-center font-semibold">
+                                ⚠️ This event has reached maximum capacity
                             </p>
                             
                             <!-- Participants List -->

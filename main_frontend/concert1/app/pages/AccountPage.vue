@@ -28,8 +28,8 @@ const router = useRouter()
 const { loadFromStorage, isLoggedIn, clearAuth } = useAuth()
 const saving = ref(false)
 const message = ref('')
-const success = ref(false)
-const { push: toast } = useToast()
+const successFlag = ref(false)
+const { success, error } = useToast()
 const activeTab = ref<'profile' | 'stats'>('profile')
 const showLogoutConfirm = ref(false)
 
@@ -130,10 +130,10 @@ async function loadUserStats() {
 
 async function handlesubmit () {
   message.value = ''
-  success.value = false
+  successFlag.value = false
   if (!userData.firstName.trim()) {
     message.value = 'Please provide at least your first name.'
-    toast('Please provide at least your first name.', 'error')
+    error('Please provide at least your first name.', 'Validation Error')
     return
   }
   saving.value = true
@@ -141,7 +141,7 @@ async function handlesubmit () {
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     if (!token) {
       message.value = 'Not authenticated'
-      toast('Please login first', 'error')
+      error('Please login first', 'Authentication Required')
       saving.value = false
       return
     }
@@ -179,13 +179,13 @@ async function handlesubmit () {
       }
     }
     
-    success.value = true
+    successFlag.value = true
     message.value = 'Profile saved to database successfully!'
-    toast('Profile saved successfully!', 'success')
+    success('Profile saved successfully!', 'Profile Updated')
   } catch (e: any) {
     console.error('Save error:', e)
     message.value = e?.statusMessage || e?.data?.message || 'Failed to save profile.'
-    toast(message.value, 'error')
+    error(message.value, 'Save Failed')
   } finally {
     saving.value = false
   }
@@ -198,7 +198,7 @@ function handleLogout() {
 function confirmLogout() {
   clearAuth()
   localStorage.removeItem('profile_data')
-  toast('Logged out successfully', 'success')
+  success('Logged out successfully', 'Goodbye!')
   router.push('/')
 }
 
@@ -308,7 +308,7 @@ function cancelLogout() {
           <!-- Profile Edit Tab -->
           <div v-if="activeTab === 'profile'">
             <form @submit.prevent="handlesubmit">
-              <div v-if="message" :class="['mb-6 px-4 py-3 rounded-lg', success ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200']">
+              <div v-if="message" :class="['mb-6 px-4 py-3 rounded-lg', successFlag ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200']">
                 {{ message }}
               </div>
 

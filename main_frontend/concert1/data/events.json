@@ -1,28 +1,36 @@
 [
   {
-    "id": 1760350889162,
-    "title": "dasda",
-    "description": "uasiuahuid",
-    "personLimit": 1122,
-    "startDate": "2025-10-13T17:21:00",
-    "endDate": "2025-10-17T23:21:00",
+    "id": 1760360780023,
+    "title": "aaaa",
+    "description": "dddd",
+    "personLimit": 2000,
+    "startDate": "2025-10-13T12:06:00",
+    "endDate": "2025-10-25T14:06:00",
     "ticketPrice": null,
-    "address": null,
-    "city": null,
-    "country": null,
+    "address": "askdlkadlkj",
+    "city": "kasdad",
+    "country": "dskladkjladjkla",
     "phone": null,
     "category": null,
     "location": null,
-    "userId": 22,
-    "userName": "dijiojasjidai njkscjnk",
-    "createdAt": "2025-10-13T10:21:29.162Z",
+    "userId": 23,
+    "userName": "jkahjdajkdashjkdhjkasdhjka kasjasjkhdahjkdajkhd",
+    "createdAt": "2025-10-13T13:06:20.024Z",
     "participants": [
+      {
+        "userId": 22,
+        "userName": "dijiojasjidai njkscjnk",
+        "ticketCount": 1,
+        "joinedAt": "2025-10-13T13:54:21.937Z"
+      },
       {
         "userId": 23,
         "userName": "jkahjdajkdashjkdhjkasdhjka kasjasjkhdahjkdajkhd",
-        "joinedAt": "2025-10-13T10:43:46.265Z"
+        "ticketCount": 1,
+        "joinedAt": "2025-10-13T13:55:30.005Z"
       }
     ],
-    "participantsCount": 1
+    "participantsCount": 2,
+    "updatedAt": "2025-10-13T13:55:21.800Z"
   }
 ]

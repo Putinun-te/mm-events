@@ -7,12 +7,18 @@ import { useToast } from '~/composables/useToast'
 const route = useRoute()
 const router = useRouter()
 const { loadFromStorage, isLoggedIn } = useAuth()
-const { push: toast } = useToast()
+const { success, error } = useToast()
 
 const productId = route.params.id
 const event = ref<any>(null)
 const loading = ref(true)
 const quantity = ref(1)
+const maxQuantityPerBooking = 10 // Maximum tickets per booking
+
+// Computed total price
+const totalPrice = computed(() => {
+  return (ticketPrice.value * quantity.value).toFixed(2)
+})
 
 // Format date helper
 function formatDateTime(dateStr: string | number) {
@@ -82,7 +88,7 @@ onMounted(async () => {
       event.value = data
     } catch (e) {
       console.error('Failed to load event', e)
-      toast('Failed to load event details', 'error')
+      error('Failed to load event details', 'Error')
     }
   }
   loading.value = false
@@ -90,26 +96,32 @@ onMounted(async () => {
 
 function changeQuantity(delta: number) {
   const newQty = quantity.value + delta
-  if (newQty >= 1 && newQty <= (availableSeats.value || 999)) {
+  const maxAllowed = Math.min(availableSeats.value || 999, maxQuantityPerBooking)
+  console.log('changeQuantity called:', { delta, current: quantity.value, newQty, maxAllowed })
+  if (newQty >= 1 && newQty <= maxAllowed) {
     quantity.value = newQty
+    console.log('quantity updated to:', quantity.value)
+  } else {
+    console.log('quantity change rejected:', { newQty, min: 1, max: maxAllowed })
   }
 }
 
 async function addToCart() {
   if (!isLoggedIn.value) {
-    toast('Please login to book tickets', 'error')
+    error('Please login to book tickets', 'Authentication Required')
     router.push('/LoginPage')
     return
   }
   
   const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
   if (!token) {
-    toast('Please login to book tickets', 'error')
+    error('Please login to book tickets', 'Authentication Required')
     router.push('/LoginPage')
     return
   }
 
   try {
+    // Create booking
     await $fetch('/api/bookings', {
       method: 'POST',
       body: {
@@ -122,12 +134,33 @@ async function addToCart() {
       },
       headers: { Authorization: `Bearer ${token}` }
     })
-    toast(`Successfully booked ${quantity.value} ticket(s)!`, 'success')
+    
+    // Get user info
+    const userProfile: any = await $fetch('/api/auth/me', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    
+    // Add user to event participants
+    await $fetch(`/api/events/json/${event.value.id}/add-participant`, {
+      method: 'POST',
+      body: {
+        userId: userProfile.id,
+        userName: userProfile.name || userProfile.username || userProfile.email,
+        ticketCount: quantity.value
+      }
+    })
+    
+    success(`Successfully booked ${quantity.value} ticket(s)!`, 'Booking Confirmed')
+    
+    // Reload event data to show updated participant count
+    const updatedEvent = await $fetch(`/api/events/json/${event.value.id}`)
+    event.value = updatedEvent
+    
     // Redirect to bookings page
     setTimeout(() => router.push('/MyBookingsPage'), 1500)
   } catch (e: any) {
     const message = e?.statusMessage || e?.data?.message || 'Failed to create booking'
-    toast(message, 'error')
+    error(message, 'Booking Failed')
   }
 }
 </script>
@@ -227,45 +260,107 @@ async function addToCart() {
                         </div>
 
                         <div class="space-y-6">
-                            <div class="flex items-center gap-4">
-                                <label class="text-gray-700 font-semibold">Tickets:</label>
-                                <div class="flex items-center border-2 border-gray-300 rounded-lg overflow-hidden">
-                                    <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors" @click="changeQuantity(-1)">-</button>
-                                    <span class="px-6 py-2 bg-white font-semibold">{{ quantity }}</span>
-                                    <button class="px-4 py-2 bg-gray-100 hover:bg-gray-200 transition-colors" @click="changeQuantity(1)">+</button>
+                            <!-- Quantity Selector with better click handling -->
+                            <div class="space-y-2">
+                                <label class="text-gray-700 font-semibold block">Number of Tickets:</label>
+                                <div class="flex items-center gap-4">
+                                    <div class="flex items-center border-2 border-gray-300 rounded-lg bg-white shadow-sm">
+                                        <button 
+                                            type="button"
+                                            class="px-6 py-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xl"
+                                            @click="changeQuantity(-1)"
+                                            :disabled="quantity <= 1"
+                                            style="z-index: 100; position: relative;"
+                                        >−</button>
+                                        <input 
+                                            type="number"
+                                            v-model.number="quantity"
+                                            :min="1"
+                                            :max="Math.min(availableSeats || 999, maxQuantityPerBooking)"
+                                            class="w-20 text-center py-3 font-semibold text-lg border-0 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                                        />
+                                        <button 
+                                            type="button"
+                                            class="px-6 py-3 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-bold text-xl"
+                                            @click="changeQuantity(1)"
+                                            :disabled="quantity >= Math.min(availableSeats || 999, maxQuantityPerBooking)"
+                                            style="z-index: 100; position: relative;"
+                                        >+</button>
+                                    </div>
+                                    <span class="text-sm text-gray-500">
+                                        Max {{ Math.min(availableSeats || maxQuantityPerBooking, maxQuantityPerBooking) }} per booking
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Total Price Display -->
+                            <div class="bg-gradient-to-r from-green-50 to-teal-50 rounded-xl p-4 border-2 border-green-200">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <p class="text-sm text-gray-600">Total Price</p>
+                                        <p class="text-3xl font-bold text-green-600">${{ totalPrice }}</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-sm text-gray-600">{{ quantity }} ticket{{ quantity > 1 ? 's' : '' }}</p>
+                                        <p class="text-sm text-gray-500">${{ ticketPrice }} each</p>
+                                    </div>
                                 </div>
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-4">
                                 <button class="flex-1 bg-gradient-to-r from-green-600 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200" @click="addToCart">
-                                    🎫 Book Tickets
+                                    🎫 Book {{ quantity }} Ticket{{ quantity > 1 ? 's' : '' }} - ${{ totalPrice }}
                                 </button>
                             </div>
                             
+                            <p class="text-sm text-gray-500 text-center">
+                                💡 Need more tickets? You can book multiple times!
+                            </p>
+                            
                             <!-- Participants List -->
-                            <div v-if="participants.length > 0" class="mt-6 bg-gray-50 rounded-xl p-6">
-                                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                    <span>👥</span>
-                                    <span>Participants ({{ participantsCount }})</span>
-                                </h3>
+                            <div v-if="participants.length > 0" class="mt-6 bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl p-6 border border-violet-200">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        <span>👥</span>
+                                        <span>Participants</span>
+                                    </h3>
+                                    <div class="bg-violet-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
+                                        {{ participantsCount }} tickets booked
+                                    </div>
+                                </div>
                                 <div class="max-h-60 overflow-y-auto space-y-2">
                                     <div 
                                         v-for="participant in participants" 
                                         :key="participant.userId"
-                                        class="flex items-center justify-between bg-white rounded-lg p-3 hover:shadow-sm transition-shadow"
+                                        class="flex items-center justify-between bg-white rounded-lg p-3 hover:shadow-md transition-all border border-violet-100"
                                     >
                                         <div class="flex items-center gap-3">
-                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-400 flex items-center justify-center text-white font-semibold">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
                                                 {{ participant.userName?.charAt(0)?.toUpperCase() || 'U' }}
                                             </div>
                                             <div>
                                                 <p class="font-semibold text-gray-900">{{ participant.userName || 'Anonymous' }}</p>
-                                                <p class="text-xs text-gray-500">{{ new Date(participant.joinedAt).toLocaleDateString() }}</p>
+                                                <p class="text-xs text-gray-500">
+                                                    Joined {{ new Date(participant.joinedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }}
+                                                </p>
                                             </div>
                                         </div>
-                                        <span class="text-green-500 text-sm">✓ Joined</span>
+                                        <div class="flex items-center gap-2">
+                                            <span class="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                                                🎫 {{ participant.ticketCount || 1 }} ticket{{ (participant.ticketCount || 1) > 1 ? 's' : '' }}
+                                            </span>
+                                        </div>
                                     </div>
                                 </div>
+                            </div>
+                            
+                            <!-- Empty Participants State -->
+                            <div v-else class="mt-6 bg-gray-50 rounded-xl p-8 text-center border-2 border-dashed border-gray-300">
+                                <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <span class="text-3xl">👥</span>
+                                </div>
+                                <p class="text-gray-600 font-semibold mb-1">No participants yet</p>
+                                <p class="text-sm text-gray-500">Be the first to join this event!</p>
                             </div>
                         </div>
                     </div>

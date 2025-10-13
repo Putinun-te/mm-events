@@ -6,7 +6,7 @@ import { useToast } from '~/composables/useToast'
 
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, clearAuth } = useAuth()
-const { push: toast } = useToast()
+const { success } = useToast()
 const showLogoutModal = ref(false)
 
 const pages = ref([
@@ -35,7 +35,7 @@ function confirmLogout() {
   clearAuth()
   localStorage.removeItem('profile_data')
   showLogoutModal.value = false
-  toast('Logged out successfully', 'success')
+  success('Logged out successfully', 'Goodbye!')
   router.push('/')
 }
 

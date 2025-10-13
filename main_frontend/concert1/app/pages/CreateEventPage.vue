@@ -23,7 +23,7 @@ interface CreateEventForm {
 
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
-const { push: toast } = useToast()
+const { success, error } = useToast()
 
 const submitting = ref(false)
 
@@ -69,12 +69,12 @@ function validate(): string | null {
 async function handleSubmit() {
   const err = validate()
   if (err) {
-    toast(err, 'error')
+    error(err, 'Validation Error')
     return
   }
   const token = user.value?.token || localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
   if (!token) {
-    toast('You must be logged in to create an event.', 'error')
+    error('You must be logged in to create an event.', 'Authentication Required')
     router.push('/LoginPage')
     return
   }
@@ -103,11 +103,11 @@ async function handleSubmit() {
       headers: { Authorization: `Bearer ${token}` }
     })
     
-    toast('Event created successfully and saved to JSON!', 'success')
+    success('Event created successfully and saved to JSON!', 'Event Created')
     router.push('/ProductPage')
   } catch (e: any) {
     const message = e?.statusMessage || e?.data?.message || 'Failed to create event.'
-    toast(message, 'error')
+    error(message, 'Creation Failed')
   } finally {
     submitting.value = false
   }

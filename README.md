@@ -1,4 +1,15 @@
-# How to use
+# Concert Management System
+
+[![CI/CD Pipeline](https://github.com/MorningMores/develop/actions/workflows/ci.yml/badge.svg)](https://github.com/MorningMores/develop/actions/workflows/ci.yml)
+[![Frontend Coverage](https://img.shields.io/badge/Frontend%20Coverage-93.36%25-brightgreen)](./docs/reports/test-coverage-summary.md)
+[![Backend Coverage](https://img.shields.io/badge/Backend%20Coverage-Check%20CI-blue)](./main_backend/target/site/jacoco/index.html)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+> Full-stack web application for concert and event management with Spring Boot backend and Nuxt 4 frontend
+
+---
+
+## How to use
 
 ## Start the app stack (no tests)
 ```bash

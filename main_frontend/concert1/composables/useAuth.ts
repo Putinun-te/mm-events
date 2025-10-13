@@ -55,12 +55,35 @@ export const useAuth = () => {
     }
   }
 
+  const isLoggedIn = computed(() => !!token.value && !!user.value)
+
+  const shouldCompleteProfile = () => {
+    if (typeof window === 'undefined') return false
+    return localStorage.getItem('needs_profile_completion') === 'true'
+  }
+
+  const saveAuth = (authData: any, remember: boolean = false) => {
+    setAuth(authData)
+    if (remember && typeof window !== 'undefined') {
+      localStorage.setItem('remember_me', 'true')
+      localStorage.setItem('user_email', authData.email)
+    }
+  }
+
+  const loadFromStorage = () => {
+    // Already handled in initialization above
+  }
+
   return {
     user: readonly(user),
     token: readonly(token),
     isAuthenticated,
+    isLoggedIn,
     setAuth,
     clearAuth,
-    logout
+    logout,
+    shouldCompleteProfile,
+    saveAuth,
+    loadFromStorage
   }
 }

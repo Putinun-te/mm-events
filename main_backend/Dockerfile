@@ -1,6 +1,6 @@
 # Multi-stage build for Spring Boot backend (cross-platform friendly)
 # Stage 1: Build with official Maven + Temurin 21 (avoids wrapper + line-ending issues on Windows)
-FROM maven:3.9.9-eclipse-temurin-21 AS build
+FROM maven:3.9.11-eclipse-temurin-21 AS build
 
 WORKDIR /app
 

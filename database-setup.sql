@@ -40,6 +40,7 @@ CREATE TABLE events (
     category VARCHAR(100),
     description TEXT,
     location VARCHAR(255),
+    personlimit INT NOT NULL DEFAULT 100,
     start_date DATETIME NOT NULL,
     end_date DATETIME,
     banner_image VARCHAR(255),
@@ -152,12 +153,12 @@ INSERT INTO users (name, email, password, company, city, country, phone) VALUES
 ('testuser', 'test@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMye7I7sJqjWJpGWJhLqAn.Z5s5QEyHHhq2', 'Test Company', 'Test City', 'Test Country', '+1-555-0121');
 
 -- Insert sample events
-INSERT INTO events (title, category, description, location, start_date, end_date, user_id) VALUES
-('Spring Music Festival', 'Music', 'Annual spring music festival featuring local and international artists', 'Central Park, New York', '2025-05-15 10:00:00', '2025-05-17 23:00:00', 1),
-('Tech Conference 2025', 'Technology', 'Latest trends in technology and innovation', 'Convention Center, San Francisco', '2025-06-20 09:00:00', '2025-06-22 18:00:00', 2),
-('Food & Wine Expo', 'Food', 'Culinary experience with renowned chefs', 'Exhibition Hall, Chicago', '2025-07-10 12:00:00', '2025-07-12 20:00:00', 3),
-('Art Gallery Opening', 'Art', 'Modern art exhibition featuring contemporary artists', 'Metropolitan Museum, New York', '2025-08-05 18:00:00', '2025-08-05 22:00:00', 4),
-('Comedy Night', 'Entertainment', 'Stand-up comedy show with famous comedians', 'Comedy Club, Los Angeles', '2025-09-15 20:00:00', '2025-09-15 23:00:00', 5);
+INSERT INTO events (title, category, description, location, personlimit, start_date, end_date, user_id) VALUES
+('Spring Music Festival', 'Music', 'Annual spring music festival featuring local and international artists', 'Central Park, New York', 500, '2025-05-15 10:00:00', '2025-05-17 23:00:00', 1),
+('Tech Conference 2025', 'Technology', 'Latest trends in technology and innovation', 'Convention Center, San Francisco', 300, '2025-06-20 09:00:00', '2025-06-22 18:00:00', 2),
+('Food & Wine Expo', 'Food', 'Culinary experience with renowned chefs', 'Exhibition Hall, Chicago', 200, '2025-07-10 12:00:00', '2025-07-12 20:00:00', 3),
+('Art Gallery Opening', 'Art', 'Modern art exhibition featuring contemporary artists', 'Metropolitan Museum, New York', 150, '2025-08-05 18:00:00', '2025-08-05 22:00:00', 4),
+('Comedy Night', 'Entertainment', 'Stand-up comedy show with famous comedians', 'Comedy Club, Los Angeles', 100, '2025-09-15 20:00:00', '2025-09-15 23:00:00', 5);
 
 -- Insert sample tickets
 INSERT INTO tickets (event_id, tk_types, price, quantity) VALUES

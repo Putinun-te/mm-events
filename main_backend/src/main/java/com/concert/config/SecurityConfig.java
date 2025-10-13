@@ -36,12 +36,14 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // กำหนดสิทธิ์การเข้าถึงแต่ละ endpoint
             .authorizeHttpRequests(authz -> authz
+                    .requestMatchers("/").permitAll()  // Allow root path
                     .requestMatchers("/api/auth/register").permitAll()
                     .requestMatchers("/api/auth/login").permitAll()
                     .requestMatchers("/api/auth/test").permitAll()
                     .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/", "/api/events/**").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
                     .requestMatchers("/error").permitAll()
+                    .requestMatchers("/favicon.ico").permitAll()  // Allow favicon
                     .requestMatchers("/actuator/health").permitAll()  // <-- เปิด public สำหรับ health
                     .anyRequest().authenticated() // ทุก request อื่นต้อง login
             )

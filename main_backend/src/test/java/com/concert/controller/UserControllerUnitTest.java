@@ -28,7 +28,7 @@ class UserControllerUnitTest {
 
         ResponseEntity<?> response = controller.getAllUsers();
 
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(500, response.getStatusCode().value());
         assertNull(response.getBody());
         verify(userRepository).findAll();
     }
@@ -39,7 +39,7 @@ class UserControllerUnitTest {
 
         ResponseEntity<?> response = controller.getUserById(1L);
 
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(500, response.getStatusCode().value());
         assertNull(response.getBody());
         verify(userRepository).findById(1L);
     }

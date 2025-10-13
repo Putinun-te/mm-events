@@ -78,7 +78,7 @@ jobs:
           reporter: java-junit
 
       - name: Upload coverage to Codecov (optional)
-        if: ${{ always() && secrets.CODECOV_TOKEN != '' }}
+        if: always()
         uses: codecov/codecov-action@v4
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

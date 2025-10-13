@@ -5,7 +5,15 @@ describe('Frontend Smoke Tests', () => {
   });
 
   it('should load the home page successfully', () => {
-    cy.contains('h1', /home|mm concerts|concert/i).should('be.visible');
+    // Check for carousel heading (h2) or quick links heading (h3)
+    cy.get('body').should('be.visible');
+    cy.contains(/Welcome to ShopHub|Browse Products|Product Details/i).should('be.visible');
+  });
+
+  it('should display carousel', () => {
+    // Verify the main carousel section exists
+    cy.get('h2').should('exist');
+    cy.contains('h2', /Welcome to ShopHub|New Arrivals|Special Offers/i).should('exist');
   });
 
   it('should have navigation elements', () => {

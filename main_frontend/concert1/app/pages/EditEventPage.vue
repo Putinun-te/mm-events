@@ -31,6 +31,9 @@ const loading = ref(true)
 const showDeleteModal = ref(false)
 const eventId = route.query.id
 
+// Event categories matching the catalog
+const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
+
 const form = reactive<CreateEventForm>({
   title: '',
   description: '',
@@ -257,6 +260,33 @@ async function confirmDelete() {
                 <label for="description" class="text-sm font-medium text-gray-700">Description</label>
                 <input v-model="form.description" type="text" placeholder="Enter description and additional information" class="md:col-span-2 mt-1 md:mt-0 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
               </div>
+              
+              <!-- Category Selector -->
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 items-start">
+                <label for="category" class="text-sm font-medium text-gray-700 pt-2">Event Type</label>
+                <div class="md:col-span-2 mt-1 md:mt-0">
+                  <div class="flex flex-wrap gap-2">
+                    <button
+                      v-for="cat in categories"
+                      :key="cat"
+                      type="button"
+                      @click="form.category = cat"
+                      :class="[
+                        'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
+                        form.category === cat
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ]"
+                    >
+                      {{ cat }}
+                    </button>
+                  </div>
+                  <p v-if="form.category" class="mt-2 text-xs text-gray-500">
+                    Selected: <span class="font-semibold text-violet-600">{{ form.category }}</span>
+                  </p>
+                </div>
+              </div>
+              
               <div class="grid grid-cols-1 md:grid-cols-3 gap-x-4 items-center">
                 <label for="limit people" class="text-sm font-medium text-gray-700">People</label>
                 <input v-model.number="form.personLimit" type="number" min="0" placeholder="Enter Limit People" class="md:col-span-2 mt-1 md:mt-0 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />

@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
       fail-fast: false
     defaults:
       run:
@@ -135,6 +135,7 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
           SPRING_DATASOURCE_USERNAME: concert_user
           SPRING_DATASOURCE_PASSWORD: concert_password
+          JWT_SECRET: test-only-jwt-secret-used-by-unit-tests-test-only-jwt-secret-used-by-unit-tests
 
       - name: 📊 Generate JaCoCo coverage report
         if: matrix.java-version == 21
@@ -241,6 +242,7 @@ jobs:
           SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
           SPRING_DATASOURCE_USERNAME: concert_user
           SPRING_DATASOURCE_PASSWORD: concert_password
+          JWT_SECRET: test-only-jwt-secret-used-by-unit-tests-test-only-jwt-secret-used-by-unit-tests
 
       - name: ⏳ Wait for backend to be ready
         run: |

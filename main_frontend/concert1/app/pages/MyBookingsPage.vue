@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
+import { useUnauthorizedHandler } from '~/composables/useUnauthorizedHandler'
 import { $fetch } from 'ofetch'
 
 interface Booking {
@@ -20,6 +21,7 @@ interface Booking {
 const router = useRouter()
 const { loadFromStorage, isLoggedIn } = useAuth()
 const { success, error } = useToast()
+const { handleApiError } = useUnauthorizedHandler()
 
 const bookings = ref<Booking[]>([])
 const loading = ref(true)
@@ -54,9 +56,15 @@ async function fetchBookings() {
     if (!bookings.value.length) {
       message.value = 'You have no bookings yet.'
     }
-  } catch (error: any) {
-    console.error('Load bookings error', error)
-    message.value = error?.data?.message || 'Failed to load your bookings.'
+  } catch (err: any) {
+    console.error('Load bookings error', err)
+    
+    // Handle unauthorized error automatically
+    if (handleApiError(err, '/MyBookingsPage')) {
+      return
+    }
+    
+    message.value = err?.data?.message || 'Failed to load your bookings.'
   } finally {
     loading.value = false
   }
@@ -97,6 +105,14 @@ async function confirmCancelBooking() {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
+      
+      // Handle unauthorized (401/403)
+      if (response.status === 401 || response.status === 403) {
+        if (handleApiError({ statusCode: response.status, message: errorData.message }, '/MyBookingsPage')) {
+          return
+        }
+      }
+      
       throw new Error(errorData.message || `Failed with status ${response.status}`)
     }
 

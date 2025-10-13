@@ -49,8 +49,12 @@ const handleSubmit = async () => {
 
       password.value = ''
 
-      // Redirect after successful login
-      if (shouldCompleteProfile()) {
+      // Check if there's a redirect URL stored (from auth middleware)
+      const redirectPath = localStorage.getItem('redirect_after_login')
+      if (redirectPath) {
+        localStorage.removeItem('redirect_after_login')
+        await navigateTo(redirectPath)
+      } else if (shouldCompleteProfile()) {
         await navigateTo('/AccountPage')
       } else {
         await navigateTo('/')  // Redirect to home page

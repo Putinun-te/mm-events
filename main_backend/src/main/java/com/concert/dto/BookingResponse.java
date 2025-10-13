@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 
 public class BookingResponse {
     private Long id;
-    private Long eventId;
+    private String eventId;
     private String eventTitle;
     private Integer quantity;
     private Double totalPrice;
@@ -28,11 +28,11 @@ public class BookingResponse {
         this.id = id;
     }
 
-    public Long getEventId() {
+    public String getEventId() {
         return eventId;
     }
 
-    public void setEventId(Long eventId) {
+    public void setEventId(String eventId) {
         this.eventId = eventId;
     }
 

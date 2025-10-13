@@ -101,17 +101,21 @@ CREATE TABLE favs (
 );
 
 -- Create bookings table (for the new booking system)
+-- Note: event_id is VARCHAR because events are stored in JSON file, not in MySQL
+-- Event details (title, location, date) are stored directly in bookings for display
 CREATE TABLE bookings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
-    event_id INT NOT NULL,
+    event_id VARCHAR(255) NOT NULL,
+    event_title VARCHAR(500),
+    event_location VARCHAR(500),
+    event_start_date DATETIME,
     quantity INT NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'PENDING',
     booking_date DATETIME NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-    FOREIGN KEY (event_id) REFERENCES events(event_id) ON DELETE CASCADE,
     INDEX idx_user_id (user_id),
     INDEX idx_event_id (event_id),
     INDEX idx_status (status),

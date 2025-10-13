@@ -14,9 +14,18 @@ public class Booking {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "event_id", nullable = false)
-    private Event event;
+    // Event stored as JSON reference, not FK
+    @Column(name = "event_id", nullable = false)
+    private String eventId;
+
+    @Column(name = "event_title")
+    private String eventTitle;
+
+    @Column(name = "event_location")
+    private String eventLocation;
+
+    @Column(name = "event_start_date")
+    private LocalDateTime eventStartDate;
 
     @Column(nullable = false)
     private Integer quantity;
@@ -61,12 +70,36 @@ public class Booking {
         this.user = user;
     }
 
-    public Event getEvent() {
-        return event;
+    public String getEventId() {
+        return eventId;
     }
 
-    public void setEvent(Event event) {
-        this.event = event;
+    public void setEventId(String eventId) {
+        this.eventId = eventId;
+    }
+
+    public String getEventTitle() {
+        return eventTitle;
+    }
+
+    public void setEventTitle(String eventTitle) {
+        this.eventTitle = eventTitle;
+    }
+
+    public String getEventLocation() {
+        return eventLocation;
+    }
+
+    public void setEventLocation(String eventLocation) {
+        this.eventLocation = eventLocation;
+    }
+
+    public LocalDateTime getEventStartDate() {
+        return eventStartDate;
+    }
+
+    public void setEventStartDate(LocalDateTime eventStartDate) {
+        this.eventStartDate = eventStartDate;
     }
 
     public Integer getQuantity() {

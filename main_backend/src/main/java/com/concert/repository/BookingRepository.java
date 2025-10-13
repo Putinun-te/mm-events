@@ -9,5 +9,5 @@ import java.util.List;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
     List<Booking> findByUserIdOrderByBookingDateDesc(Long userId);
-    List<Booking> findByEventIdOrderByBookingDateDesc(Long eventId);
+    // Removed findByEventIdOrderByBookingDateDesc - not needed since events are in JSON
 }

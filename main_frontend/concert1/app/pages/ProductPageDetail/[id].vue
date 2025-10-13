@@ -41,6 +41,16 @@ const eventLocation = computed(() => {
   return 'Location TBA'
 })
 
+// Participants info (display only)
+const participantsCount = computed(() => event.value?.participantsCount || 0)
+const participants = computed(() => event.value?.participants || [])
+const spotsRemaining = computed(() => {
+  const limit = availableSeats.value
+  if (limit <= 0) return 'Unlimited'
+  const remaining = limit - participantsCount.value
+  return remaining > 0 ? remaining : 0
+})
+
 function loadScript(src: string): Promise<void> {
   return new Promise((resolve, reject) => {
     if (document.querySelector(`script[src="${src}"]`)) {
@@ -103,8 +113,12 @@ async function addToCart() {
     await $fetch('/api/bookings', {
       method: 'POST',
       body: {
-        eventId: event.value.id,
-        quantity: quantity.value
+        eventId: String(event.value.id),
+        quantity: quantity.value,
+        eventTitle: eventTitle.value,
+        eventLocation: eventLocation.value,
+        eventStartDate: event.value.startDate || event.value.datestart,
+        ticketPrice: ticketPrice.value || 0
       },
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -193,6 +207,23 @@ async function addToCart() {
                                 <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
                                 <span class="text-green-600 font-semibold">{{ availableSeats }} seats available</span>
                             </div>
+                            
+                            <div class="bg-violet-50 rounded-xl p-4 space-y-2">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-gray-700 font-semibold">👥 Participants:</span>
+                                    <span class="text-violet-600 font-bold">{{ participantsCount }} / {{ availableSeats || '∞' }}</span>
+                                </div>
+                                <div v-if="spotsRemaining !== 'Unlimited'" class="w-full bg-gray-200 rounded-full h-2">
+                                    <div 
+                                        class="bg-gradient-to-r from-violet-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                                        :style="{ width: `${(participantsCount / availableSeats) * 100}%` }"
+                                    ></div>
+                                </div>
+                                <p v-if="spotsRemaining !== 'Unlimited'" class="text-sm text-gray-600">
+                                    {{ spotsRemaining }} spots remaining
+                                </p>
+                                <p v-else class="text-sm text-gray-600">Unlimited spots available</p>
+                            </div>
                         </div>
 
                         <div class="space-y-6">
@@ -206,9 +237,35 @@ async function addToCart() {
                             </div>
 
                             <div class="flex flex-col sm:flex-row gap-4">
-                                <button class="flex-1 bg-gradient-to-r from-violet-600 to-purple-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200" @click="addToCart">
+                                <button class="flex-1 bg-gradient-to-r from-green-600 to-teal-600 text-white px-8 py-4 rounded-xl font-semibold text-lg hover:shadow-lg transform hover:scale-105 transition-all duration-200" @click="addToCart">
                                     🎫 Book Tickets
                                 </button>
+                            </div>
+                            
+                            <!-- Participants List -->
+                            <div v-if="participants.length > 0" class="mt-6 bg-gray-50 rounded-xl p-6">
+                                <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                    <span>👥</span>
+                                    <span>Participants ({{ participantsCount }})</span>
+                                </h3>
+                                <div class="max-h-60 overflow-y-auto space-y-2">
+                                    <div 
+                                        v-for="participant in participants" 
+                                        :key="participant.userId"
+                                        class="flex items-center justify-between bg-white rounded-lg p-3 hover:shadow-sm transition-shadow"
+                                    >
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-10 h-10 rounded-full bg-gradient-to-br from-violet-400 to-purple-400 flex items-center justify-center text-white font-semibold">
+                                                {{ participant.userName?.charAt(0)?.toUpperCase() || 'U' }}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-gray-900">{{ participant.userName || 'Anonymous' }}</p>
+                                                <p class="text-xs text-gray-500">{{ new Date(participant.joinedAt).toLocaleDateString() }}</p>
+                                            </div>
+                                        </div>
+                                        <span class="text-green-500 text-sm">✓ Joined</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

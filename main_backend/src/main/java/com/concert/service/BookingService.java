@@ -3,10 +3,8 @@ package com.concert.service;
 import com.concert.dto.BookingResponse;
 import com.concert.dto.CreateBookingRequest;
 import com.concert.model.Booking;
-import com.concert.model.Event;
 import com.concert.model.User;
 import com.concert.repository.BookingRepository;
-import com.concert.repository.EventRepository;
 import com.concert.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,13 +18,11 @@ import java.util.stream.Collectors;
 public class BookingService {
 
     private final BookingRepository bookingRepository;
-    private final EventRepository eventRepository;
     private final UserRepository userRepository;
 
     @Autowired
-    public BookingService(BookingRepository bookingRepository, EventRepository eventRepository, UserRepository userRepository) {
+    public BookingService(BookingRepository bookingRepository, UserRepository userRepository) {
         this.bookingRepository = bookingRepository;
-        this.eventRepository = eventRepository;
         this.userRepository = userRepository;
     }
 
@@ -35,17 +31,17 @@ public class BookingService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        Event event = eventRepository.findById(request.getEventId())
-                .orElseThrow(() -> new RuntimeException("Event not found"));
-
         // Calculate total price
-        Double ticketPrice = event.getTicketPrice() != null ? event.getTicketPrice() : 0.0;
+        Double ticketPrice = request.getTicketPrice() != null ? request.getTicketPrice() : 0.0;
         Double totalPrice = ticketPrice * request.getQuantity();
 
-        // Create booking
+        // Create booking with event data from request
         Booking booking = new Booking();
         booking.setUser(user);
-        booking.setEvent(event);
+        booking.setEventId(request.getEventId());
+        booking.setEventTitle(request.getEventTitle());
+        booking.setEventLocation(request.getEventLocation());
+        booking.setEventStartDate(request.getEventStartDate());
         booking.setQuantity(request.getQuantity());
         booking.setTotalPrice(totalPrice);
         booking.setStatus("CONFIRMED");
@@ -94,24 +90,14 @@ public class BookingService {
     private BookingResponse toResponse(Booking booking) {
         BookingResponse response = new BookingResponse();
         response.setId(booking.getId());
-        response.setEventId(booking.getEvent().getId());
-        response.setEventTitle(booking.getEvent().getTitle());
+        response.setEventId(booking.getEventId());
+        response.setEventTitle(booking.getEventTitle());
         response.setQuantity(booking.getQuantity());
         response.setTotalPrice(booking.getTotalPrice());
         response.setStatus(booking.getStatus());
         response.setBookingDate(booking.getBookingDate());
-        response.setEventStartDate(booking.getEvent().getStartDate());
-        
-        // Build location string
-        String location = "";
-        if (booking.getEvent().getLocation() != null) {
-            location = booking.getEvent().getLocation();
-        } else if (booking.getEvent().getCity() != null && booking.getEvent().getCountry() != null) {
-            location = booking.getEvent().getCity() + ", " + booking.getEvent().getCountry();
-        } else if (booking.getEvent().getCity() != null) {
-            location = booking.getEvent().getCity();
-        }
-        response.setEventLocation(location);
+        response.setEventStartDate(booking.getEventStartDate());
+        response.setEventLocation(booking.getEventLocation());
 
         return response;
     }

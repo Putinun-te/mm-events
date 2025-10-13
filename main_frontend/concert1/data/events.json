@@ -15,6 +15,14 @@
     "location": null,
     "userId": 22,
     "userName": "dijiojasjidai njkscjnk",
-    "createdAt": "2025-10-13T10:21:29.162Z"
+    "createdAt": "2025-10-13T10:21:29.162Z",
+    "participants": [
+      {
+        "userId": 23,
+        "userName": "jkahjdajkdashjkdhjkasdhjka kasjasjkhdahjkdajkhd",
+        "joinedAt": "2025-10-13T10:43:46.265Z"
+      }
+    ],
+    "participantsCount": 1
   }
 ]

@@ -315,9 +315,8 @@ jobs:
       - name: 📥 Install frontend dependencies
         working-directory: ./main_frontend/concert1
         run: |
-          rm -rf node_modules package-lock.json || true
-          npm cache clean --force
-          npm install
+          rm -rf node_modules || true
+          npm ci
 
       - name: 🔍 Verify TypeScript installation
         working-directory: ./main_frontend/concert1

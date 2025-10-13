@@ -105,16 +105,8 @@ CREATE TABLE favs (
 -- Event details (title, location, date) are stored directly in bookings for display
 CREATE TABLE bookings (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
-<<<<<<< HEAD
-    user_id INT NOT NULL,
-    event_id VARCHAR(255) NOT NULL,
-    event_title VARCHAR(500),
-    event_location VARCHAR(500),
-    event_start_date DATETIME,
-=======
     user_id BIGINT NOT NULL,
     event_id BIGINT NOT NULL,
->>>>>>> 6f892ee311a05154c15d2db8e267d877780ae5d8
     quantity INT NOT NULL,
     total_price DECIMAL(10,2) NOT NULL,
     status VARCHAR(50) DEFAULT 'PENDING',

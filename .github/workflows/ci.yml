@@ -106,8 +106,8 @@ jobs:
 
       # No MySQL wait needed when using H2
 
-      - name: 🧪 Run backend tests (H2)
-        run: ./mvnw clean test -Dspring.profiles.active=test
+      - name: 🧪 Run backend tests (H2 only, exclude Docker tests)
+        run: ./mvnw clean test -Dspring.profiles.active=test -Dtest='!**/*DockerTest'
         env:
           JWT_SECRET: test-only-jwt-secret-used-by-unit-tests-test-only-jwt-secret-used-by-unit-tests
 

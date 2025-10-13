@@ -1,6 +1,6 @@
 /**
  * Unauthorized Handler Composable
- * Handles 401/403 responses globally when user is not authorized (logged out)
+ * Handles 401/403 responses from API calls (not middleware redirects)
  */
 
 import { useRouter } from 'vue-router'
@@ -13,16 +13,18 @@ export const useUnauthorizedHandler = () => {
   const { clearAuth } = useAuth()
 
   /**
-   * Handle unauthorized response (401/403)
-   * Clears authentication and redirects to login
+   * Handle unauthorized response (401/403) from API calls
+   * Only shows error message for actual API failures, not initial page loads
    */
-  const handleUnauthorized = (errorMessage?: string, currentPath?: string) => {
+  const handleUnauthorized = (errorMessage?: string, currentPath?: string, showMessage: boolean = true) => {
     // Clear authentication data
     clearAuth()
 
-    // Show error message
-    const message = errorMessage || 'Your session has expired. Please login again.'
-    showError(message, 'Authentication Required')
+    // Show error message only if requested (for API call failures)
+    if (showMessage) {
+      const message = errorMessage || 'Your session has expired. Please login again.'
+      showError(message, 'Authentication Required')
+    }
 
     // Store the current path to redirect after login
     if (currentPath && typeof window !== 'undefined') {
@@ -45,11 +47,12 @@ export const useUnauthorizedHandler = () => {
 
   /**
    * Handle API error with automatic unauthorized detection
+   * Shows error message since this is an API call failure
    */
   const handleApiError = (error: any, currentPath?: string) => {
     if (isUnauthorizedError(error)) {
       const message = error?.statusMessage || error?.message || error?.data?.message
-      handleUnauthorized(message, currentPath)
+      handleUnauthorized(message, currentPath, true) // Show message for API errors
       return true
     }
     return false

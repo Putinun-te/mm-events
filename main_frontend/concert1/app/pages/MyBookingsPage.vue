@@ -32,8 +32,10 @@ const bookingToCancel = ref<Booking | null>(null)
 
 onMounted(async () => {
   loadFromStorage()
+  
+  // Middleware will handle redirect if not logged in
+  // Don't show "Unauthorized" message, just let middleware redirect
   if (!isLoggedIn.value) {
-    router.push('/LoginPage')
     return
   }
 
@@ -46,7 +48,7 @@ async function fetchBookings() {
   try {
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     if (!token) {
-      router.push('/LoginPage')
+      // Middleware will handle redirect
       return
     }
     const res: any = await $fetch('/api/bookings/me', {
@@ -59,11 +61,12 @@ async function fetchBookings() {
   } catch (err: any) {
     console.error('Load bookings error', err)
     
-    // Handle unauthorized error automatically
+    // If API returns 401/403, handle it with error message
     if (handleApiError(err, '/MyBookingsPage')) {
       return
     }
     
+    // For other errors, show message
     message.value = err?.data?.message || 'Failed to load your bookings.'
   } finally {
     loading.value = false

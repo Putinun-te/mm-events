@@ -25,14 +25,16 @@ export default defineNuxtRouteMiddleware((to, from) => {
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     
     if (!token) {
-      // User is not authorized (logged out)
-      console.log('User not authorized - redirecting to login')
+      // User is not authorized (logged out) - silently redirect
+      console.log('No auth token - redirecting to login')
       
-      // Store the intended destination
-      localStorage.setItem('redirect_after_login', to.fullPath)
+      // Store the intended destination (only if not coming from login page)
+      if (from.path !== '/LoginPage') {
+        localStorage.setItem('redirect_after_login', to.fullPath)
+      }
       
-      // Redirect to login page
-      return navigateTo('/LoginPage')
+      // Redirect to login page without showing error
+      return navigateTo('/LoginPage', { replace: true })
     }
   }
 })

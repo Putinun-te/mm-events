@@ -15,11 +15,24 @@ export function useAuth() {
 
   function loadFromStorage() {
     try {
-      const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
-      const email = localStorage.getItem('user_email') || sessionStorage.getItem('user_email') || undefined
-      const username = localStorage.getItem('username') || sessionStorage.getItem('username') || undefined
-      if (token) user.value = { token, email, username }
-      remember.value = localStorage.getItem('remember_me') === 'true'
+      // Check if user chose "Remember Me" on their last login
+      const remembered = localStorage.getItem('remember_me') === 'true'
+      
+      if (remembered) {
+        // Load from localStorage (persistent)
+        const token = localStorage.getItem('jwt_token')
+        const email = localStorage.getItem('user_email') || undefined
+        const username = localStorage.getItem('username') || undefined
+        if (token) user.value = { token, email, username }
+        remember.value = true
+      } else {
+        // Load from sessionStorage (cleared when browser closes)
+        const token = sessionStorage.getItem('jwt_token')
+        const email = sessionStorage.getItem('user_email') || undefined
+        const username = sessionStorage.getItem('username') || undefined
+        if (token) user.value = { token, email, username }
+        remember.value = false
+      }
     } catch {}
   }
 

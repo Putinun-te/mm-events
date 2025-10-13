@@ -58,7 +58,6 @@ jobs:
           flags: frontend
           name: frontend-coverage
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
           slug: MorningMores/develop
 
       - name: 💾 Upload coverage artifacts
@@ -124,7 +123,6 @@ jobs:
           flags: backend
           name: backend-coverage
           fail_ci_if_error: false
-          token: ${{ secrets.CODECOV_TOKEN }}
           slug: MorningMores/develop
 
       - name: 💾 Upload JaCoCo coverage artifacts

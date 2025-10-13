@@ -1,7 +1,7 @@
 # Concert Management System
 
 [![CI/CD Pipeline](https://github.com/MorningMores/develop/actions/workflows/ci.yml/badge.svg)](https://github.com/MorningMores/develop/actions/workflows/ci.yml)
-[![Codecov](https://img.shields.io/badge/Codecov-coverage-blue)](https://app.codecov.io/gh/MorningMores/develop)
+[![codecov](https://codecov.io/github/MorningMores/develop/branch/version1.0/graph/badge.svg)](https://codecov.io/github/MorningMores/develop)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 A full-stack application for managing concerts and events.

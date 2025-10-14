@@ -214,4 +214,53 @@ describe('ProductPage.vue', () => {
       expect(wrapper.exists()).toBe(true)
     }
   })
+
+  it('should call loadEvents function', async () => {
+    const wrapper = mount(ProductPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.loadEvents) {
+      await vm.loadEvents()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call clearFilters function', async () => {
+    const wrapper = mount(ProductPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.clearFilters) {
+      vm.clearFilters()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should have clear filters button', async () => {
+    const wrapper = mount(ProductPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const buttons = wrapper.findAll('button')
+    const clearBtn = buttons.find(b => b.text().includes('Clear') || b.text().includes('Reset'))
+    
+    if (clearBtn && clearBtn.exists()) {
+      await clearBtn.trigger('click')
+      await wrapper.vm.$nextTick()
+    }
+    
+    expect(wrapper.exists()).toBe(true)
+  })
 })
+

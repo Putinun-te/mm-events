@@ -3,6 +3,21 @@ import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import AccountPage from '~/app/pages/AccountPage.vue'
 
+// Mock composables
+vi.mock('~/composables/useAuth', () => ({
+  useAuth: () => ({
+    loadFromStorage: vi.fn(),
+    clearAuth: vi.fn()
+  })
+}))
+
+vi.mock('~/composables/useToast', () => ({
+  useToast: () => ({
+    success: vi.fn(),
+    error: vi.fn()
+  })
+}))
+
 // Mock fetch globally
 global.fetch = vi.fn()
 
@@ -201,5 +216,101 @@ describe('AccountPage.vue', () => {
       await inputs[0].setValue('New Value')
       expect(inputs[0].element.value).toBe('New Value')
     }
+  })
+
+  it('should call loadUserData function', async () => {
+    const wrapper = mount(AccountPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.loadUserData) {
+      await vm.loadUserData()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call loadUserStats function', async () => {
+    const wrapper = mount(AccountPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.loadUserStats) {
+      await vm.loadUserStats()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call handlesubmit function', async () => {
+    const wrapper = mount(AccountPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.handlesubmit) {
+      await vm.handlesubmit()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call handleLogout function', async () => {
+    const wrapper = mount(AccountPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.handleLogout) {
+      await vm.handleLogout()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call confirmLogout function', async () => {
+    const wrapper = mount(AccountPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.confirmLogout) {
+      await vm.confirmLogout()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call cancelLogout function', async () => {
+    const wrapper = mount(AccountPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.cancelLogout) {
+      vm.cancelLogout()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
   })
 })

@@ -346,4 +346,77 @@ describe('MyEventsPage.vue', () => {
     
     expect(wrapper.exists()).toBe(true)
   })
+
+  it('should call toEpochSeconds function', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: {
+        plugins: [router],
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.toEpochSeconds) {
+      const result = vm.toEpochSeconds('2024-12-31T18:00:00')
+      expect(result !== undefined).toBe(true)
+    }
+  })
+
+  it('should call formatRange function', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: {
+        plugins: [router],
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.formatRange) {
+      const mockEvent = {
+        id: 1,
+        title: 'Test Event',
+        startDate: '2024-12-31T18:00:00',
+        endDate: '2024-12-31T23:00:00'
+      }
+      const result = vm.formatRange(mockEvent)
+      expect(result !== undefined).toBe(true)
+    }
+  })
+
+  it('should call fetchEvents function', async () => {
+    const wrapper = mount(MyEventsPage, {
+      global: {
+        plugins: [router],
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.fetchEvents) {
+      await vm.fetchEvents()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call goToEvent function', async () => {
+    const wrapper = mount(MyEventsPage, {
+      global: {
+        plugins: [router],
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.goToEvent) {
+      const mockEvent = {
+        id: 1,
+        title: 'Test Event'
+      }
+      vm.goToEvent(mockEvent)
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
 })
+

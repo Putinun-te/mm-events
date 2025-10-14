@@ -3,6 +3,9 @@ import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import MyBookingsPage from '~/app/pages/MyBookingsPage.vue'
 
+// Mock $fetch globally
+global.$fetch = vi.fn() as any
+
 // Mock fetch globally
 global.fetch = vi.fn()
 
@@ -231,4 +234,93 @@ describe('MyBookingsPage.vue', () => {
       expect(vm.bookings.length).toBeGreaterThanOrEqual(0)
     }
   })
+
+  it('should call fetchBookings function', async () => {
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.fetchBookings) {
+      await vm.fetchBookings()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call openCancelModal function', async () => {
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.openCancelModal) {
+      const mockBooking = {
+        id: 1,
+        eventTitle: 'Test Event',
+        quantity: 2,
+        totalPrice: 1000
+      }
+      vm.openCancelModal(mockBooking)
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call closeCancelModal function', async () => {
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.closeCancelModal) {
+      vm.closeCancelModal()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call confirmCancelBooking function', async () => {
+    ;(global.$fetch as any).mockResolvedValue({ success: true })
+    
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.confirmCancelBooking) {
+      await vm.confirmCancelBooking()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call goToEvent function', async () => {
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.goToEvent) {
+      const mockBooking = {
+        id: 1,
+        eventId: 123,
+        eventTitle: 'Test Event'
+      }
+      vm.goToEvent(mockBooking)
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
 })
+

@@ -37,7 +37,11 @@ describe('EmptyState.vue', () => {
         actionText: 'Add Item'
       },
       global: {
-        stubs: { NuxtLink: true }
+        stubs: { 
+          NuxtLink: {
+            template: '<a><slot /></a>'
+          }
+        }
       }
     })
     
@@ -108,13 +112,16 @@ describe('EmptyState.vue', () => {
     expect(wrapper.text()).toContain(customTitle)
   })
 
-  it('should support slot content', () => {
+  it('should support different empty state types', () => {
     const wrapper = mount(EmptyState, {
-      slots: {
-        default: '<div class="custom-content">Custom content</div>'
+      props: {
+        type: 'no-events',
+        title: 'No Events',
+        description: 'No events available'
       }
     })
     
-    expect(wrapper.html()).toContain('custom-content')
+    // Should render with the type-specific icon
+    expect(wrapper.html()).toContain('🎭')
   })
 })

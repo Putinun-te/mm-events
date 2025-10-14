@@ -66,7 +66,7 @@ public class EventIntegrationTest {
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername("testuser");
+        loginRequest.setUsernameOrEmail("testuser");
         loginRequest.setPassword("password123");
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")
@@ -93,7 +93,7 @@ public class EventIntegrationTest {
         request.setPhone("1234567890");
         request.setStartDate(LocalDateTime.now().plusDays(7));
         request.setEndDate(LocalDateTime.now().plusDays(8));
-        request.setTicketPrice(new BigDecimal("50.00"));
+        request.setTicketPrice(50.00);
 
         mockMvc.perform(post("/api/events")
                         .header("Authorization", "Bearer " + jwtToken)
@@ -129,7 +129,7 @@ public class EventIntegrationTest {
         request.setLocation("Public Location");
         request.setStartDate(LocalDateTime.now().plusDays(7));
         request.setEndDate(LocalDateTime.now().plusDays(8));
-        request.setTicketPrice(new BigDecimal("25.00"));
+        request.setTicketPrice(25.00);
 
         mockMvc.perform(post("/api/events")
                         .header("Authorization", "Bearer " + jwtToken)
@@ -155,7 +155,7 @@ public class EventIntegrationTest {
             request.setLocation("Location " + i);
             request.setStartDate(LocalDateTime.now().plusDays(i));
             request.setEndDate(LocalDateTime.now().plusDays(i + 1));
-            request.setTicketPrice(new BigDecimal("50.00"));
+            request.setTicketPrice(50.00);
 
             mockMvc.perform(post("/api/events")
                             .header("Authorization", "Bearer " + jwtToken)
@@ -184,7 +184,7 @@ public class EventIntegrationTest {
         request.setLocation("My Location");
         request.setStartDate(LocalDateTime.now().plusDays(5));
         request.setEndDate(LocalDateTime.now().plusDays(6));
-        request.setTicketPrice(new BigDecimal("75.00"));
+        request.setTicketPrice(75.00);
 
         mockMvc.perform(post("/api/events")
                         .header("Authorization", "Bearer " + jwtToken)
@@ -212,7 +212,7 @@ public class EventIntegrationTest {
         request.setLocation("Specific Location");
         request.setStartDate(LocalDateTime.now().plusDays(10));
         request.setEndDate(LocalDateTime.now().plusDays(11));
-        request.setTicketPrice(new BigDecimal("100.00"));
+        request.setTicketPrice(100.00);
 
         MvcResult createResult = mockMvc.perform(post("/api/events")
                         .header("Authorization", "Bearer " + jwtToken)

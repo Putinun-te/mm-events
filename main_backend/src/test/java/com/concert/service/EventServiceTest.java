@@ -61,7 +61,7 @@ public class EventServiceTest {
         testEvent.setPhone("1234567890");
         testEvent.setStartDate(LocalDateTime.now().plusDays(7));
         testEvent.setEndDate(LocalDateTime.now().plusDays(8));
-        testEvent.setTicketPrice(new BigDecimal("50.00"));
+        testEvent.setTicketPrice(50.00);
         testEvent.setOrganizer(testUser);
 
         createEventRequest = new CreateEventRequest();
@@ -76,7 +76,7 @@ public class EventServiceTest {
         createEventRequest.setPhone("0987654321");
         createEventRequest.setStartDate(LocalDateTime.now().plusDays(10));
         createEventRequest.setEndDate(LocalDateTime.now().plusDays(11));
-        createEventRequest.setTicketPrice(new BigDecimal("75.00"));
+        createEventRequest.setTicketPrice(75.00);
     }
 
     @Test

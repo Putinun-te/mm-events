@@ -64,7 +64,7 @@ public class BookingIntegrationTest {
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsername("testuser");
+        loginRequest.setUsernameOrEmail("testuser");
         loginRequest.setPassword("password123");
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")

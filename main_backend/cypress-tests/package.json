@@ -1,0 +1,16 @@
+{
+  "name": "backend-e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for backend REST API",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "test:e2e": "cypress run --spec 'cypress/e2e/**/*.cy.js'",
+    "test:e2e:auth": "cypress run --spec 'cypress/e2e/auth/*.cy.js'",
+    "test:e2e:events": "cypress run --spec 'cypress/e2e/events/*.cy.js'",
+    "test:e2e:bookings": "cypress run --spec 'cypress/e2e/bookings/*.cy.js'"
+  },
+  "devDependencies": {
+    "cypress": "^13.6.0"
+  }
+}

@@ -1,0 +1,149 @@
+name: Backend E2E Tests (Cypress)
+
+on:
+  push:
+    branches: [ main, BE-Tester, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+concurrency:
+  group: backend-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  cypress-e2e:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: concert_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main_backend/cypress-tests/package.json
+
+      - name: Wait for MySQL
+        run: |
+          echo "Waiting for MySQL to be ready..."
+          for i in {1..30}; do
+            if mysqladmin ping -h"127.0.0.1" -P3306 -uroot -ppassword --silent; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Waiting... ($i/30)"
+            sleep 2
+          done
+
+      - name: Build backend
+        working-directory: ./main_backend
+        run: |
+          ./mvnw clean package -DskipTests
+
+      - name: Start backend server
+        working-directory: ./main_backend
+        run: |
+          nohup java -jar target/*.jar --spring.profiles.active=test > backend.log 2>&1 &
+          echo $! > backend.pid
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: password
+
+      - name: Wait for backend to be ready
+        run: |
+          echo "Waiting for backend server..."
+          for i in {1..60}; do
+            if curl -f http://localhost:8080/actuator/health 2>/dev/null; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Waiting... ($i/60)"
+            sleep 2
+          done
+          
+          # Verify backend is actually running
+          if ! curl -f http://localhost:8080/actuator/health 2>/dev/null; then
+            echo "Backend failed to start. Logs:"
+            cat main_backend/backend.log
+            exit 1
+          fi
+
+      - name: Install Cypress dependencies
+        working-directory: ./main_backend/cypress-tests
+        run: npm install
+
+      - name: Run Cypress E2E tests
+        working-directory: ./main_backend/cypress-tests
+        run: npm run test:e2e
+        env:
+          CYPRESS_BASE_URL: http://localhost:8080
+
+      - name: Upload Cypress screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: main_backend/cypress-tests/cypress/screenshots/
+          retention-days: 7
+
+      - name: Upload Cypress videos
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-videos
+          path: main_backend/cypress-tests/cypress/videos/
+          retention-days: 7
+
+      - name: Upload backend logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-logs
+          path: main_backend/backend.log
+          retention-days: 7
+
+      - name: Generate E2E test summary
+        if: always()
+        run: |
+          echo "## E2E Test Results (Cypress)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Cypress E2E tests completed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Test Suites:**" >> $GITHUB_STEP_SUMMARY
+          echo "- Auth API Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Events API Tests" >> $GITHUB_STEP_SUMMARY
+          echo "- Bookings API Tests" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "View artifacts for videos and screenshots." >> $GITHUB_STEP_SUMMARY
+
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -f main_backend/backend.pid ]; then
+            kill $(cat main_backend/backend.pid) || true
+          fi

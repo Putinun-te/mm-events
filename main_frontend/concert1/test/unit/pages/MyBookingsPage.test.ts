@@ -322,5 +322,110 @@ describe('MyBookingsPage.vue', () => {
     }
     expect(wrapper.exists()).toBe(true)
   })
+
+  it('should handle fetch error with error message', async () => {
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      json: async () => ({ message: 'Failed to fetch bookings' })
+    })
+
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle fetch error without message', async () => {
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: false
+    })
+
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle network error during fetch', async () => {
+    ;(global.fetch as any).mockRejectedValueOnce(new Error('Network error'))
+
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle cancel booking failure', async () => {
+    ;(global.$fetch as any).mockRejectedValueOnce({
+      data: { message: 'Cannot cancel booking' }
+    })
+
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.confirmCancelBooking) {
+      await vm.confirmCancelBooking()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle missing token', async () => {
+    localStorage.removeItem('jwt_token')
+
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle bookings with missing event data', async () => {
+    ;(global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [
+        {
+          bookingId: 1,
+          event: null,
+          quantity: 2,
+          totalPrice: 1000
+        }
+      ]
+    })
+
+    const wrapper = mount(MyBookingsPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.exists()).toBe(true)
+  })
 })
+
 

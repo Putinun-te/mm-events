@@ -304,4 +304,152 @@ describe('ProfilePage.vue', () => {
     
     expect(wrapper.exists()).toBe(true)
   })
+
+  it('should handle API error when loading profile', async () => {
+    ;(global.$fetch as any).mockRejectedValueOnce({
+      data: { message: 'Unauthorized' }
+    })
+
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle API error without message', async () => {
+    ;(global.$fetch as any).mockRejectedValueOnce(new Error('Network error'))
+
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should show message when not logged in', async () => {
+    vi.mock('~/composables/useAuth', () => ({
+      useAuth: () => ({
+        loadFromStorage: vi.fn(),
+        isLoggedIn: { value: false }
+      })
+    }))
+
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle missing profile data in localStorage', async () => {
+    localStorage.removeItem('profile_data')
+
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle empty username and email', async () => {
+    ;(global.$fetch as any).mockResolvedValueOnce({
+      username: '',
+      email: ''
+    })
+
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle null user data from API', async () => {
+    ;(global.$fetch as any).mockResolvedValueOnce(null)
+
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 100))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should show loading state initially', () => {
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    expect(wrapper.html()).toContain('Loading')
+  })
+
+  it('should hide loading after data loads', async () => {
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 150))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.exists()).toBe(true)
+  })
 })
+

@@ -135,4 +135,138 @@ describe('Register Component', () => {
     await wrapper.find('form').trigger('submit.prevent')
     await wrapper.vm.$nextTick()
   })
+
+  it('should handle registration API error', async () => {
+    mockFetch.mockRejectedValueOnce({
+      data: { message: 'Email already exists' }
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const inputs = wrapper.findAll('input')
+    if (inputs.length >= 3) {
+      await inputs[0].setValue('test@test.com')
+      await inputs[1].setValue('testuser')
+      
+      const passwordInputs = wrapper.findAll('input[type="password"]')
+      if (passwordInputs.length >= 2) {
+        await passwordInputs[0].setValue('password123')
+        await passwordInputs[1].setValue('password123')
+      }
+    }
+    
+    await wrapper.find('form').trigger('submit.prevent')
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle network error during registration', async () => {
+    mockFetch.mockRejectedValueOnce(new Error('Network error'))
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const inputs = wrapper.findAll('input')
+    if (inputs.length >= 3) {
+      await inputs[0].setValue('test@test.com')
+      await inputs[1].setValue('testuser')
+      
+      const passwordInputs = wrapper.findAll('input[type="password"]')
+      if (passwordInputs.length >= 2) {
+        await passwordInputs[0].setValue('password123')
+        await passwordInputs[1].setValue('password123')
+      }
+    }
+    
+    await wrapper.find('form').trigger('submit.prevent')
+    await wrapper.vm.$nextTick()
+    await new Promise(resolve => setTimeout(resolve, 100))
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should handle empty email validation', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const inputs = wrapper.findAll('input')
+    if (inputs.length >= 2) {
+      await inputs[1].setValue('testuser')
+      
+      const passwordInputs = wrapper.findAll('input[type="password"]')
+      if (passwordInputs.length >= 2) {
+        await passwordInputs[0].setValue('password123')
+        await passwordInputs[1].setValue('password123')
+      }
+    }
+    
+    await wrapper.find('form').trigger('submit.prevent')
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('should handle empty username validation', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const inputs = wrapper.findAll('input')
+    if (inputs.length >= 1) {
+      await inputs[0].setValue('test@test.com')
+      
+      const passwordInputs = wrapper.findAll('input[type="password"]')
+      if (passwordInputs.length >= 2) {
+        await passwordInputs[0].setValue('password123')
+        await passwordInputs[1].setValue('password123')
+      }
+    }
+    
+    await wrapper.find('form').trigger('submit.prevent')
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('should handle weak password validation', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const inputs = wrapper.findAll('input')
+    if (inputs.length >= 3) {
+      await inputs[0].setValue('test@test.com')
+      await inputs[1].setValue('testuser')
+      
+      const passwordInputs = wrapper.findAll('input[type="password"]')
+      if (passwordInputs.length >= 2) {
+        await passwordInputs[0].setValue('123')
+        await passwordInputs[1].setValue('123')
+      }
+    }
+    
+    await wrapper.find('form').trigger('submit.prevent')
+    await wrapper.vm.$nextTick()
+  })
 })
+

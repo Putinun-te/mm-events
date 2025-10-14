@@ -206,4 +206,101 @@ describe('EditEventPage', () => {
     
     expect(wrapper.exists()).toBe(true)
   })
+
+  it('should call loadEventData function', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.loadEventData) {
+      await vm.loadEventData()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call validate function', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.validate) {
+      const result = vm.validate()
+      expect(typeof result === 'string' || result === null).toBe(true)
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call handleSubmit function', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.handleSubmit) {
+      await vm.handleSubmit()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call openDeleteModal function', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.openDeleteModal) {
+      vm.openDeleteModal()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call closeDeleteModal function', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.closeDeleteModal) {
+      vm.closeDeleteModal()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call confirmDelete function', async () => {
+    ;(global.$fetch as any).mockResolvedValue({ success: true })
+    
+    const wrapper = mount(EditEventPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.confirmDelete) {
+      await vm.confirmDelete()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
 })

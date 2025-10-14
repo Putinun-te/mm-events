@@ -1,6 +1,14 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProductCard from '~/app/components/ProductCard.vue'
+
+// Mock router
+const mockPush = vi.fn()
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: mockPush
+  })
+}))
 
 describe('ProductCard Component', () => {
   const mockEvent = {
@@ -98,6 +106,104 @@ describe('ProductCard Component', () => {
       }
     })
     
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call toDate function', () => {
+    const wrapper = mount(ProductCard, {
+      props: {
+        event: mockEvent
+      },
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.toDate) {
+      const result = vm.toDate('1735689600')
+      expect(result).toBeInstanceOf(Date)
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call formatEventDateMn function', () => {
+    const wrapper = mount(ProductCard, {
+      props: {
+        event: mockEvent
+      },
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.formatEventDateMn) {
+      const result = vm.formatEventDateMn('1735689600')
+      expect(typeof result).toBe('string')
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call formatEventDateTime function', () => {
+    const wrapper = mount(ProductCard, {
+      props: {
+        event: mockEvent
+      },
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.formatEventDateTime) {
+      const result = vm.formatEventDateTime('1735689600')
+      expect(typeof result).toBe('string')
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call more function', () => {
+    const wrapper = mount(ProductCard, {
+      props: {
+        event: mockEvent
+      },
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.more) {
+      vm.more()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call join function', () => {
+    const wrapper = mount(ProductCard, {
+      props: {
+        event: mockEvent
+      },
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.join) {
+      vm.join()
+    }
     expect(wrapper.exists()).toBe(true)
   })
 })

@@ -7,7 +7,8 @@ import AccountPage from '~/app/pages/AccountPage.vue'
 vi.mock('~/composables/useAuth', () => ({
   useAuth: () => ({
     loadFromStorage: vi.fn(),
-    clearAuth: vi.fn()
+    clearAuth: vi.fn(),
+    isLoggedIn: { value: true }
   })
 }))
 

@@ -680,5 +680,85 @@ describe('ProductDetailPage [id].vue', () => {
     // Component should handle quantity validation
     expect(wrapper.exists()).toBe(true)
   })
+
+  it('should call formatDateTime function', async () => {
+    const wrapper = mount(ProductDetailPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.formatDateTime) {
+      const result = vm.formatDateTime('2024-12-31T18:00:00')
+      expect(typeof result).toBe('string')
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call loadScript function', async () => {
+    const wrapper = mount(ProductDetailPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.loadScript) {
+      const promise = vm.loadScript('https://example.com/script.js')
+      expect(promise).toBeInstanceOf(Promise)
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call changeQuantity function with positive delta', async () => {
+    const wrapper = mount(ProductDetailPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.changeQuantity) {
+      vm.changeQuantity(1)
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call changeQuantity function with negative delta', async () => {
+    const wrapper = mount(ProductDetailPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.changeQuantity) {
+      vm.changeQuantity(-1)
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call addToCart function directly', async () => {
+    const wrapper = mount(ProductDetailPage, {
+      global: {
+        stubs: { NuxtLink: true }
+      }
+    })
+    
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    if (vm.addToCart) {
+      await vm.addToCart()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
 })
 

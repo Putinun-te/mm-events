@@ -89,7 +89,7 @@ describe('Auth API E2E Tests', () => {
         method: 'POST',
         url: `${apiUrl}/auth/login`,
         body: {
-          username: `loginuser${timestamp}`,
+          usernameOrEmail: `loginuser${timestamp}`,
           password: 'LoginPass123!'
         }
       }).then((response) => {
@@ -105,7 +105,7 @@ describe('Auth API E2E Tests', () => {
         method: 'POST',
         url: `${apiUrl}/auth/login`,
         body: {
-          username: `loginuser${timestamp}`,
+          usernameOrEmail: `loginuser${timestamp}`,
           password: 'WrongPassword123!'
         },
         failOnStatusCode: false
@@ -119,7 +119,7 @@ describe('Auth API E2E Tests', () => {
         method: 'POST',
         url: `${apiUrl}/auth/login`,
         body: {
-          username: 'nonexistentuser999999',
+          usernameOrEmail: 'nonexistentuser999999',
           password: 'password123'
         },
         failOnStatusCode: false

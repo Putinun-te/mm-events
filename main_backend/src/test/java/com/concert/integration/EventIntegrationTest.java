@@ -53,6 +53,7 @@ public class EventIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        // Delete in correct order due to foreign key constraints
         eventRepository.deleteAll();
         userRepository.deleteAll();
 

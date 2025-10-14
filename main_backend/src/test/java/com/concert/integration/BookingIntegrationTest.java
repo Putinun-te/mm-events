@@ -5,6 +5,7 @@ import com.concert.dto.CreateBookingRequest;
 import com.concert.dto.LoginRequest;
 import com.concert.model.User;
 import com.concert.repository.BookingRepository;
+import com.concert.repository.EventRepository;
 import com.concert.repository.UserRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +45,9 @@ public class BookingIntegrationTest {
     private BookingRepository bookingRepository;
 
     @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     private String jwtToken;
@@ -51,7 +55,9 @@ public class BookingIntegrationTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        // Delete in correct order due to foreign key constraints
         bookingRepository.deleteAll();
+        eventRepository.deleteAll();
         userRepository.deleteAll();
 
         // Create and save test user

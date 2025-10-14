@@ -8,7 +8,7 @@ Cypress.Commands.add('login', (username = 'testuser', password = 'password123') 
     method: 'POST',
     url: `${Cypress.env('apiUrl')}/auth/login`,
     body: {
-      username,
+      usernameOrEmail: username,
       password
     }
   }).then((response) => {

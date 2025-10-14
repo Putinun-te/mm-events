@@ -2,7 +2,7 @@ name: Backend E2E Tests (Cypress)
 
 on:
   push:
-    branches: [ main, BE-Tester, develop ]
+    branches: [ main, BE-Tester, Tester, develop ]
   pull_request:
     branches: [ main, develop ]
   workflow_dispatch:

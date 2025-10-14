@@ -2,7 +2,7 @@ name: Frontend E2E
 
 on:
   push:
-    branches: [ main, FE-Testing ]
+    branches: [ main, FE-Testing, Tester ]
   pull_request:
     branches: [ main ]
 

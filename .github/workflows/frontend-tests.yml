@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - FE-tester
+      - Tester
     paths:
       - 'main_frontend/concert1/**'
 

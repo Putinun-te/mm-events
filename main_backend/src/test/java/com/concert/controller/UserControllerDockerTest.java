@@ -54,7 +54,7 @@ class UserControllerDockerTest {
     private String jwtToken;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
         // Clean database
         userRepository.deleteAll();
         
@@ -67,6 +67,9 @@ class UserControllerDockerTest {
         testUser.setCreatedAt(LocalDateTime.now());
         userRepository.save(testUser);
 
+        // Wait for service to be ready
+        Thread.sleep(1000);
+
         // Get JWT token by logging in
         String loginUrl = "http://localhost:" + port + "/api/auth/login";
         String loginBody = "{\"usernameOrEmail\":\"testuser\",\"password\":\"password123\"}";
@@ -75,10 +78,28 @@ class UserControllerDockerTest {
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> loginRequest = new HttpEntity<>(loginBody, headers);
         
-        ResponseEntity<String> loginResponse = restTemplate.exchange(
-            loginUrl, HttpMethod.POST, loginRequest, String.class);
+        // Retry login with exponential backoff
+        int maxRetries = 3;
+        int retryDelay = 1000;
+        ResponseEntity<String> loginResponse = null;
+        
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                loginResponse = restTemplate.exchange(
+                    loginUrl, HttpMethod.POST, loginRequest, String.class);
+                if (loginResponse.getStatusCode() == HttpStatus.OK) {
+                    break;
+                }
+            } catch (Exception e) {
+                if (i == maxRetries - 1) {
+                    throw e;
+                }
+                Thread.sleep(retryDelay);
+                retryDelay *= 2;
+            }
+        }
             
-        if (loginResponse.getStatusCode() == HttpStatus.OK) {
+        if (loginResponse != null && loginResponse.getStatusCode() == HttpStatus.OK) {
             try {
                 String responseBody = loginResponse.getBody();
                 // Extract token from JSON response

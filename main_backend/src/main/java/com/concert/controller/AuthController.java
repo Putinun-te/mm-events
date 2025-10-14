@@ -40,17 +40,22 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             AuthResponse response = authService.login(loginRequest);
-            return ResponseEntity.ok(response);
-        } catch (RuntimeException e) {
-            if ("USER_NOT_FOUND".equals(e.getMessage())) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body(new AuthResponse("User not found"));
-            } else if ("INVALID_PASSWORD".equals(e.getMessage())) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(new AuthResponse("Invalid credentials"));
+            
+            // Check if login was successful by checking if token exists
+            if (response.getToken() != null) {
+                return ResponseEntity.ok(response);
             }
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new AuthResponse("Login failed: " + e.getMessage()));
+            
+            // Login failed - check the error message to determine status code
+            String message = response.getMessage();
+            if (message != null && message.contains("Invalid username/email or password!")) {
+                // For E2E tests: return 401 for invalid credentials
+                // Note: We can't distinguish between user-not-found and wrong-password from the message
+                // so we'll return 401 UNAUTHORIZED for any auth failure
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+            }
+            
+            return ResponseEntity.badRequest().body(response);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new AuthResponse("Login failed: " + e.getMessage()));

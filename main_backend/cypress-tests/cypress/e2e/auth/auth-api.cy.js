@@ -124,7 +124,7 @@ describe('Auth API E2E Tests', () => {
         },
         failOnStatusCode: false
       }).then((response) => {
-        expect(response.status).to.be.oneOf([401, 404])
+        expect(response.status).to.eq(401)
       })
     })
   })

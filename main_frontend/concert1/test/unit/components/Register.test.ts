@@ -6,9 +6,13 @@ import Register from '~/app/components/Register.vue'
 const mockFetch = vi.fn()
 ;(global as any).$fetch = mockFetch
 
+// Mock navigateTo
+;(global as any).navigateTo = vi.fn()
+
 describe('Register Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    mockFetch.mockReset()
     localStorage.clear()
   })
 
@@ -267,6 +271,306 @@ describe('Register Component', () => {
     
     await wrapper.find('form').trigger('submit.prevent')
     await wrapper.vm.$nextTick()
+  })
+
+  // Branch coverage tests for conditional logic
+  it('should prevent submit when already loading', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.isLoading = true
+    
+    await vm.handleSubmit()
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
+  it('should validate all fields are filled', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = ''
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    expect(vm.message).toBe('Please fill all fields')
+  })
+
+  it('should validate email format with regex', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'invalid-email'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    expect(vm.message).toBe('Please enter a valid email')
+  })
+
+  it('should validate password length >= 6', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = '12345'
+    
+    await vm.handleSubmit()
+    expect(vm.message).toBe('Password must be at least 6 characters')
+  })
+
+  it('should handle success with token in response', async () => {
+    mockFetch.mockResolvedValueOnce({
+      token: 'test-token-123',
+      message: 'Success'
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.isSuccess).toBe(true)
+    expect(vm.message).toContain('Registered successfully')
+  })
+
+  it('should handle success without message in response', async () => {
+    mockFetch.mockResolvedValueOnce({
+      userId: 123
+      // no message, no token
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.isSuccess).toBe(true)
+  })
+
+  it('should handle response with error message', async () => {
+    mockFetch.mockResolvedValueOnce({
+      message: 'Username already exists'
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.message).toBe('Username already exists')
+  })
+
+  it('should handle response with message field for error', async () => {
+    mockFetch.mockResolvedValueOnce({
+      message: 'Username already taken'
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.message).toBe('Username already taken')
+  })
+
+  it('should handle error with data.message', async () => {
+    mockFetch.mockRejectedValueOnce({
+      data: { message: 'Email already in use' }
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.message).toBe('Email already in use')
+  })
+
+  it('should handle error with response.data.message fallback', async () => {
+    mockFetch.mockRejectedValueOnce({
+      response: { data: { message: 'Server error' } }
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.message).toBe('Server error')
+  })
+
+  it('should handle error with just message property', async () => {
+    mockFetch.mockRejectedValueOnce({
+      message: 'Network timeout'
+    })
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.message).toBe('Network timeout')
+  })
+
+  it('should use default error message when no specific message', async () => {
+    mockFetch.mockRejectedValueOnce({})
+
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.username = 'testuser'
+    vm.email = 'test@test.com'
+    vm.password = 'password123'
+    
+    await vm.handleSubmit()
+    await wrapper.vm.$nextTick()
+    
+    expect(vm.message).toBe('Registration failed!')
+  })
+
+  it('should show success message with green background', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.isSuccess = true
+    vm.message = 'Success!'
+    await wrapper.vm.$nextTick()
+    
+    const messageDiv = wrapper.find('.bg-green-500')
+    expect(messageDiv.exists()).toBe(true)
+  })
+
+  it('should show error message with red background', async () => {
+    const wrapper = mount(Register, {
+      global: {
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    vm.isSuccess = false
+    vm.message = 'Error!'
+    await wrapper.vm.$nextTick()
+    
+    const messageDiv = wrapper.find('.bg-red-500')
+    expect(messageDiv.exists()).toBe(true)
   })
 })
 

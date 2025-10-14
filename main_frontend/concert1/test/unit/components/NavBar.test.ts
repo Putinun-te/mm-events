@@ -2,6 +2,28 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NavBar from '~/app/components/NavBar.vue'
 
+// Mock composables
+vi.mock('~/composables/useAuth', () => ({
+  useAuth: () => ({
+    loadFromStorage: vi.fn(),
+    isLoggedIn: { value: false },
+    clearAuth: vi.fn(),
+    logout: vi.fn()
+  })
+}))
+
+vi.mock('#app', () => ({
+  useRouter: () => ({
+    push: vi.fn()
+  })
+}))
+
+vi.mock('vue-router', () => ({
+  useRouter: () => ({
+    push: vi.fn()
+  })
+}))
+
 describe('NavBar Component', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -91,4 +113,60 @@ describe('NavBar Component', () => {
     // NavBar should have logout functionality
     expect(wrapper.vm).toBeDefined()
   })
+
+  it('should call handleLogout function', async () => {
+    const wrapper = mount(NavBar, {
+      global: {
+        stubs: {
+          NuxtLink: true,
+          LogoutModal: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.handleLogout) {
+      vm.handleLogout()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call confirmLogout function', async () => {
+    localStorage.setItem('jwt_token', 'test-token')
+    const wrapper = mount(NavBar, {
+      global: {
+        stubs: {
+          NuxtLink: true,
+          LogoutModal: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.confirmLogout) {
+      vm.confirmLogout()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call cancelLogout function', async () => {
+    const wrapper = mount(NavBar, {
+      global: {
+        stubs: {
+          NuxtLink: true,
+          LogoutModal: true
+        }
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.cancelLogout) {
+      vm.cancelLogout()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
 })
+

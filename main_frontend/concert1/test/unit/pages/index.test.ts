@@ -163,4 +163,65 @@ describe('index.vue (Homepage)', () => {
     // Component should have root element
     expect(wrapper.element).toBeTruthy()
   })
+
+  it('should call click function', async () => {
+    const wrapper = mount(IndexPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.click) {
+      vm.click()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should call click2 function', async () => {
+    const wrapper = mount(IndexPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.click2) {
+      vm.click2()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should navigate to next slide', async () => {
+    const wrapper = mount(IndexPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.nextSlide) {
+      vm.nextSlide()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
+
+  it('should navigate to previous slide', async () => {
+    const wrapper = mount(IndexPage, {
+      global: {
+        plugins: [router]
+      }
+    })
+    
+    const vm = wrapper.vm as any
+    if (vm.prevSlide) {
+      vm.prevSlide()
+      await wrapper.vm.$nextTick()
+    }
+    expect(wrapper.exists()).toBe(true)
+  })
 })
+

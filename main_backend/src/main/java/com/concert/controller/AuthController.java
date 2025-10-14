@@ -40,12 +40,17 @@ public class AuthController {
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest loginRequest) {
         try {
             AuthResponse response = authService.login(loginRequest);
-            
-            if (response.getToken() != null) {
-                return ResponseEntity.ok(response);
-            } else {
-                return ResponseEntity.badRequest().body(response);
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            if ("USER_NOT_FOUND".equals(e.getMessage())) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new AuthResponse("User not found"));
+            } else if ("INVALID_PASSWORD".equals(e.getMessage())) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new AuthResponse("Invalid credentials"));
             }
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(new AuthResponse("Login failed: " + e.getMessage()));
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new AuthResponse("Login failed: " + e.getMessage()));

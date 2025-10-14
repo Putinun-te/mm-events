@@ -64,13 +64,13 @@ public class AuthService {
         );
         
         if (userOptional.isEmpty()) {
-            return new AuthResponse("Invalid username/email or password!");
+            throw new RuntimeException("USER_NOT_FOUND");
         }
         
         User user = userOptional.get();
         
         if (!passwordEncoder.matches(loginRequest.getPassword(), user.getPassword())) {
-            return new AuthResponse("Invalid username/email or password!");
+            throw new RuntimeException("INVALID_PASSWORD");
         }
         
         // Generate JWT token

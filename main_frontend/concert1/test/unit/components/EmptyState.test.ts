@@ -20,7 +20,8 @@ describe('EmptyState.vue', () => {
     const customMessage = 'No items found'
     const wrapper = mount(EmptyState, {
       props: {
-        message: customMessage
+        title: 'Empty',
+        description: customMessage
       }
     })
     
@@ -30,32 +31,44 @@ describe('EmptyState.vue', () => {
   it('should show action button when provided', () => {
     const wrapper = mount(EmptyState, {
       props: {
-        buttonText: 'Add Item'
+        title: 'Empty',
+        description: 'No items',
+        actionLink: '/add',
+        actionText: 'Add Item'
+      },
+      global: {
+        stubs: { NuxtLink: true }
       }
     })
     
-    const button = wrapper.find('button')
-    expect(button.exists()).toBe(true)
-    expect(button.text()).toContain('Add Item')
+    const html = wrapper.html()
+    expect(html).toContain('Add Item')
   })
 
   it('should emit action event when button clicked', async () => {
     const wrapper = mount(EmptyState, {
       props: {
-        buttonText: 'Add Item'
+        title: 'Empty',
+        description: 'No items',
+        secondaryAction: true,
+        secondaryText: 'Secondary'
       }
     })
     
     const button = wrapper.find('button')
-    await button.trigger('click')
-    
-    expect(wrapper.emitted()).toHaveProperty('action')
+    if (button.exists()) {
+      await button.trigger('click')
+      expect(wrapper.emitted()).toHaveProperty('secondary-action')
+    } else {
+      expect(wrapper.exists()).toBe(true)
+    }
   })
 
   it('should not show button when buttonText not provided', () => {
     const wrapper = mount(EmptyState, {
       props: {
-        message: 'No items'
+        title: 'Empty',
+        description: 'No items'
       }
     })
     

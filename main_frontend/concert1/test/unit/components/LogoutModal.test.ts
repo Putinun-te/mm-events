@@ -10,17 +10,17 @@ describe('LogoutModal.vue', () => {
   it('should render logout modal', () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('should not display when isOpen is false', () => {
+  it('should not display when show is false', () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: false
+        show: false
       }
     })
     
@@ -28,10 +28,10 @@ describe('LogoutModal.vue', () => {
     expect(modal.exists()).toBe(false)
   })
 
-  it('should display when isOpen is true', () => {
+  it('should display when show is true', () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
@@ -41,7 +41,7 @@ describe('LogoutModal.vue', () => {
   it('should show logout confirmation message', () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
@@ -52,7 +52,7 @@ describe('LogoutModal.vue', () => {
   it('should emit confirm event when confirm button clicked', async () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
@@ -76,7 +76,7 @@ describe('LogoutModal.vue', () => {
   it('should emit cancel event when cancel button clicked', async () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
@@ -99,7 +99,7 @@ describe('LogoutModal.vue', () => {
   it('should emit close event when clicking outside', async () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
@@ -119,7 +119,7 @@ describe('LogoutModal.vue', () => {
   it('should have confirm and cancel buttons', () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
@@ -130,7 +130,7 @@ describe('LogoutModal.vue', () => {
   it('should handle ESC key press to close', async () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: true
+        show: true
       }
     })
     
@@ -141,19 +141,19 @@ describe('LogoutModal.vue', () => {
     expect(emitted.close || emitted.cancel).toBeTruthy()
   })
 
-  it('should toggle visibility based on isOpen prop', async () => {
+  it('should toggle visibility based on show prop', async () => {
     const wrapper = mount(LogoutModal, {
       props: {
-        isOpen: false
+        show: false
       }
     })
     
     expect(wrapper.html()).toBeTruthy()
     
-    await wrapper.setProps({ isOpen: true })
+    await wrapper.setProps({ show: true })
     expect(wrapper.html()).toBeTruthy()
     
-    await wrapper.setProps({ isOpen: false })
+    await wrapper.setProps({ show: false })
     expect(wrapper.html()).toBeTruthy()
   })
 })

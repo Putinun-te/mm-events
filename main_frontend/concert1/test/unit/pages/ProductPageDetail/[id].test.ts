@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { createRouter, createMemoryHistory } from 'vue-router'
 import ProductDetailPage from '~/app/pages/ProductPageDetail/[id].vue'
 
 // Mock composables
@@ -29,26 +28,41 @@ vi.mock('#app', () => ({
   useRouter: () => ({
     push: vi.fn(),
     back: vi.fn()
-  })
+  }),
+  navigateTo: vi.fn()
 }))
+
+// Mock vue-router's useRoute as well for imports
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual('vue-router')
+  return {
+    ...actual,
+    useRoute: () => ({
+      params: { id: '123' }
+    }),
+    useRouter: () => ({
+      push: vi.fn(),
+      back: vi.fn(),
+      currentRoute: { value: { params: { id: '123' } } }
+    }),
+    createRouter: actual.createRouter,
+    createMemoryHistory: actual.createMemoryHistory
+  }
+})
 
 // Mock $fetch
 global.$fetch = vi.fn()
 
-describe('ProductDetailPage [id].vue', () => {
-  let router: any
+// Mock useRoute as a global function (Nuxt auto-import)
+global.useRoute = vi.fn(() => ({
+  params: { id: '123' },
+  query: {},
+  path: '/product/123'
+}))
 
+describe('ProductDetailPage [id].vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    
-    router = createRouter({
-      history: createMemoryHistory(),
-      routes: [
-        { path: '/product/:id', component: ProductDetailPage },
-        { path: '/LoginPage', component: { template: '<div>Login</div>' } },
-        { path: '/mybookingsPage', component: { template: '<div>Bookings</div>' } }
-      ]
-    })
     
     localStorage.clear()
     sessionStorage.clear()
@@ -74,7 +88,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should render product detail page', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -87,7 +100,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should show loading state initially', () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -101,7 +113,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should fetch event data on mount', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -117,7 +128,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should display event title', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -134,7 +144,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should compute total price correctly', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -150,7 +159,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should handle quantity changes', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -167,7 +175,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should calculate spots remaining', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -193,7 +200,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -209,7 +215,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should format dates correctly', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -226,7 +231,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should display event location', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -243,7 +247,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should show ticket price', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -260,7 +263,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should display participants count', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -279,7 +281,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -303,7 +304,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -319,7 +319,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -345,7 +344,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -361,7 +359,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should validate quantity against available seats', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -380,7 +377,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -404,7 +400,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -430,7 +425,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -446,7 +440,6 @@ describe('ProductDetailPage [id].vue', () => {
   it('should display event description', async () => {
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -468,7 +461,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -488,7 +480,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -504,7 +495,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -520,7 +510,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -536,7 +525,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -553,7 +541,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }
@@ -569,7 +556,6 @@ describe('ProductDetailPage [id].vue', () => {
     
     const wrapper = mount(ProductDetailPage, {
       global: {
-        plugins: [router],
         stubs: {
           NuxtLink: true
         }

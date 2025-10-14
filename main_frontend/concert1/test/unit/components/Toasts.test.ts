@@ -6,6 +6,9 @@ import { useToast } from '~/composables/useToast'
 describe('Toasts.vue', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    // Clear all toasts before each test
+    const { dismissAll } = useToast()
+    dismissAll()
   })
 
   it('should render toasts component', () => {

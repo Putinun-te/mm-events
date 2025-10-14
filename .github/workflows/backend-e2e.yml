@@ -78,7 +78,7 @@ jobs:
 
       - name: Install Cypress dependencies
         working-directory: ./main_backend/cypress-tests
-        run: npm ci
+        run: npm install
 
       - name: Run Cypress tests
         working-directory: ./main_backend/cypress-tests

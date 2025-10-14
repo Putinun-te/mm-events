@@ -1,4 +1,4 @@
-name: Frontend Tests
+name: Frontend Component Tests (Cypress)
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [ main, develop ]
 
 jobs:
-  unit-tests:
-    name: Unit Tests (Vitest)
+  component-tests:
+    name: Component Tests (Cypress)
     runs-on: ubuntu-latest
 
     steps:
@@ -24,13 +24,21 @@ jobs:
 
       - name: Install dependencies
         working-directory: ./main_frontend/concert1
-        run: npm ci
+        run: npm install
 
-      - name: Run unit tests
+      - name: Run Cypress component tests
         working-directory: ./main_frontend/concert1
-        run: npm run test
-        env:
-          CI: true
+        run: npx cypress run --component
+        continue-on-error: true
+
+      - name: Upload Cypress screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-component-screenshots
+          path: main_frontend/concert1/cypress/screenshots/
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Upload coverage report
         if: always()

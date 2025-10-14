@@ -671,5 +671,27 @@ describe('ProfilePage.vue', () => {
     // Error handled
     expect(wrapper.exists()).toBe(true)
   })
+
+  // Branch coverage test - testing the ternary: saved ? JSON.parse(saved) : null  
+  it('should set profile to null when localStorage has no profile_data', async () => {
+    localStorage.removeItem('profile_data')
+    localStorage.setItem('jwt_token', 'test-token')
+
+    const wrapper = mount(ProfilePage, {
+      global: {
+        plugins: [router],
+        stubs: {
+          NuxtLink: true
+        }
+      }
+    })
+
+    await new Promise(resolve => setTimeout(resolve, 150))
+
+    const vm = wrapper.vm as any
+    // The profile should be null when no data in localStorage
+    expect(vm.profile).toBeNull()
+  })
 })
+
 

@@ -1,0 +1,93 @@
+name: Backend E2E Tests
+
+on:
+  push:
+    branches: [ main, BE-Tester, Tester, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  e2e-tests:
+    name: E2E Tests (Cypress)
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: concert_db
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -ppassword"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main_backend/cypress-tests/package-lock.json
+
+      - name: Build backend
+        working-directory: ./main_backend
+        run: ./mvnw clean package -DskipTests -B
+
+      - name: Start backend server
+        working-directory: ./main_backend
+        run: |
+          ./mvnw spring-boot:run &
+          echo $! > backend.pid
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: password
+
+      - name: Wait for backend
+        run: |
+          for i in {1..60}; do
+            if curl -f http://localhost:8080/actuator/health; then
+              echo "Backend is ready!"
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Install Cypress dependencies
+        working-directory: ./main_backend/cypress-tests
+        run: npm ci
+
+      - name: Run Cypress tests
+        working-directory: ./main_backend/cypress-tests
+        run: npx cypress run
+        continue-on-error: true
+
+      - name: Upload Cypress results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-results
+          path: main_backend/cypress-tests/cypress/screenshots/
+          retention-days: 7
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f main_backend/backend.pid ]; then
+            kill $(cat main_backend/backend.pid) || true
+          fi

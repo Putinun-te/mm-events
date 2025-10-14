@@ -40,8 +40,16 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: main_backend/cypress-tests/package-lock.json
+
+      - name: Wait for MySQL
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h"127.0.0.1" -P3306 -uroot -ppassword --silent; then
+              echo "MySQL is ready!"
+              break
+            fi
+            sleep 2
+          done
 
       - name: Build backend
         working-directory: ./main_backend

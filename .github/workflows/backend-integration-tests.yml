@@ -66,6 +66,14 @@ jobs:
         env:
           SPRING_PROFILES_ACTIVE: test
 
+      - name: Run integration tests
+        working-directory: ./main_backend
+        run: |
+          ./mvnw verify -P integration-tests -B
+        env:
+          SPRING_PROFILES_ACTIVE: test
+        continue-on-error: false
+
       - name: Check coverage threshold (80%)
         working-directory: ./main_backend
         run: |
@@ -163,7 +171,7 @@ jobs:
       - name: Run unit tests only
         working-directory: ./main_backend
         run: |
-          ./mvnw test -Dtest="*UnitTest,*ServiceTest" -B
+          ./mvnw test -P unit-tests -B
         env:
           SPRING_PROFILES_ACTIVE: test
 

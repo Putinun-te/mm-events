@@ -1,6 +1,7 @@
 package com.concert.config;
 
 import com.concert.security.JwtAuthenticationFilter;
+import com.concert.security.JwtAuthenticationEntryPoint;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -24,6 +25,9 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    @Autowired
+    private JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -34,11 +38,16 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // ใช้ stateless session เพราะ JWT
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            // Custom authentication entry point for 401 responses
+            .exceptionHandling(exception -> exception
+                .authenticationEntryPoint(jwtAuthenticationEntryPoint)
+            )
             // กำหนดสิทธิ์การเข้าถึงแต่ละ endpoint
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers("/api/auth/register").permitAll()
                     .requestMatchers("/api/auth/login").permitAll()
-                    .requestMatchers("/api/auth/test").permitAll()
+                    // /api/auth/test requires authentication for E2E tests
+                    .requestMatchers("/api/events/me").authenticated()  // Requires auth
                     .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/", "/api/events/**").permitAll()
                     .requestMatchers("/h2-console/**").permitAll()
                     .requestMatchers("/error").permitAll()

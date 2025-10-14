@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -31,6 +32,7 @@ import static org.hamcrest.Matchers.*;
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
 public class EventIntegrationTest {
 
     @Autowired
@@ -50,6 +52,7 @@ public class EventIntegrationTest {
 
     private String jwtToken;
     private User testUser;
+    private String uniqueUsername;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -57,17 +60,20 @@ public class EventIntegrationTest {
         eventRepository.deleteAll();
         userRepository.deleteAll();
 
+        // Use unique username to avoid conflicts
+        uniqueUsername = "testuser" + System.currentTimeMillis();
+        
         // Create and save test user
         testUser = new User();
-        testUser.setUsername("testuser");
-        testUser.setEmail("test@example.com");
+        testUser.setUsername(uniqueUsername);
+        testUser.setEmail("test" + System.currentTimeMillis() + "@example.com");
         testUser.setName("Test User");
         testUser.setPassword(passwordEncoder.encode("password123"));
         testUser = userRepository.save(testUser);
 
         // Login to get JWT token
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsernameOrEmail("testuser");
+        loginRequest.setUsernameOrEmail(uniqueUsername);
         loginRequest.setPassword("password123");
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")

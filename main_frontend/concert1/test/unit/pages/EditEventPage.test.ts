@@ -303,4 +303,310 @@ describe('EditEventPage', () => {
     }
     expect(wrapper.exists()).toBe(true)
   })
+
+  // Branch coverage for validate()
+  it('should return error when title is empty', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = ''
+    const result = vm.validate()
+    expect(result).toBe('Please fill in the event name.')
+  })
+
+  it('should return error when description is empty', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = ''
+    const result = vm.validate()
+    expect(result).toBe('Please add a description.')
+  })
+
+  it('should return error when dateStart is missing', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = ''
+    const result = vm.validate()
+    expect(result).toBe('Please select a start date and time.')
+  })
+
+  it('should return error when timeStart is missing', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = '2024-12-31'
+    vm.form.timeStart = ''
+    const result = vm.validate()
+    expect(result).toBe('Please select a start date and time.')
+  })
+
+  it('should return error when dateEnd is missing', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = '2024-12-31'
+    vm.form.timeStart = '18:00'
+    vm.form.dateEnd = ''
+    const result = vm.validate()
+    expect(result).toBe('Please select an end date and time.')
+  })
+
+  it('should return error when timeEnd is missing', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = '2024-12-31'
+    vm.form.timeStart = '18:00'
+    vm.form.dateEnd = '2024-12-31'
+    vm.form.timeEnd = ''
+    const result = vm.validate()
+    expect(result).toBe('Please select an end date and time.')
+  })
+
+  it('should return error when start date is invalid', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = 'invalid'
+    vm.form.timeStart = '18:00'
+    vm.form.dateEnd = '2024-12-31'
+    vm.form.timeEnd = '23:00'
+    const result = vm.validate()
+    expect(result).toBe('Invalid start/end date.')
+  })
+
+  it('should return error when end time is before start time', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = '2024-12-31'
+    vm.form.timeStart = '23:00'
+    vm.form.dateEnd = '2024-12-31'
+    vm.form.timeEnd = '18:00'
+    const result = vm.validate()
+    expect(result).toBe('End time must be after start time.')
+  })
+
+  it('should return null when validation passes', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = '2024-12-31'
+    vm.form.timeStart = '18:00'
+    vm.form.dateEnd = '2024-12-31'
+    vm.form.timeEnd = '23:00'
+    const result = vm.validate()
+    expect(result).toBeNull()
+  })
+
+  // Branch coverage for handleSubmit()
+  it('should not submit when validation fails', async () => {
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = ''
+    await vm.handleSubmit()
+    expect(global.$fetch).not.toHaveBeenCalledWith(expect.stringContaining('/api/events/json/'), expect.objectContaining({ method: 'PUT' }))
+  })
+
+  it('should handle update error with statusMessage', async () => {
+    ;(global.$fetch as any).mockRejectedValue({ statusMessage: 'Server error' })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = '2024-12-31'
+    vm.form.timeStart = '18:00'
+    vm.form.dateEnd = '2024-12-31'
+    vm.form.timeEnd = '23:00'
+    await vm.handleSubmit()
+    expect(vm.submitting).toBe(false)
+  })
+
+  it('should handle update error with data.message', async () => {
+    ;(global.$fetch as any).mockRejectedValue({ data: { message: 'Data error' } })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    vm.form.title = 'Test Event'
+    vm.form.description = 'Test Description'
+    vm.form.dateStart = '2024-12-31'
+    vm.form.timeStart = '18:00'
+    vm.form.dateEnd = '2024-12-31'
+    vm.form.timeEnd = '23:00'
+    await vm.handleSubmit()
+    expect(vm.submitting).toBe(false)
+  })
+
+  // Branch coverage for confirmDelete()
+  it('should handle delete error with statusMessage', async () => {
+    ;(global.$fetch as any).mockRejectedValue({ statusMessage: 'Delete error' })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    await vm.confirmDelete()
+    expect(vm.showDeleteModal).toBe(false)
+  })
+
+  it('should handle delete error with data.message', async () => {
+    ;(global.$fetch as any).mockRejectedValue({ data: { message: 'Cannot delete' } })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 100))
+    const vm = wrapper.vm as any
+    await vm.confirmDelete()
+    expect(vm.showDeleteModal).toBe(false)
+  })
+
+  // Branch coverage for loadEventData()
+  it('should handle event with name instead of title', async () => {
+    ;(global.$fetch as any).mockResolvedValue({
+      id: 123,
+      name: 'Event Name',
+      description: 'Test',
+      startDate: '2024-12-31T18:00:00',
+      endDate: '2024-12-31T23:00:00'
+    })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 150))
+    const vm = wrapper.vm as any
+    expect(vm.form.title).toBe('Event Name')
+  })
+
+  it('should handle event with personlimit instead of personLimit', async () => {
+    ;(global.$fetch as any).mockResolvedValue({
+      id: 123,
+      title: 'Test',
+      description: 'Test',
+      personlimit: 50,
+      startDate: '2024-12-31T18:00:00',
+      endDate: '2024-12-31T23:00:00'
+    })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 150))
+    const vm = wrapper.vm as any
+    expect(vm.form.personLimit).toBe(50)
+  })
+
+  it('should handle event with datestart instead of startDate', async () => {
+    ;(global.$fetch as any).mockResolvedValue({
+      id: 123,
+      title: 'Test',
+      description: 'Test',
+      datestart: '2024-12-31T18:00:00',
+      dateend: '2024-12-31T23:00:00'
+    })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 150))
+    const vm = wrapper.vm as any
+    expect(vm.form.dateStart).toBeTruthy()
+  })
+
+  it('should handle null startDate', async () => {
+    ;(global.$fetch as any).mockResolvedValue({
+      id: 123,
+      title: 'Test',
+      description: 'Test',
+      startDate: null,
+      endDate: null
+    })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 150))
+    const vm = wrapper.vm as any
+    expect(vm.form.dateStart).toBe('')
+  })
+
+  it('should handle null endDate', async () => {
+    ;(global.$fetch as any).mockResolvedValue({
+      id: 123,
+      title: 'Test',
+      description: 'Test',
+      startDate: '2024-12-31T18:00:00',
+      endDate: null
+    })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 150))
+    const vm = wrapper.vm as any
+    expect(vm.form.dateEnd).toBe('')
+  })
+
+  it('should handle numeric timestamp for startDate', async () => {
+    ;(global.$fetch as any).mockResolvedValue({
+      id: 123,
+      title: 'Test',
+      description: 'Test',
+      startDate: 1704038400,
+      endDate: 1704056400
+    })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 150))
+    const vm = wrapper.vm as any
+    expect(vm.form.dateStart).toBeTruthy()
+  })
+
+  it('should handle load error with data.message', async () => {
+    ;(global.$fetch as any).mockRejectedValue({ data: { message: 'Load error' } })
+    const wrapper = mount(EditEventPage, {
+      global: { stubs: { NuxtLink: true } }
+    })
+    await new Promise(resolve => setTimeout(resolve, 150))
+    expect(mockPush).toHaveBeenCalledWith('/MyEventsPage')
+  })
 })

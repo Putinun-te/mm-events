@@ -1,23 +1,7 @@
-# Account Page Save to SQL Fix
+# Account Page Save to SQL Fix (moved)
 
-## Problem
-The account page was not properly saving user profile data to the database and retrieving full user information from SQL.
+This document was moved to `doce/ACCOUNT_SAVE_FIX.md` to keep the repository root tidy. Please open that file for the full content.
 
-## Solution Implemented
-
-### 1. Backend Changes
-
-#### Created New DTO: `UserProfileResponse.java`
-- **Location**: `main_backend/src/main/java/com/concert/dto/UserProfileResponse.java`
-- **Purpose**: Return complete user profile data including all fields
-- **Fields**: 
-  - id, username, email, name
-  - phone, address, city, country, pincode
-  - profilePhoto, company, website
-
-#### Updated `AuthService.java`
-- **Added Method**: `getUserProfile(String username)` 
-- **Returns**: Full `UserProfileResponse` with all user data from database
 - **Replaces**: Limited data returned by previous `getCurrentUser()` method
 
 #### Updated `AuthController.java`

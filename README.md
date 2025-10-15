@@ -10,13 +10,16 @@ docker compose up -d
 ```
 
 **Access Points:**
-- 🌐 **Frontend:** http://localhost:3000/concert/
-- 🔧 **Backend API:** http://localhost:8080
-- 🗄️ **MySQL:** localhost:3306
 
-### Default Test Account
-```
-Email: john@example.com
+# Concert Project
+
+This repository contains the backend (Spring Boot) and frontend (Nuxt 4) for the Concert application.
+
+- Backend: `main_backend/`
+- Frontend: `main_frontend/concert1/`
+
+Documentation has been consolidated into the `doce/` folder. See `doce/INDEX.md` for an index of moved documents.
+
 Password: password123
 ```
 

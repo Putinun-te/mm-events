@@ -180,4 +180,90 @@ describe('useUnauthorizedHandler', () => {
       expect(handleApiError(notFoundError)).toBe(false)
     })
   })
+
+  describe('Additional Branch Coverage', () => {
+    it('should handle 401 from response.status', () => {
+      const { isUnauthorizedError } = useUnauthorizedHandler()
+      expect(isUnauthorizedError({ response: { status: 401 } })).toBe(true)
+    })
+
+    it('should handle error with null status', () => {
+      const { isUnauthorizedError } = useUnauthorizedHandler()
+      expect(isUnauthorizedError({ statusCode: null })).toBe(false)
+    })
+
+    it('should handle error with statusMessage', () => {
+      const { handleApiError } = useUnauthorizedHandler()
+      const error = { statusCode: 401, statusMessage: 'Unauthorized Access' }
+      expect(handleApiError(error, '/test')).toBe(true)
+      expect(localStorage.getItem('redirect_after_login')).toBe('/test')
+    })
+
+    it('should handle error with data.message', () => {
+      const { handleApiError } = useUnauthorizedHandler()
+      const error = { statusCode: 403, data: { message: 'Access Denied' } }
+      expect(handleApiError(error, '/admin')).toBe(true)
+      expect(localStorage.getItem('redirect_after_login')).toBe('/admin')
+    })
+
+    it('should handle error with only message property', () => {
+      const { handleApiError } = useUnauthorizedHandler()
+      const error = { statusCode: 401, message: 'Token invalid' }
+      expect(handleApiError(error)).toBe(true)
+    })
+
+    it('should handle error without any message properties', () => {
+      const { handleApiError } = useUnauthorizedHandler()
+      const error = { statusCode: 401 }
+      expect(handleApiError(error)).toBe(true)
+    })
+
+    it('should not store redirect path when currentPath is undefined', () => {
+      const { handleApiError } = useUnauthorizedHandler()
+      localStorage.clear()
+      const error = { statusCode: 401 }
+      handleApiError(error)
+      expect(localStorage.getItem('redirect_after_login')).toBeNull()
+    })
+
+    it('should not store redirect path when currentPath is empty', () => {
+      const { handleApiError } = useUnauthorizedHandler()
+      localStorage.clear()
+      const error = { statusCode: 401 }
+      handleApiError(error, '')
+      // Empty string is falsy, so it won't be stored
+      expect(localStorage.getItem('redirect_after_login')).toBeNull()
+    })
+
+    it('should handle handleUnauthorized with showMessage=false', () => {
+      const { handleUnauthorized } = useUnauthorizedHandler()
+      localStorage.clear()
+      handleUnauthorized('Test message', '/test-path', false)
+      // Should not show toast message but should still redirect
+      expect(localStorage.getItem('redirect_after_login')).toBe('/test-path')
+    })
+
+    it('should handle handleUnauthorized with showMessage=true (default)', () => {
+      const { handleUnauthorized } = useUnauthorizedHandler()
+      localStorage.clear()
+      handleUnauthorized('Test message', '/test-path')
+      // Default showMessage is true
+      expect(localStorage.getItem('redirect_after_login')).toBe('/test-path')
+    })
+
+    it('should handle error with 0 status code', () => {
+      const { isUnauthorizedError } = useUnauthorizedHandler()
+      expect(isUnauthorizedError({ statusCode: 0 })).toBe(false)
+    })
+
+    it('should handle error with negative status code', () => {
+      const { isUnauthorizedError } = useUnauthorizedHandler()
+      expect(isUnauthorizedError({ statusCode: -1 })).toBe(false)
+    })
+
+    it('should handle error with string status code', () => {
+      const { isUnauthorizedError } = useUnauthorizedHandler()
+      expect(isUnauthorizedError({ statusCode: '401' })).toBe(false)
+    })
+  })
 })

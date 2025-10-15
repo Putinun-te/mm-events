@@ -1,15 +1,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import MyEventsPage from '~/app/pages/MyEventsPage.vue'
+
+// Create mock functions at module level
+const mockLoadFromStorage = vi.fn()
+const mockHandleApiError = vi.fn()
+const mockPush = vi.fn()
 
 // Mock composables
 vi.mock('~/composables/useAuth', () => ({
   useAuth: () => ({
-    loadFromStorage: vi.fn(),
+    loadFromStorage: mockLoadFromStorage,
     isLoggedIn: { value: true },
     user: { value: { token: 'test-token', id: 1, name: 'Test User' } },
     logout: vi.fn()
+  })
+}))
+
+vi.mock('~/composables/useUnauthorizedHandler', () => ({
+  useUnauthorizedHandler: () => ({
+    handleApiError: mockHandleApiError
   })
 }))
 
@@ -24,7 +35,7 @@ vi.mock('~/composables/useToast', () => ({
 
 vi.mock('#app', () => ({
   useRouter: () => ({
-    push: vi.fn(),
+    push: mockPush,
     back: vi.fn()
   })
 }))
@@ -36,6 +47,10 @@ describe('MyEventsPage.vue', () => {
 
   beforeEach(() => {
     vi.clearAllMocks()
+    mockLoadFromStorage.mockClear()
+    mockHandleApiError.mockClear()
+    mockPush.mockClear()
+    mockHandleApiError.mockReturnValue(false) // Default to not handling error
     
     router = createRouter({
       history: createMemoryHistory(),
@@ -707,6 +722,177 @@ describe('MyEventsPage.vue', () => {
     // Default error message used
     expect(wrapper.exists()).toBe(true)
   })
+
+  // Branch coverage tests for toEpochSeconds function
+  it('should return null when dateLike is null', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const result = vm.toEpochSeconds(null)
+    expect(result).toBeNull()
+  })
+
+  it('should return number directly when dateLike is a number', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const result = vm.toEpochSeconds(1609459200)
+    expect(result).toBe(1609459200)
+  })
+
+  it('should convert string date to epoch seconds', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const result = vm.toEpochSeconds('2024-01-01T00:00:00')
+    expect(result).toBeGreaterThan(0)
+  })
+
+  it('should return null for invalid string date', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const result = vm.toEpochSeconds('invalid-date')
+    expect(result).toBeNull()
+  })
+
+  it('should return null for non-string non-number types', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const result = vm.toEpochSeconds({})
+    expect(result).toBeNull()
+  })
+
+  // Branch coverage tests for formatRange function
+  it('should return "Schedule coming soon" when startSec is null', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const event = { datestart: null, startDate: null }
+    const result = vm.formatRange(event)
+    expect(result).toBe('Schedule coming soon')
+  })
+
+  it('should use startDate when datestart is missing', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const event = { startDate: '2024-12-31T18:00:00' }
+    const result = vm.formatRange(event)
+    expect(result).toContain('Dec')
+  })
+
+  it('should use endDate when dateend is missing', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const event = { 
+      startDate: '2024-12-31T18:00:00',
+      endDate: '2024-12-31T23:00:00'
+    }
+    const result = vm.formatRange(event)
+    expect(result).toContain('|')
+  })
+
+  it('should fall back to startSec when endSec is null', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const event = { 
+      startDate: '2024-12-31T18:00:00',
+      endDate: null,
+      dateend: null
+    }
+    const result = vm.formatRange(event)
+    expect(result).toContain('Dec')
+    expect(result).toContain('|')
+  })
+
+  it('should format same day events with single date', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const event = { 
+      startDate: '2024-12-31T18:00:00',
+      endDate: '2024-12-31T23:00:00'
+    }
+    const result = vm.formatRange(event)
+    // Should not have date range separator when same day
+    const parts = result.split('|')
+    expect(parts.length).toBe(2)
+  })
+
+  it('should format multi-day events with date range', () => {
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    const event = { 
+      startDate: '2024-12-31T18:00:00',
+      endDate: '2025-01-01T23:00:00'
+    }
+    const result = vm.formatRange(event)
+    expect(result).toContain('-')
+    expect(result).toContain('|')
+  })
+
+  // Branch coverage for fetchEvents  
+  it('should return early when token is missing', async () => {
+    localStorage.clear()
+    sessionStorage.clear()
+    ;(global.$fetch as any).mockResolvedValue([])
+    
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    const vm = wrapper.vm as any
+    // Override user token to null
+    vm.user = { value: null }
+    
+    await vm.fetchEvents()
+    await wrapper.vm.$nextTick()
+    
+    // $fetch should not be called
+    expect(global.$fetch).not.toHaveBeenCalled()
+  })
+
+  it('should convert non-array response to empty array', async () => {
+    ;(global.$fetch as any).mockResolvedValue({ events: [] })
+    
+    const wrapper = mount(MyEventsPage, {
+      global: { plugins: [router], stubs: { NuxtLink: true } }
+    })
+    
+    await flushPromises()
+    
+    const vm = wrapper.vm as any
+    expect(Array.isArray(vm.events)).toBe(true)
+  })
 })
+
+
 
 

@@ -1,3 +1,74 @@
+# ========================================
+# Build & Test Output
+# ========================================
+main_backend/target/
 coverage/
+*.log
+*.class
 
-# Ignore backend build output\nmain_backend/target/
+# ========================================
+# IDE & Editor
+# ========================================
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+.DS_Store
+
+# ========================================
+# History & Cache
+# ========================================
+.history/
+.cache/
+*.cache
+
+# ========================================
+# OS Files
+# ========================================
+Thumbs.db
+desktop.ini
+
+# ========================================
+# Environment & Secrets
+# ========================================
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+
+# ========================================
+# Node.js
+# ========================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn-integrity
+
+# ========================================
+# Java & Maven
+# ========================================
+*.jar
+*.war
+*.ear
+*.zip
+*.tar.gz
+*.rar
+.mvn/wrapper/maven-wrapper.jar
+
+# ========================================
+# Docker
+# ========================================
+docker-compose.override.yml
+
+# ========================================
+# Temporary Files
+# ========================================
+tmp/
+temp/
+*.tmp
+*.bak

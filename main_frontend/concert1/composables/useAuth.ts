@@ -1,66 +1,75 @@
-// Authentication composable for managing user state
-import { ref, computed, readonly } from 'vue'
+import { ref, computed } from 'vue'
 
-const user = ref<any>(null)
-const token = ref<string | null>(null)
+// Singleton state - shared across all instances
+let token = ref<string | null>(null)
+let profile = ref<any>(null)
 
-export const useAuth = () => {
-  // Initialize from localStorage if available (client-side only)
-  if (typeof window !== 'undefined') {
-    const storedToken = localStorage.getItem('jwt_token')
-    const storedUsername = localStorage.getItem('username')
-    const storedEmail = localStorage.getItem('user_email')
+export function useAuth() {
+  const isLoggedIn = computed(() => !!token.value)
+
+  const loadFromStorage = () => {
+    const localToken = localStorage.getItem('jwt_token')
+    const sessionToken = sessionStorage.getItem('jwt_token')
+    token.value = localToken || sessionToken || null
     
-    if (storedToken && storedUsername && storedEmail) {
-      token.value = storedToken
-      user.value = {
-        username: storedUsername,
-        email: storedEmail
+    if (token.value) {
+      const savedProfile = localStorage.getItem('profile_data')
+      if (savedProfile) {
+        try {
+          profile.value = JSON.parse(savedProfile)
+        } catch (e) {
+          profile.value = null
+        }
       }
     }
   }
 
-  const isAuthenticated = computed(() => !!token.value)
-
-  const setAuth = (authData: any) => {
-    user.value = {
-      username: authData.username,
-      email: authData.email
-    }
-    token.value = authData.token
-    
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('jwt_token', authData.token)
-      localStorage.setItem('username', authData.username)
-      localStorage.setItem('user_email', authData.email)
+  const setToken = (newToken: string, rememberMe: boolean = false) => {
+    token.value = newToken
+    if (rememberMe) {
+      sessionStorage.setItem('jwt_token', newToken)
+    } else {
+      localStorage.setItem('jwt_token', newToken)
     }
   }
 
-  const clearAuth = () => {
-    user.value = null
-    token.value = null
-    
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('jwt_token')
-      localStorage.removeItem('username')
-      localStorage.removeItem('user_email')
+  const getToken = (): string | null => {
+    return token.value || localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token') || null
+  }
+
+  const setProfile = (profileData: any) => {
+    profile.value = profileData
+    localStorage.setItem('profile_data', JSON.stringify(profileData))
+  }
+
+  const getProfile = (): any | null => {
+    if (profile.value) return profile.value
+    const savedProfile = localStorage.getItem('profile_data')
+    if (!savedProfile) return null
+    try {
+      return JSON.parse(savedProfile)
+    } catch (e) {
+      return null
     }
   }
 
   const logout = () => {
-    clearAuth()
-    // Redirect to login page or home
-    if (typeof window !== 'undefined') {
-      window.location.href = '/concert/'
-    }
+    token.value = null
+    profile.value = null
+    localStorage.removeItem('jwt_token')
+    sessionStorage.removeItem('jwt_token')
+    localStorage.removeItem('profile_data')
   }
 
   return {
-    user: readonly(user),
-    token: readonly(token),
-    isAuthenticated,
-    setAuth,
-    clearAuth,
+    isLoggedIn,
+    token,
+    profile,
+    loadFromStorage,
+    setToken,
+    getToken,
+    setProfile,
+    getProfile,
     logout
   }
 }

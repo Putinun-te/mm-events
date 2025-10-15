@@ -1,0 +1,534 @@
+
+> test:coverage
+> vitest run --coverage
+
+
+[1m[46m RUN [49m[22m [36mv3.2.4 [39m[90mC:/Users/ASUS/OneDrive/Documents/MU/ITDS323/pj/develop/main_frontend/concert1[39m
+      [2mCoverage enabled with [22m[33mv8[39m
+
+[@vue/compiler-sfc] `defineProps` is a compiler macro and no longer needs to be imported.
+
+[@vue/compiler-sfc] `defineEmits` is a compiler macro and no longer needs to be imported.
+
+ [32mΓ£ô[39m test/unit/composables/useAuth.app.test.ts [2m([22m[2m17 tests[22m[2m)[22m[32m 7[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/ProductFilterSeclection.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 47[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/RegisterPage.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 53[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/layouts/default.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/ProductTag.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 66[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/CartEach.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 69[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/SideSearchBar.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 61[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/LoginPage.test.ts [2m([22m[2m2 tests[22m[2m)[22m[32m 46[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/AboutUS.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/MapTestingPage.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 45[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/CategoriesTop.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 44[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/CartPage.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 90[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/EventCardSkeleton.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 48[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/DatabasePage.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 58[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/EmptyState.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 88[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/NavBar.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 84[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/Register.test.ts [2m([22m[2m7 tests[22m[2m)[22m[32m 106[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/ProductCard.test.ts [2m([22m[2m5 tests[22m[2m)[22m[32m 78[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/Login.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 118[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/LogoutModal.test.ts [2m([22m[2m10 tests[22m[2m)[22m[32m 140[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/CreateEventPage.test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 468[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/Toasts.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 403[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/index.test.ts [2m([22m[2m12 tests[22m[2m)[22m[33m 556[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/components/DatabaseInfo.test.ts [2m([22m[2m18 tests[22m[2m)[22m[33m 489[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/EditEventPage.test.ts [2m([22m[2m10 tests[22m[2m)[22m[33m 719[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/ProductPage.test.ts [2m([22m[2m13 tests[22m[2m)[22m[33m 865[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/ProfilePage.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 961[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/MyEventsPage.test.ts [2m([22m[2m22 tests[22m[2m)[22m[33m 985[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/MyBookingsPage.test.ts [2m([22m[2m15 tests[22m[2m)[22m[33m 1052[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/composables/useUnauthorizedHandler.test.ts [2m([22m[2m21 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/composables/useAuth.test.ts [2m([22m[2m14 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/composables/useToast.test.ts [2m([22m[2m9 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/AccountPage.test.ts [2m([22m[2m16 tests[22m[2m)[22m[33m 1761[2mms[22m[39m
+ [32mΓ£ô[39m test/unit/pages/ProductPageDetail/[id].test.ts [2m([22m[2m34 tests[22m[2m)[22m[33m 2859[2mms[22m[39m
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Errors ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+
+Vitest caught 19 unhandled errors during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ReferenceError: longdo is not defined
+ Γ¥» app/pages/MapTestingPage.vue:24:15
+     22| onMounted(async () => {
+     23|   await loadScript('https://api.longdo.com/map3/?key=4255cc52d653dd7cdΓÇª
+     24|   const map = new longdo.Map({
+       |               ^
+     25|     placeholder: document.getElementById('map')
+     26|   })
+ Γ¥» processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "test/unit/pages/MapTestingPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ReferenceError: longdo is not defined
+ Γ¥» app/pages/MapTestingPage.vue:24:15
+     22| onMounted(async () => {
+     23|   await loadScript('https://api.longdo.com/map3/?key=4255cc52d653dd7cdΓÇª
+     24|   const map = new longdo.Map({
+       |               ^
+     25|     placeholder: document.getElementById('map')
+     26|   })
+ Γ¥» processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "test/unit/pages/MapTestingPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+ReferenceError: longdo is not defined
+ Γ¥» app/pages/MapTestingPage.vue:24:15
+     22| onMounted(async () => {
+     23|   await loadScript('https://api.longdo.com/map3/?key=4255cc52d653dd7cdΓÇª
+     24|   const map = new longdo.Map({
+       |               ^
+     25|     placeholder: document.getElementById('map')
+     26|   })
+ Γ¥» processTicksAndRejections node:internal/process/task_queues:105:5
+
+This error originated in "test/unit/pages/MapTestingPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should load profile on mount". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should load profile on mount". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should display profile information". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should have edit profile form". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should update profile on submit". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle form validation". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should redirect to login if not authenticated". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should handle API error". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should display email field". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should allow editing profile fields". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should call loadUserData function". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should call loadUserStats function". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should call handlesubmit function". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should call handleLogout function". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should call confirmLogout function". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+
+ΓÄ»ΓÄ»ΓÄ»ΓÄ» Unhandled Rejection ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+TypeError: loadFromStorage is not a function
+ Γ¥» app/pages/AccountPage.vue:65:3
+     63| 
+     64| onMounted(async () => {
+     65|   loadFromStorage()
+       |   ^
+     66|   if (!isLoggedIn.value) {
+     67|     router.push('/LoginPage')
+ Γ¥» node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2858:40
+ Γ¥» callWithErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:200:19
+ Γ¥» callWithAsyncErrorHandling node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:207:17
+ Γ¥» hook.__weh.hook.__weh node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:2838:19
+ Γ¥» flushPostFlushCbs node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:382:28
+ Γ¥» render node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:6016:7
+ Γ¥» mount node_modules/@vue/runtime-core/dist/runtime-core.cjs.js:3982:13
+ Γ¥» Object.app.mount node_modules/@vue/runtime-dom/dist/runtime-dom.cjs.js:1734:19
+ Γ¥» Proxy.mount node_modules/@vue/test-utils/dist/vue-test-utils.cjs.js:8415:18
+
+This error originated in "test/unit/pages/AccountPage.test.ts" test file. It doesn't mean the error was thrown inside the file itself, but while it was running.
+The latest test that might've caused the error is "should call cancelLogout function". It might mean one of the following:
+- The error was thrown, while Vitest was running this test.
+- If the error occurred after the test had been completed, this was the last documented test before it was thrown.
+ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»ΓÄ»
+
+
+[2m Test Files [22m [1m[32m34 passed[39m[22m[90m (34)[39m
+[2m      Tests [22m [1m[32m365 passed[39m[22m[90m (365)[39m
+[2m     Errors [22m [1m[31m19 errors[39m[22m
+[2m   Start at [22m 21:59:02
+[2m   Duration [22m 7.07s[2m (transform 7.59s, setup 35.89s, collect 17.51s, tests 12.51s, environment 52.47s, prepare 10.62s)[22m
+
+[34m % [39m[2mCoverage report from [22m[33mv8[39m
+-------------------|---------|----------|---------|---------|-------------------
+File               | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+-------------------|---------|----------|---------|---------|-------------------
+All files          |   84.42 |     71.1 |   73.39 |   84.42 |                   
+ app/components    |   90.16 |    74.66 |    87.5 |   90.16 |                   
+  CartEach.vue     |     100 |      100 |     100 |     100 |                   
+  ...goriesTop.vue |     100 |      100 |     100 |     100 |                   
+  DatabaseInfo.vue |     100 |      100 |     100 |     100 |                   
+  EmptyState.vue   |     100 |      100 |     100 |     100 |                   
+  ...dSkeleton.vue |     100 |      100 |     100 |     100 |                   
+  Login.vue        |   83.73 |    63.15 |     100 |   83.73 | ...8-61,63-65,145 
+  LogoutModal.vue  |     100 |      100 |     100 |     100 |                   
+  NavBar.vue       |     100 |       80 |     100 |     100 | 75                
+  ProductCard.vue  |   85.54 |    88.23 |      60 |   85.54 | 58-71             
+  ...eclection.vue |     100 |      100 |     100 |     100 |                   
+  ProductTag.vue   |     100 |      100 |     100 |     100 |                   
+  Register.vue     |   78.04 |    41.66 |     100 |   78.04 | ...1-47,49-54,138 
+  ...SearchBar.vue |     100 |      100 |     100 |     100 |                   
+  Toasts.vue       |     100 |       60 |     100 |     100 | 13,31             
+ app/composables   |   96.89 |    96.22 |   94.44 |   96.89 |                   
+  useAuth.ts       |   91.66 |     90.9 |   83.33 |   91.66 | 8-11              
+  useToast.ts      |     100 |      100 |     100 |     100 |                   
+  ...zedHandler.ts |     100 |      100 |     100 |     100 |                   
+ app/layouts       |     100 |      100 |     100 |     100 |                   
+  default.vue      |     100 |      100 |     100 |     100 |                   
+ app/pages         |   83.77 |     61.2 |   55.31 |   83.77 |                   
+  AboutUS.vue      |     100 |      100 |     100 |     100 |                   
+  AccountPage.vue  |   82.42 |    42.85 |   54.54 |   82.42 | ...66-191,413-418 
+  CartPage.vue     |     100 |      100 |     100 |     100 |                   
+  ...EventPage.vue |   95.88 |    69.04 |   66.66 |   95.88 | 80-83,112-113,175 
+  DatabasePage.vue |     100 |      100 |     100 |     100 |                   
+  ...EventPage.vue |   70.39 |       70 |    12.5 |   70.39 | ...,78-80,129-218 
+  LoginPage.vue    |     100 |      100 |     100 |     100 |                   
+  ...stingPage.vue |     100 |      100 |   33.33 |     100 |                   
+  ...kingsPage.vue |   76.84 |    63.63 |     100 |   76.84 | ...0,89-93,95-142 
+  MyEventsPage.vue |    91.2 |     42.3 |      80 |    91.2 | ...65,71-72,78-79 
+  ProductPage.vue  |   90.64 |    66.66 |      50 |   90.64 | ...-45,56,183-187 
+  ProfilePage.vue  |   65.55 |    63.15 |     100 |   65.55 | 33-34,68-96       
+  RegisterPage.vue |     100 |      100 |     100 |     100 |                   
+  index.vue        |   98.84 |      100 |   57.14 |   98.84 | 61-62             
+ ...ductPageDetail |   72.85 |    73.11 |   55.55 |   72.85 |                   
+  [id].vue         |   72.85 |    73.11 |   55.55 |   72.85 | ...86,330,389-425 
+ composables       |   84.82 |    85.71 |   94.73 |   84.82 |                   
+  useAuth.ts       |   90.62 |    84.21 |     100 |   90.62 | 18-23             
+  useToast.ts      |     100 |      100 |     100 |     100 |                   
+  ...zedHandler.ts |   57.89 |       60 |      75 |   57.89 | 21-38,54-57       
+-------------------|---------|----------|---------|---------|-------------------
+ERROR: Coverage for lines (84.42%) does not meet global threshold (90%)
+ERROR: Coverage for functions (73.39%) does not meet global threshold (90%)
+ERROR: Coverage for statements (84.42%) does not meet global threshold (90%)
+ERROR: Coverage for branches (71.1%) does not meet global threshold (90%)

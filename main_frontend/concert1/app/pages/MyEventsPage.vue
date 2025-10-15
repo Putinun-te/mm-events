@@ -3,11 +3,13 @@ import { ref, onMounted } from 'vue'
 import { $fetch } from 'ofetch'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
+import { useUnauthorizedHandler } from '~/composables/useUnauthorizedHandler'
 
 type MyEvent = any
 
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
+const { handleApiError } = useUnauthorizedHandler()
 
 const events = ref<MyEvent[]>([])
 const loading = ref(true)
@@ -15,8 +17,10 @@ const message = ref('')
 
 onMounted(async () => {
   loadFromStorage()
+  
+  // Middleware will handle redirect if not logged in
+  // Don't show "Unauthorized" message, just let middleware redirect
   if (!isLoggedIn.value) {
-    router.push('/LoginPage')
     return
   }
 
@@ -56,7 +60,7 @@ async function fetchEvents() {
   try {
     const token = user.value?.token || localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     if (!token) {
-      router.push('/LoginPage')
+      // Middleware will handle redirect
       return
     }
     const res: any = await $fetch('/api/events/json/me', {
@@ -68,6 +72,13 @@ async function fetchEvents() {
     }
   } catch (error: any) {
     console.error('Load my events error', error)
+    
+    // If API returns 401/403, handle it with error message
+    if (handleApiError(error, '/MyEventsPage')) {
+      return // handleApiError already handled redirect
+    }
+    
+    // For other errors, show message
     message.value = error?.data?.message || error?.response?._data?.message || 'Failed to load your events.'
   } finally {
     loading.value = false

@@ -49,11 +49,15 @@ const handleSubmit = async () => {
 
       password.value = ''
 
-      // Redirect after successful login
-      if (shouldCompleteProfile()) {
-        await navigateTo('/AccountPage')
+      // Check if there's a redirect URL stored (from auth middleware)
+      const redirectPath = localStorage.getItem('redirect_after_login')
+      if (redirectPath) {
+        localStorage.removeItem('redirect_after_login')
+        await navigateTo(redirectPath, { replace: true })
+      } else if (shouldCompleteProfile()) {
+        await navigateTo('/AccountPage', { replace: true })
       } else {
-        await navigateTo('/')  // Redirect to home page
+        await navigateTo('/', { replace: true })  // Redirect to home page
       }
     } else if (res?.message) {
       message.value = res.message;

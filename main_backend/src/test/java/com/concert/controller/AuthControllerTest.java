@@ -3,6 +3,7 @@ package com.concert.controller;
 import com.concert.dto.AuthResponse;
 import com.concert.dto.LoginRequest;
 import com.concert.dto.RegisterRequest;
+import com.concert.dto.UserProfileResponse;
 import com.concert.service.AuthService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -12,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -156,5 +158,25 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testRegisterWithNullUsername() throws Exception {
+        RegisterRequest nullUsernameRequest = new RegisterRequest(null, "test@example.com", "password123");
+
+        mockMvc.perform(post("/api/auth/register")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(nullUsernameRequest)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testLoginWithNullUsernameOrEmail() throws Exception {
+        LoginRequest nullLoginRequest = new LoginRequest(null, "password123");
+        
+        mockMvc.perform(post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(nullLoginRequest)))
+            .andExpect(status().isBadRequest());
     }
 }

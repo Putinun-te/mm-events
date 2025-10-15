@@ -4,6 +4,7 @@ import { ref } from "vue";
 const username = ref('')
 const email = ref('')
 const password = ref('')
+const agreeToTerms = ref(false)
 const isLoading = ref(false)
 const message = ref('')
 const isSuccess = ref(false)
@@ -23,6 +24,10 @@ const handleSubmit = async () => {
   }
   if (password.value.length < 6) {
     message.value = 'Password must be at least 6 characters';
+    return;
+  }
+  if (!agreeToTerms.value) {
+    message.value = 'You must agree to the Terms and Conditions';
     return;
   }
 
@@ -108,6 +113,7 @@ const handleSubmit = async () => {
           <div class="flex items-center h-5">
             <input 
               id="terms" 
+              v-model="agreeToTerms"
               type="checkbox" 
               class="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
               :disabled="isLoading"

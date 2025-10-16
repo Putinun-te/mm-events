@@ -7,6 +7,7 @@ type EventItem = any
 const events = ref<EventItem[]>([])
 const loading = ref(false)
 const message = ref('')
+const today = new Date ()
 
 const page = ref(0)
 const size = ref(12)
@@ -16,7 +17,8 @@ const searchQuery = ref('')
 const selectedCategory = ref('')
 const selectedDate = ref('')
 
-const categories = ['All', 'Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
+
+const categories = ['All', 'Rock', 'Pop', 'Jazz', 'EDM']
 
 const hasEvents = computed(() => events.value.length > 0)
 
@@ -37,12 +39,25 @@ const filteredEvents = computed(() => {
   }
 
   if (selectedDate.value) {
+    console.log('test')
     result = result.filter(e => {
       const eventDate = e.startDate ? new Date(e.startDate).toISOString().split('T')[0] : 
                         e.datestart ? new Date(e.datestart * 1000).toISOString().split('T')[0] : null
       return eventDate === selectedDate.value
     })
-  }
+  } 
+  // else {
+  //   console.log('hello')
+  //   // mm/dd//yyyy
+  //   console.log(today.getFullYear())
+  //   console.log(selectedDate.value)
+  //   console.log((Date.now()))
+  //   const ty = today.getFullYear()
+  //   const tm = String(today.getMonth() + 1).padStart(2, "0")
+  //   const td = String(today.getDay() + 12).padStart(2, "0")
+  //   selectedDate.value = "2025-10-16"
+  //   selectedDate.value = `${ty}-${tm}-${td}`
+  // }
 
   return result
 })
@@ -114,7 +129,7 @@ onMounted(loadEvents)
               </svg>
             </button>
             <button class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-violet-600 text-white p-3 rounded-full hover:bg-violet-700 transition-colors">
-              🔍
+              Search
             </button>
           </div>
         </div>

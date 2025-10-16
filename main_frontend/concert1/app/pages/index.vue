@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 
+const eventImg = new URL('../assets/img/even2.jpg', import.meta.url).href
+const event3Img = new URL('../assets/img/event3.jpg', import.meta.url).href
+
 const show = ref(false)
 const show2 = ref(false)
 const currentSlide = ref(0)
@@ -8,26 +11,23 @@ const currentSlide = ref(0)
 const slides = [
   {
     id: 1,
-    title: 'Welcome to ShopHub',
-    description: 'Discover amazing products at unbeatable prices',
+    title: 'Welcome to MM concerts',
+    // description: 'Experience unforgettable live music events and exclusive performances',
     buttonText: 'Start Shopping',
     link: '/ProductPage',
+    // use event3.jpg for this slide background
+    image: event3Img,
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
   },
   {
-    id: 2,
-    title: 'New Arrivals',
-    description: 'Check out our latest collection of trending items',
-    buttonText: 'View Collection',
-    link: '/ProductPage',
-    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
-  },
-  {
     id: 3,
-    title: 'Special Offers',
-    description: 'Save big with our exclusive deals and discounts',
-    buttonText: 'Shop Now',
-    link: '/ProductPageDetail',
+    title: 'Create Event',
+    description: 'Easily plan and promote your event with our powerful tools',
+    buttonText: 'Create Now',
+    link: '/CreateEventPage',
+    // use image for background
+    image: eventImg,
+    // keep gradient as fallback if needed
     gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
   }
 ]
@@ -97,8 +97,8 @@ onUnmounted(() => {
               class="absolute inset-0 w-full h-full"
             >
               <div 
-                class="w-full h-full bg-gradient-to-r flex items-center justify-center"
-                :style="{ background: slide.gradient }"
+                class="w-full h-full flex items-center justify-center"
+                :style="slide.image ? { backgroundImage: `url(${slide.image})`, backgroundSize: 'cover', backgroundPosition: 'center' } : { background: slide.gradient }"
               >
                 <div class="text-center text-white px-6 max-w-3xl">
                   <h2 class="text-5xl sm:text-6xl font-bold mb-6 animate-fade-in">
@@ -119,7 +119,7 @@ onUnmounted(() => {
           </transition-group>
 
           <!-- Navigation Arrows -->
-          <button 
+          <!-- <button 
             @click="prevSlide"
             class="absolute left-4 top-1/2 -translate-y-1/2 bg-white bg-opacity-30 hover:bg-opacity-50 text-white rounded-full p-3 backdrop-blur-sm transition-all duration-200 z-10"
           >
@@ -134,7 +134,7 @@ onUnmounted(() => {
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </button> -->
 
           <!-- Indicators -->
           <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-3 z-10">
@@ -159,8 +159,8 @@ onUnmounted(() => {
           class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-8 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
         >
           <div class="relative z-10">
-            <h3 class="text-3xl font-bold mb-3">Browse Products</h3>
-            <p class="text-blue-100 mb-4">Discover our amazing collection</p>
+            <h3 class="text-3xl font-bold mb-3">Browse Events</h3>
+            <p class="text-blue-100 mb-4">Discover our amazing events</p>
             <span class="inline-flex items-center text-sm font-semibold">
               Explore Now
               <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,12 +172,12 @@ onUnmounted(() => {
         </NuxtLink>
 
         <NuxtLink 
-          to="/ProductPageDetail/1"
+          to="/MyEventsPage"
           class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-500 to-purple-700 p-8 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
         >
           <div class="relative z-10">
-            <h3 class="text-3xl font-bold mb-3">Product Details</h3>
-            <p class="text-purple-100 mb-4">View detailed information</p>
+            <h3 class="text-3xl font-bold mb-3">Your Events</h3>
+            <p class="text-purple-100 mb-4">Manage and explore your events</p>
             <span class="inline-flex items-center text-sm font-semibold">
               View Details
               <svg class="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">

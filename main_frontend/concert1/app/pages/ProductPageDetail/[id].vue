@@ -223,11 +223,11 @@ async function addToCart() {
                             <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0"></div>
                         </div>
                         
-                        <div class="grid">
+                        <!-- <div class="grid">
                             <div>
                                 <div id="map" style="width: 100%; height: 500px;"></div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
 
                     <div class="flex flex-col justify-between space-y-8">
@@ -398,7 +398,7 @@ async function addToCart() {
                                 <div class="max-h-60 overflow-y-auto space-y-2">
                                     <div 
                                         v-for="participant in participants" 
-                                        :key="participant.userId"
+                                        :key="participant.userName"
                                         class="flex items-center justify-between bg-white rounded-lg p-3 hover:shadow-md transition-all border border-violet-100"
                                     >
                                         <div class="flex items-center gap-3">

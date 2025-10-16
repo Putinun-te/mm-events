@@ -88,7 +88,7 @@ public class BookingService {
     }
 
     @Transactional
-    public void cancelAllBookingsForEvent(Long eventId) {
+    public void cancelAllBookingsForEvent(String eventId) {
         List<Booking> bookings = bookingRepository.findByEventId(eventId);
         for (Booking booking : bookings) {
             booking.setStatus("CANCELLED");

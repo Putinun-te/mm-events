@@ -362,6 +362,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
@@ -388,6 +389,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
@@ -412,6 +414,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
@@ -436,6 +439,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
@@ -460,6 +464,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
@@ -484,6 +489,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
@@ -508,6 +514,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
@@ -530,6 +537,7 @@ describe('Register Component', () => {
     vm.username = 'testuser'
     vm.email = 'test@test.com'
     vm.password = 'password123'
+    vm.agreeToTerms = true
     
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()

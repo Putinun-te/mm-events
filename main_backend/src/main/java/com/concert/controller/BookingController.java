@@ -58,7 +58,7 @@ public class BookingController {
 
     @DeleteMapping("/event/{eventId}")
     public ResponseEntity<Void> cancelAllBookingsForEvent(
-            @PathVariable Long eventId,
+            @PathVariable String eventId,
             Authentication authentication) {
         // This endpoint should only be called when deleting an event
         // Additional authorization check could be added here

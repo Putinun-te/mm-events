@@ -40,9 +40,8 @@ updates:
       - "dependencies"
       - "backend"
     ignore:
-      # Ignore major Spring Boot updates
+      # Ignore ALL Spring Boot updates (managed manually)
       - dependency-name: "org.springframework.boot:*"
-        update-types: ["version-update:semver-major"]
   
   # GitHub Actions
   - package-ecosystem: "github-actions"

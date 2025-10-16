@@ -1,74 +1,64 @@
-# ========================================
-# Build & Test Output
-# ========================================
-main_backend/target/
-coverage/
+# ===========================
+# MM Concerts Project (.gitignore)
+# ===========================
+
+# === Backend (Spring Boot) ===
+target/
+logs/
 *.log
-*.class
-
-# ========================================
-# IDE & Editor
-# ========================================
-.idea/
-.vscode/
+*.tmp
+!.keep
 *.iml
-*.swp
-*.swo
-*~
-.DS_Store
-
-# ========================================
-# History & Cache
-# ========================================
-.history/
-.cache/
-*.cache
-
-# ========================================
-# OS Files
-# ========================================
-Thumbs.db
-desktop.ini
-
-# ========================================
-# Environment & Secrets
-# ========================================
-.env
-.env.local
-.env.*.local
-*.pem
-*.key
-
-# ========================================
-# Node.js
-# ========================================
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.npm
-.yarn-integrity
-
-# ========================================
-# Java & Maven
-# ========================================
+*.class
 *.jar
 *.war
 *.ear
-*.zip
-*.tar.gz
-*.rar
-.mvn/wrapper/maven-wrapper.jar
 
-# ========================================
-# Docker
-# ========================================
-docker-compose.override.yml
+# === Frontend (Nuxt 4 / Node.js) ===
+node_modules/
+.nuxt/
+.output/
+dist/
+coverage/
+.env
+.env.local
+.nitro/
+.cache/
+package-lock.json
 
-# ========================================
-# Temporary Files
-# ========================================
-tmp/
-temp/
-*.tmp
+# === IDE / Editor ===
+.vscode/
+.idea/
+*.swp
+*.swo
+# macOS junk files
+.DS_Store
+# Windows junk files
+Thumbs.db
+
+# === Docker & Container ===
+/mysql_data/
+/db_data/
+*.pid
+*.sock
+
+# === Test / Reports ===
+test-results/
+target/surefire-reports/
+reports/
+coverage/
+cypress/videos/
+cypress/screenshots/
+
+# === OS Specific ===
+ehthumbs.db
+desktop.ini
+
+# === Other Generated Files ===
 *.bak
+*.orig
+*.rej
+
+# Keep README and env example
+!.env.example
+!README.md

@@ -1,5 +1,12 @@
 # 🎵 MM Concerts - Concert Booking Platform
 
+## ⚡ TL;DR (Run in One Command)
+
+```bash
+git clone https://github.com/MorningMores/develop.git
+cd develop
+docker compose up -d
+
 <div align="center">
 
 A modern, full-stack concert booking and event management platform built with Spring Boot 3.2 and Nuxt 4.

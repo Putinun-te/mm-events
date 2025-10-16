@@ -80,8 +80,9 @@ jobs:
           reporter: java-junit
 
       - name: Upload coverage to Codecov (optional)
-        if: ${{ always() && secrets.CODECOV_TOKEN != '' }}
+        if: always()
         uses: codecov/codecov-action@v4
+        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: main_backend/target/site/jacoco/jacoco.xml

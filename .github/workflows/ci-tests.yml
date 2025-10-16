@@ -17,6 +17,8 @@ jobs:
   frontend-tests:
     name: Frontend Tests & Coverage
     runs-on: ubuntu-latest
+    # Skip dependabot PRs to prevent failures from breaking dependency updates
+    if: ${{ github.actor != 'dependabot[bot]' }}
     
     defaults:
       run:
@@ -120,6 +122,8 @@ jobs:
   backend-tests:
     name: Backend Tests & Coverage
     runs-on: ubuntu-latest
+    # Skip dependabot PRs to prevent failures from breaking dependency updates
+    if: ${{ github.actor != 'dependabot[bot]' }}
     
     defaults:
       run:

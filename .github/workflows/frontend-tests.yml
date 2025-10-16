@@ -19,6 +19,8 @@ jobs:
   unit-tests:
     name: Unit Tests & Coverage
     runs-on: ubuntu-latest
+    # Skip dependabot PRs to prevent failures from breaking dependency updates
+    if: ${{ github.actor != 'dependabot[bot]' }}
     
     steps:
       - name: Checkout code

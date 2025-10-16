@@ -76,6 +76,7 @@ async function confirmCancelBooking() {
   if (!bookingToCancel.value) return
 
   const bookingId = bookingToCancel.value.id
+  const eventId = bookingToCancel.value.eventId
   cancelling.value = bookingId
 
   try {
@@ -85,10 +86,26 @@ async function confirmCancelBooking() {
       return
     }
 
+    // Step 1: Cancel the booking in the database
     await $fetch(`/api/bookings/${bookingId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
+
+    // Step 2: Remove user from event participants list
+    if (eventId) {
+      try {
+        await $fetch(`/api/events/json/${eventId}/leave`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        console.log('User removed from participants list')
+      } catch (leaveErr: any) {
+        console.error('Failed to remove from participants:', leaveErr)
+        // Don't fail the whole cancellation if participant removal fails
+        // The booking is already cancelled
+      }
+    }
 
     // Update the booking status locally
     const booking = bookings.value.find(b => b.id === bookingId)

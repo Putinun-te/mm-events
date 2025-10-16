@@ -4,15 +4,48 @@ on:
   push:
     branches: [ main, develop, FE-tester ]
     paths:
+      - 'main_frontend/concert1/**'
       - 'main_backend/src/**'
       - 'main_backend/pom.xml'
   pull_request:
     branches: [ main, develop ]
     paths:
+      - 'main_frontend/concert1/**'
       - 'main_backend/src/**'
       - 'main_backend/pom.xml'
 
 jobs:
+  frontend-unit-tests:
+    name: Frontend Unit Tests (Vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      - name: 📦 Install dependencies
+        working-directory: main_frontend/concert1
+        run: npm ci
+
+      - name: 🧪 Run unit tests with coverage
+        working-directory: main_frontend/concert1
+        run: npm run test:coverage
+
+      - name: 📤 Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./main_frontend/concert1/coverage/lcov.info
+          flags: frontend-unit
+          name: frontend-unit-tests
+        continue-on-error: true
+
   backend-unit-tests:
     name: Backend Unit Tests (Maven Only)
     runs-on: ubuntu-latest

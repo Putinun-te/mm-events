@@ -51,7 +51,7 @@ jobs:
 
       - name: 🐳 Start full stack (MySQL + Backend via Docker Compose)
         run: |
-          docker-compose up -d mysql backend
+          docker compose up -d mysql backend
           echo "⏳ Waiting for backend to be healthy..."
           for i in {1..90}; do
             if curl -sf http://localhost:8080/actuator/health | grep -q 'UP'; then
@@ -121,7 +121,7 @@ jobs:
 
       - name: 📋 Show backend logs
         if: failure()
-        run: docker-compose logs backend
+        run: docker compose logs backend
 
       - name: 🧹 Cleanup
         if: always()
@@ -132,4 +132,4 @@ jobs:
           fi
           
           # Stop Docker services
-          docker-compose down -v
+          docker compose down -v

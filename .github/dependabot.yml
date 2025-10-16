@@ -5,21 +5,26 @@ updates:
   - package-ecosystem: "npm"
     directory: "/main_frontend/concert1"
     schedule:
-      interval: "weekly"  # Only check weekly instead of constantly
+      interval: "monthly"  # Only check monthly to reduce noise
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 5  # Limit concurrent PRs
+    open-pull-requests-limit: 3  # Reduced limit
     reviewers:
       - "MorningMores"
     labels:
       - "dependencies"
       - "frontend"
     ignore:
-      # Ignore major version updates for testing libraries that might break
+      # Ignore ALL updates for testing libraries (pinned versions)
       - dependency-name: "happy-dom"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: "jsdom"
       - dependency-name: "vitest"
-        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/*"
+      - dependency-name: "cypress"
+      - dependency-name: "@cypress/*"
+      - dependency-name: "@nuxt/test-utils"
+      - dependency-name: "@testing-library/*"
+      - dependency-name: "@vue/test-utils"
     
   # Backend Maven dependencies
   - package-ecosystem: "maven"

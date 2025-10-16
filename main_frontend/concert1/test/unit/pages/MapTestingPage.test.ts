@@ -1,8 +1,23 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import MapTestingPage from '~/app/pages/MapTestingPage.vue'
 
 describe('MapTestingPage', () => {
+  beforeEach(() => {
+    globalThis.longdo = {
+      Map: vi.fn(() => ({
+        Route: vi.fn(),
+        location: vi.fn(),
+        Event: vi.fn()
+      }))
+    }
+  })
+
+  afterEach(() => {
+    // @ts-expect-error cleanup test shim
+    delete globalThis.longdo
+  })
+
   it('should render the page title', () => {
     const wrapper = mount(MapTestingPage)
     expect(wrapper.find('h1').text()).toBe('This is for testing map')

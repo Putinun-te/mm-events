@@ -1,5 +1,4 @@
 {
-  "extends": "./tsconfig.json",
   "compilerOptions": {
     "target": "ES2020",
     "module": "commonjs",
@@ -7,9 +6,11 @@
     "types": ["cypress", "node"],
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    "jsx": "preserve"
   },
   "include": [
-    "cypress/**/*.ts"
+    "**/*.ts",
+    "**/*.js"
   ]
 }

@@ -1,0 +1,50 @@
+# Dependabot configuration to prevent excessive workflow runs
+version: 2
+updates:
+  # Frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/main_frontend/concert1"
+    schedule:
+      interval: "weekly"  # Only check weekly instead of constantly
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5  # Limit concurrent PRs
+    reviewers:
+      - "MorningMores"
+    labels:
+      - "dependencies"
+      - "frontend"
+    ignore:
+      # Ignore major version updates for testing libraries that might break
+      - dependency-name: "happy-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+    
+  # Backend Maven dependencies
+  - package-ecosystem: "maven"
+    directory: "/main_backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "MorningMores"
+    labels:
+      - "dependencies"
+      - "backend"
+    ignore:
+      # Ignore major Spring Boot updates
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major"]
+  
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci-cd"

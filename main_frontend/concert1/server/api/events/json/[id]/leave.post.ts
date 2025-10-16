@@ -68,8 +68,11 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
     // Remove participant
     foundEvent.participants.splice(participantIndex, 1)
     
-    // Update participants count
-    foundEvent.participantsCount = foundEvent.participants.length
+    // Update participants count - sum all ticket counts from remaining participants
+    foundEvent.participantsCount = foundEvent.participants.reduce(
+      (sum: number, p: any) => sum + (p.ticketCount || 0), 
+      0
+    )
     
     // Save back to file
     await writeFile(JSON_FILE_PATH, JSON.stringify(events, null, 2), 'utf-8')

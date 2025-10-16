@@ -21,6 +21,17 @@ vi.mock('#app', () => ({
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: vi.fn()
+  }),
+  useRoute: () => ({
+    path: '/',
+    name: 'index',
+    params: {},
+    query: {},
+    hash: '',
+    fullPath: '/',
+    matched: [],
+    meta: {},
+    redirectedFrom: undefined
   })
 }))
 

@@ -3,8 +3,18 @@ name: Backend CI
 on:
   push:
     branches: [ main, FE-Testing ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
+      - 'main_frontend/**'
   pull_request:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
+      - 'main_frontend/**'
 
 concurrency:
   group: backend-ci-${{ github.ref }}

@@ -3,8 +3,16 @@ name: CI - Frontend & Backend Tests with Docker
 on:
   push:
     branches: [ main, develop, 'feature/**' ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
   pull_request:
     branches: [ main, develop ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.github/dependabot.yml'
 
 env:
   FRONTEND_COVERAGE_THRESHOLD: 90

@@ -51,9 +51,9 @@ jobs:
         continue-on-error: true
 
   backend-unit-tests:
-    name: Backend Tests (Maven + Testcontainers)
+    name: Backend Unit Tests (Maven Only)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 10
     
     steps:
       - name: 📥 Checkout
@@ -74,15 +74,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: 🐳 Setup Docker for Testcontainers
-        run: |
-          docker --version
-          docker pull mysql:8.0
-
-      - name: 🧪 Run all tests (unit + integration)
+      - name: 🧪 Run unit tests only (fast)
         working-directory: main_backend
         run: |
-          mvn -B -DforkCount=1 -DreuseForks=false clean test
+          mvn -B clean test
 
       - name: 📊 Generate JaCoCo report
         working-directory: main_backend

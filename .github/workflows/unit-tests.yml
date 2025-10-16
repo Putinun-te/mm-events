@@ -51,8 +51,9 @@ jobs:
         continue-on-error: true
 
   backend-unit-tests:
-    name: Backend Unit Tests (Maven)
+    name: Backend Tests (Maven + Testcontainers)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     
     steps:
       - name: 📥 Checkout
@@ -73,19 +74,32 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: 🧪 Run unit tests (no Testcontainers)
+      - name: 🐳 Setup Docker for Testcontainers
+        run: |
+          docker --version
+          docker pull mysql:8.0
+
+      - name: 🧪 Run all tests (unit + integration)
         working-directory: main_backend
         run: |
-          mvn -B test -Dtest='!*DockerTest,!*IntegrationTest' -DfailIfNoTests=false
+          mvn -B -DforkCount=1 -DreuseForks=false clean test
 
       - name: 📊 Generate JaCoCo report
         working-directory: main_backend
         run: mvn jacoco:report
+        if: always()
 
       - name: 📤 Upload coverage
         uses: codecov/codecov-action@v4
         with:
           files: ./main_backend/target/site/jacoco/jacoco.xml
-          flags: backend-unit
-          name: backend-unit-tests
+          flags: backend
+          name: backend-tests
         continue-on-error: true
+
+      - name: 📤 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: main_backend/target/surefire-reports/

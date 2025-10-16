@@ -49,12 +49,10 @@ jobs:
       - name: 🐳 Pre-pull MySQL image for Testcontainers
         run: docker pull mysql:8.0
 
-      - name: 🧪 Run integration tests (Testcontainers + DockerTest)
+      - name: 🧪 Run all backend tests with Testcontainers
         working-directory: main_backend
         run: |
-          mvn -B -DforkCount=1 -DreuseForks=false test \
-            -Dtest='*DockerTest,*IntegrationTest' \
-            -DfailIfNoTests=false
+          mvn -B -DforkCount=1 -DreuseForks=false clean test
         env:
           TESTCONTAINERS_RYUK_DISABLED: false
 

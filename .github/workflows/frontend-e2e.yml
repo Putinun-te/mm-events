@@ -3,21 +3,23 @@ name: Frontend E2E
 on:
   push:
     branches: [ main, FE-Testing ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/dependabot.yml'
+    paths:
+      - 'main_frontend/concert1/**'
+      - 'main_backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/frontend-e2e.yml'
   pull_request:
     branches: [ main ]
-    paths-ignore:
-      - '**.md'
-      - 'docs/**'
-      - '.github/dependabot.yml'
+    paths:
+      - 'main_frontend/concert1/**'
+      - 'main_backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/frontend-e2e.yml'
 
 jobs:
   e2e:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,6 +41,17 @@ jobs:
           sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
           sudo chmod +x /usr/local/bin/docker-compose
           docker-compose --version
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('main_backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
 
       - name: Start backend stack (MySQL + backend)
         run: |

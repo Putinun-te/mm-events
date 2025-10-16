@@ -36,9 +36,15 @@ jobs:
         run: |
           npm ci
 
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
       - name: Start backend stack (MySQL + backend)
         run: |
-          docker compose up -d mysql backend
+          docker-compose up -d mysql backend
           echo "Waiting for backend..."
           for i in {1..60}; do
             if curl -sf http://localhost:8080/actuator/health | grep 'UP'; then echo OK; break; fi; sleep 2; done
@@ -69,4 +75,4 @@ jobs:
         if: always()
         run: |
           if [ -f /tmp/nuxt.pid ]; then kill $(cat /tmp/nuxt.pid) || true; fi
-          docker compose down
+          docker-compose down

@@ -74,11 +74,13 @@ jobs:
           for i in {1..60}; do
             if curl -sf http://localhost:3000/ >/dev/null 2>&1; then
               echo "✅ Frontend is ready!"
-              break
+              exit 0
             fi
             echo "Attempt $i/60..."
             sleep 2
           done
+          echo "❌ Frontend failed to start!"
+          exit 1
 
       - name: 🧪 Run Cypress E2E tests with coverage
         working-directory: main_frontend/concert1

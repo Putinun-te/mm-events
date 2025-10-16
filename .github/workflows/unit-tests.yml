@@ -34,11 +34,7 @@ jobs:
         working-directory: main_frontend/concert1
         run: npm ci
 
-      - name: 🧪 Run unit tests
-        working-directory: main_frontend/concert1
-        run: npm test
-
-      - name: 📊 Generate coverage
+      - name: 🧪 Run unit tests with coverage
         working-directory: main_frontend/concert1
         run: npm run test:coverage
 

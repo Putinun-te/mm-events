@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onActivated, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
@@ -88,24 +88,38 @@ function loadScript(src: string): Promise<void> {
   })
 }
 
+// Function to fetch event data
+async function fetchEventData() {
+  loading.value = true
+  try {
+    const data = await $fetch(`/api/events/json/${productId}`)
+    event.value = data
+  } catch (e) {
+    console.error('Failed to load event', e)
+    error('Failed to load event details', 'Error')
+  } finally {
+    loading.value = false
+  }
+}
+
 onMounted(async () => {
   loadFromStorage()
   loadScript('https://api.longdo.com/map3/?key=REPLACE_WITH_MAP_API_KEY')
     .catch(error => console.error("Failed to load Longdo Map script:", error))
 
-  loading.value = true
   // Try history state first, then fetch from JSON
   event.value = window.history.state?.event ?? null
   if (!event.value) {
-    try {
-      const data = await $fetch(`/api/events/json/${productId}`)
-      event.value = data
-    } catch (e) {
-      console.error('Failed to load event', e)
-      error('Failed to load event details', 'Error')
-    }
+    await fetchEventData()
+  } else {
+    loading.value = false
   }
-  loading.value = false
+})
+
+// Refresh data when page is activated (e.g., navigating back from another page)
+onActivated(async () => {
+  // Always refresh data to get latest participant count
+  await fetchEventData()
 })
 
 const changeQuantity = (delta: number) => {

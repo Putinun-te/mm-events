@@ -42,6 +42,10 @@ updates:
     ignore:
       # Ignore ALL Spring Boot updates (managed manually)
       - dependency-name: "org.springframework.boot:*"
+      # Ignore ALL Maven plugin updates (build stability)
+      - dependency-name: "org.apache.maven.plugins:*"
+      - dependency-name: "org.jacoco:*"
+      - dependency-name: "org.springframework.boot:spring-boot-maven-plugin"
   
   # GitHub Actions
   - package-ecosystem: "github-actions"

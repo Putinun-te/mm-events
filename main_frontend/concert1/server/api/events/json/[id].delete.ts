@@ -63,6 +63,17 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
     // Write back to file
     await writeFile(JSON_FILE_PATH, JSON.stringify(events, null, 2), 'utf-8')
     
+    // Cancel all bookings for this event
+    try {
+      await $fetch(`${backend}/api/bookings/event/${eventId}`, {
+        method: 'DELETE',
+        headers: { Authorization: auth }
+      })
+    } catch (bookingError: any) {
+      console.error('Failed to cancel bookings for event:', bookingError)
+      // Continue even if booking cancellation fails
+    }
+    
     setResponseStatus(event, 204)
     return null
   } catch (err: any) {

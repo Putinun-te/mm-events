@@ -33,9 +33,9 @@ const bookingToCancel = ref<Booking | null>(null)
 onMounted(async () => {
   loadFromStorage()
   
-  // Middleware will handle redirect if not logged in
-  // Don't show "Unauthorized" message, just let middleware redirect
+  // Check if user is logged in, redirect if not
   if (!isLoggedIn.value) {
+    router.push('/LoginPage')
     return
   }
 

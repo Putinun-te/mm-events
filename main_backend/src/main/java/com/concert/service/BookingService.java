@@ -87,6 +87,15 @@ public class BookingService {
         bookingRepository.save(booking);
     }
 
+    @Transactional
+    public void cancelAllBookingsForEvent(Long eventId) {
+        List<Booking> bookings = bookingRepository.findByEventId(eventId);
+        for (Booking booking : bookings) {
+            booking.setStatus("CANCELLED");
+        }
+        bookingRepository.saveAll(bookings);
+    }
+
     private BookingResponse toResponse(Booking booking) {
         BookingResponse response = new BookingResponse();
         response.setId(booking.getId());

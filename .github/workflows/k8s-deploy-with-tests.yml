@@ -148,23 +148,29 @@ jobs:
       - name: 📥 Checkout
         uses: actions/checkout@v4
 
+      - name: 🔧 Create Kind config
+        run: |
+          cat > kind-config.yaml << 'EOF'
+          kind: Cluster
+          apiVersion: kind.x-k8s.io/v1alpha4
+          nodes:
+          - role: control-plane
+            extraPortMappings:
+            - containerPort: 30080
+              hostPort: 30080
+              protocol: TCP
+            - containerPort: 30081
+              hostPort: 30081
+              protocol: TCP
+          EOF
+          cat kind-config.yaml
+
       - name: 🔧 Create Kind cluster
         uses: helm/kind-action@v1.10.0
         with:
           cluster_name: concert-test
           wait: 120s
-          config: |
-            kind: Cluster
-            apiVersion: kind.x-k8s.io/v1alpha4
-            nodes:
-            - role: control-plane
-              extraPortMappings:
-              - containerPort: 30080
-                hostPort: 30080
-                protocol: TCP
-              - containerPort: 30081
-                hostPort: 30081
-                protocol: TCP
+          config: kind-config.yaml
 
       - name: 🔍 Verify Kind cluster
         run: |

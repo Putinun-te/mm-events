@@ -145,7 +145,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: build-images
     timeout-minutes: 20
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && vars.K8S_ENABLED == 'true'
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
 
     steps:
       - name: 📥 Checkout
@@ -155,31 +155,57 @@ jobs:
         run: |
           if [ -z "${{ secrets.KUBE_CONFIG }}" ]; then
             echo "❌ Error: KUBE_CONFIG secret is not set"
-            echo "Please add your Kubernetes config as a base64-encoded secret"
-            echo "To create: cat ~/.kube/config | base64 | pbcopy"
-            echo "Then add it as KUBE_CONFIG secret in GitHub repo settings"
+            echo ""
+            echo "📖 Setup Instructions:"
+            echo "1. Get your kubeconfig: cat ~/.kube/config"
+            echo "2. Encode it: cat ~/.kube/config | base64"
+            echo "3. Add to GitHub: Settings → Secrets → New secret"
+            echo "   Name: KUBE_CONFIG"
+            echo "   Value: <paste base64 string>"
+            echo ""
+            echo "📚 Full guide: docs/K8S_DEPLOYMENT_SETUP.md"
             exit 1
           fi
           
           mkdir -p $HOME/.kube
           echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
           chmod 600 $HOME/.kube/config
+          
+          echo "✅ Kubeconfig loaded successfully"
 
       - name: 🔍 Verify Kubernetes connection
         run: |
           echo "Testing connection to Kubernetes cluster..."
+          
           if ! kubectl cluster-info &> /dev/null; then
+            echo ""
             echo "❌ Error: Cannot connect to Kubernetes cluster"
+            echo ""
+            echo "📋 Debugging Information:"
             echo "Current kubeconfig context:"
-            kubectl config current-context || echo "No context available"
+            kubectl config current-context || echo "  No context available"
             echo ""
             echo "Available contexts:"
-            kubectl config get-contexts || echo "No contexts available"
+            kubectl config get-contexts || echo "  No contexts available"
+            echo ""
+            echo "Cluster info (detailed):"
+            kubectl cluster-info dump --output-directory=/tmp/cluster-info 2>&1 | head -20 || true
+            echo ""
+            echo "💡 Possible issues:"
+            echo "  1. Cluster is not publicly accessible from GitHub Actions"
+            echo "  2. Kubeconfig is pointing to localhost (127.0.0.1)"
+            echo "  3. Cluster API server is down or unreachable"
+            echo "  4. Service account token has expired"
+            echo ""
+            echo "📚 See troubleshooting guide: docs/K8S_DEPLOYMENT_SETUP.md"
             exit 1
           fi
+          
           echo "✅ Successfully connected to Kubernetes cluster"
+          echo ""
           kubectl cluster-info
-          kubectl version --short
+          echo ""
+          kubectl version --short || kubectl version
 
       - name: 📋 Apply Kubernetes manifests
         run: |

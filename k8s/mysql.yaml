@@ -81,8 +81,8 @@ spec:
             command:
             - mysqladmin
             - ping
-            - -h
-            - localhost
+            - -S
+            - /var/lib/mysql/mysql.sock
           initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
@@ -92,8 +92,8 @@ spec:
             command:
             - mysqladmin
             - ping
-            - -h
-            - localhost
+            - -S
+            - /var/lib/mysql/mysql.sock
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5

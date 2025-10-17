@@ -80,7 +80,22 @@ jobs:
         working-directory: main_frontend/concert1
         run: npm run build
 
-      - name: 📤 Upload frontend dist
+      - name: � Verify build output
+        working-directory: main_frontend/concert1
+        run: |
+          echo "Checking build output..."
+          ls -la
+          if [ -d ".output" ]; then
+            echo "✅ .output directory exists"
+            ls -la .output/
+          else
+            echo "❌ .output directory not found"
+            echo "Available directories:"
+            find . -maxdepth 2 -type d
+            exit 1
+          fi
+
+      - name: �📤 Upload frontend dist
         uses: actions/upload-artifact@v4
         with:
           name: frontend-dist
@@ -139,6 +154,12 @@ jobs:
         with:
           name: frontend-dist
           path: main_frontend/concert1/.output/
+        continue-on-error: false
+
+      - name: 🔍 Verify frontend artifact
+        run: |
+          echo "Checking downloaded frontend artifact..."
+          ls -la main_frontend/concert1/.output/ || echo "❌ .output directory is empty or missing"
 
       - name: 🐳 Build and push frontend image
         uses: docker/build-push-action@v5

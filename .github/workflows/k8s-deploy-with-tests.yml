@@ -270,8 +270,26 @@ jobs:
           echo "Deploying MySQL..."
           kubectl apply -f k8s-test/mysql.yaml
           
-          echo "Waiting for MySQL to be ready (max 5 minutes)..."
-          kubectl wait --for=condition=ready pod -l app=mysql -n concert-platform --timeout=300s
+          echo "Waiting for MySQL pod to be created..."
+          for i in {1..30}; do
+            if kubectl get pod mysql-0 -n concert-platform 2>/dev/null; then
+              echo "✅ MySQL pod created"
+              break
+            fi
+            echo "Waiting for pod creation... attempt $i/30"
+            sleep 2
+          done
+          
+          echo "Checking MySQL pod status..."
+          kubectl get pod mysql-0 -n concert-platform -o wide
+          
+          echo "Waiting for MySQL to be ready (max 8 minutes for CI environment)..."
+          kubectl wait --for=condition=ready pod/mysql-0 -n concert-platform --timeout=480s || {
+            echo "❌ MySQL failed to become ready, checking logs..."
+            kubectl describe pod mysql-0 -n concert-platform
+            kubectl logs mysql-0 -n concert-platform --tail=100
+            exit 1
+          }
           
           echo "Deploying backend..."
           kubectl apply -f k8s-test/backend.yaml

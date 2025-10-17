@@ -83,9 +83,10 @@ spec:
             - ping
             - -h
             - localhost
-          initialDelaySeconds: 30
+          initialDelaySeconds: 60
           periodSeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 6
         readinessProbe:
           exec:
             command:
@@ -93,9 +94,10 @@ spec:
             - ping
             - -h
             - localhost
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 2
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 10
         resources:
           requests:
             memory: "512Mi"

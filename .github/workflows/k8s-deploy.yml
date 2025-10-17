@@ -1,0 +1,218 @@
+name: K8s Deployment Pipeline
+
+on:
+  push:
+    branches: [ k8s-development ]
+    paths:
+      - 'main_backend/**'
+      - 'main_frontend/concert1/**'
+      - 'k8s/**'
+      - '.github/workflows/k8s-deploy.yml'
+      - 'docker-compose.yml'
+  pull_request:
+    branches: [ k8s-development ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE_NAME: ${{ github.repository }}/concert-backend
+  FRONTEND_IMAGE_NAME: ${{ github.repository }}/concert-frontend
+
+jobs:
+  backend-tests:
+    name: Backend Tests & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🧪 Run backend tests
+        working-directory: main_backend
+        run: mvn -B clean test
+
+      - name: 📦 Build backend JAR
+        working-directory: main_backend
+        run: mvn -B clean package -DskipTests
+
+      - name: 📤 Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: main_backend/target/concert-backend-*.jar
+          retention-days: 1
+
+  frontend-tests:
+    name: Frontend Tests & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 📦 Install dependencies
+        working-directory: main_frontend/concert1
+        run: npm ci
+
+      - name: 🧪 Run frontend tests
+        working-directory: main_frontend/concert1
+        run: npm run test
+
+      - name: 🏗️ Build frontend
+        working-directory: main_frontend/concert1
+        run: npm run build
+
+      - name: 📤 Upload frontend dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: main_frontend/concert1/.output/
+          retention-days: 1
+
+  build-images:
+    name: Build Docker Images
+    runs-on: ubuntu-latest
+    needs: [ backend-tests, frontend-tests ]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 🔐 Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 📥 Download backend artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: backend-jar
+          path: main_backend/target/
+
+      - name: 🐳 Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: main_backend
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 📥 Download frontend dist
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: main_frontend/concert1/.output/
+
+      - name: 🐳 Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: main_frontend/concert1
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:latest
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-k8s:
+    name: Deploy to Kubernetes
+    runs-on: ubuntu-latest
+    needs: build-images
+    timeout-minutes: 20
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔐 Set up Kubeconfig
+        run: |
+          mkdir -p $HOME/.kube
+          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
+          chmod 600 $HOME/.kube/config
+
+      - name: 📋 Apply Kubernetes manifests
+        run: |
+          echo "Creating namespace..."
+          kubectl apply -f k8s/namespace.yaml
+          
+          echo "Creating secrets and config..."
+          kubectl apply -f k8s/configmap.yaml
+          
+          echo "Deploying MySQL..."
+          kubectl apply -f k8s/mysql.yaml
+          
+          echo "Waiting for MySQL to be ready..."
+          kubectl wait --for=condition=ready pod -l app=mysql -n concert-platform --timeout=300s || true
+          
+          echo "Deploying backend..."
+          kubectl apply -f k8s/backend.yaml
+          
+          echo "Deploying frontend..."
+          kubectl apply -f k8s/frontend.yaml
+          
+          echo "Applying ingress..."
+          kubectl apply -f k8s/ingress.yaml
+          
+          echo "Waiting for rollout..."
+          kubectl rollout status deployment/backend -n concert-platform --timeout=300s || true
+          kubectl rollout status deployment/frontend -n concert-platform --timeout=300s || true
+
+      - name: 🔍 Verify deployment
+        run: |
+          echo "=== Deployment Status ==="
+          kubectl get deployment -n concert-platform
+          echo ""
+          echo "=== Pods Status ==="
+          kubectl get pods -n concert-platform
+          echo ""
+          echo "=== Services ==="
+          kubectl get svc -n concert-platform
+          echo ""
+          echo "=== Ingress ==="
+          kubectl get ingress -n concert-platform
+
+      - name: 📊 Generate deployment report
+        if: always()
+        run: |
+          echo "# K8s Deployment Report" > deployment-report.md
+          echo "**Branch:** ${{ github.ref }}" >> deployment-report.md
+          echo "**Commit:** ${{ github.sha }}" >> deployment-report.md
+          echo "**Timestamp:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> deployment-report.md
+          echo "" >> deployment-report.md
+          echo "## Deployment Status" >> deployment-report.md
+          kubectl get deployment -n concert-platform >> deployment-report.md 2>&1 || echo "Failed to get deployments" >> deployment-report.md
+          cat deployment-report.md
+
+      - name: 📤 Upload deployment report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k8s-deployment-report
+          path: deployment-report.md

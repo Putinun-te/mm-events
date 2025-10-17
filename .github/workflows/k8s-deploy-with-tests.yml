@@ -150,6 +150,7 @@ jobs:
 
       - name: 🔧 Create Kind config
         run: |
+          echo "🔧 Creating Kind cluster configuration file..."
           cat > kind-config.yaml << 'EOF'
           kind: Cluster
           apiVersion: kind.x-k8s.io/v1alpha4
@@ -163,9 +164,12 @@ jobs:
               hostPort: 30081
               protocol: TCP
           EOF
+          echo "✅ Kind config file created successfully"
+          echo "📄 Configuration:"
           cat kind-config.yaml
+          echo "✅ Config file ready at: $(pwd)/kind-config.yaml"
 
-      - name: 🔧 Create Kind cluster
+      - name: 🔧 Create Kind cluster (FIXED - using config file)
         uses: helm/kind-action@v1.10.0
         with:
           cluster_name: concert-test

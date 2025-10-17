@@ -116,15 +116,21 @@ jobs:
           name: backend-jar
           path: main_backend/target/
 
-      - name: 🐳 Build and push backend image
+      - name: � Convert repository name to lowercase
+        id: repo-lowercase
+        run: |
+          echo "repository=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> $GITHUB_OUTPUT
+
+      - name: �🐳 Build and push backend image
         uses: docker/build-push-action@v5
         with:
           context: main_backend
           file: main_backend/Dockerfile.k8s
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/concert-backend:latest
-            ghcr.io/${{ github.repository_owner }}/concert-backend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.repo-lowercase.outputs.repository }}/concert-backend:latest
+            ${{ env.REGISTRY }}/${{ steps.repo-lowercase.outputs.repository }}/concert-backend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -141,8 +147,8 @@ jobs:
           file: main_frontend/concert1/Dockerfile.k8s
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/concert-frontend:latest
-            ghcr.io/${{ github.repository_owner }}/concert-frontend:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ steps.repo-lowercase.outputs.repository }}/concert-frontend:latest
+            ${{ env.REGISTRY }}/${{ steps.repo-lowercase.outputs.repository }}/concert-frontend:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 

@@ -303,7 +303,8 @@ docker compose exec mysql mysqldump -u root -p concert_db > backup.sql
 |-----------|-------|----------|--------|
 | **Backend** | 228 tests | 96% instruction | ✅ All passing |
 | **Frontend** | 570 tests | 90%+ | ✅ All passing |
-| **Total** | **798 tests** | **~96% overall** | ✅ **Production Ready** |
+| **K8s Integration** | Full stack | End-to-end | ✅ Automated in CI |
+| **Total** | **798+ tests** | **~96% overall** | ✅ **Production Ready** |
 
 ### Backend Tests
 
@@ -361,6 +362,26 @@ npm test
 # Open Cypress Test Runner
 npx cypress open
 ```
+
+### Kubernetes Integration Tests
+
+Run full-stack K8s integration tests locally:
+
+```bash
+# Run integration tests in Kind cluster
+./k8s-integration-test.sh
+```
+
+This creates a local Kubernetes cluster, deploys the entire stack, and runs comprehensive tests:
+- MySQL database initialization
+- Backend API endpoints
+- Frontend serving
+- Authentication flow (register, login, JWT)
+- Service discovery and networking
+
+**CI/CD:** Tests run automatically in GitHub Actions on push to `k8s-development`.
+
+See [K8s Integration Testing Guide](docs/K8S_INTEGRATION_TESTING.md) for details.
 
 ### System Health Check
 
@@ -439,23 +460,51 @@ docker compose down -v
 
 ### Kubernetes Deployment
 
+#### Quick Deploy
 ```bash
-# Apply all manifests
+# Deploy using helper script
+./k8s/deploy.sh
+
+# Or manually apply manifests
 kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/configmaps/
-kubectl apply -f k8s/secrets/
-kubectl apply -f k8s/deployments/
-kubectl apply -f k8s/services/
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/mysql.yaml
+kubectl apply -f k8s/backend.yaml
+kubectl apply -f k8s/frontend.yaml
+kubectl apply -f k8s/ingress.yaml
 
 # Check status
-kubectl get pods -n concert-platform
-kubectl get services -n concert-platform
+kubectl get all -n concert-platform
 
 # View logs
 kubectl logs -f <pod-name> -n concert-platform
 ```
 
-See [k8s/README.md](k8s/README.md) for detailed Kubernetes setup guide.
+#### K8s Integration Testing
+
+Run comprehensive integration tests locally using Kind:
+
+```bash
+# Run full integration test suite
+./k8s-integration-test.sh
+```
+
+The test suite validates:
+- ✅ MySQL StatefulSet deployment and readiness
+- ✅ Backend/Frontend Deployment scaling to 2 replicas
+- ✅ All pods healthy with passing readiness probes
+- ✅ Services exposing correct ports
+- ✅ Backend API health checks
+- ✅ Frontend serving content
+- ✅ User registration and login endpoints
+- ✅ JWT token generation and validation
+
+**CI/CD Integration:** Tests run automatically on every push to `k8s-development` branch via GitHub Actions.
+
+**Documentation:**
+- 📖 [K8s Integration Testing Guide](docs/K8S_INTEGRATION_TESTING.md) - Complete testing documentation
+- 📖 [Quick Reference](docs/K8S_INTEGRATION_TESTING_QUICK_REF.md) - Cheat sheet for common tasks
+- 📖 [K8s Deployment Guide](k8s/README.md) - Detailed setup instructions
 
 ### Production Build
 

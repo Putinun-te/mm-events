@@ -215,6 +215,9 @@ jobs:
           # Copy base manifests
           cp k8s/*.yaml k8s-test/
           
+          # Fix storageClassName for Kind (uses 'standard', not 'hostpath')
+          sed -i "s|storageClassName: hostpath|storageClassName: standard|g" k8s-test/mysql.yaml
+          
           # Update image references to use SHA tags
           sed -i "s|image: concert-backend:latest|image: ${{ env.REGISTRY }}/${REPO_LOWER}/concert-backend:${{ github.sha }}|g" k8s-test/backend.yaml
           sed -i "s|image: concert-frontend:latest|image: ${{ env.REGISTRY }}/${REPO_LOWER}/concert-frontend:${{ github.sha }}|g" k8s-test/frontend.yaml
@@ -261,6 +264,10 @@ jobs:
 
       - name: 🚀 Deploy to Kind cluster
         run: |
+          echo "Checking storage classes..."
+          kubectl get storageclass
+          
+          echo ""
           echo "Creating namespace..."
           kubectl apply -f k8s-test/namespace.yaml
           
@@ -269,6 +276,22 @@ jobs:
           
           echo "Deploying MySQL..."
           kubectl apply -f k8s-test/mysql.yaml
+          
+          echo "Checking PVC status..."
+          kubectl get pvc -n concert-platform
+          kubectl describe pvc mysql-pvc -n concert-platform
+          
+          echo ""
+          echo "Waiting for PVC to be bound (max 2 minutes)..."
+          kubectl wait --for=jsonpath='{.status.phase}'=Bound pvc/mysql-pvc -n concert-platform --timeout=120s || {
+            echo "❌ PVC failed to bind, checking details..."
+            kubectl get pvc mysql-pvc -n concert-platform -o yaml
+            kubectl get pv
+            exit 1
+          }
+          
+          echo "✅ PVC bound successfully"
+          echo ""
           
           echo "Waiting for MySQL pod to be created..."
           for i in {1..30}; do

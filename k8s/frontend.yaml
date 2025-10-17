@@ -10,7 +10,7 @@ spec:
   type: LoadBalancer
   ports:
   - port: 80
-    targetPort: 80
+    targetPort: 3000  # Nuxt runs on port 3000
     protocol: TCP
     name: http
   selector:
@@ -41,7 +41,7 @@ spec:
         image: concert-frontend:latest
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 80
+        - containerPort: 3000  # Nuxt runs on port 3000
           name: http
         env:
         - name: BACKEND_BASE_URL
@@ -56,16 +56,16 @@ spec:
               key: NODE_ENV
         livenessProbe:
           httpGet:
-            path: /
-            port: 80
+            path: /concert  # Nuxt base URL
+            port: 3000
           initialDelaySeconds: 10
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 3
         readinessProbe:
           httpGet:
-            path: /
-            port: 80
+            path: /concert  # Nuxt base URL
+            port: 3000
           initialDelaySeconds: 5
           periodSeconds: 5
           timeoutSeconds: 3

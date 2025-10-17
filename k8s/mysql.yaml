@@ -10,7 +10,7 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: standard
+  storageClassName: hostpath  # Changed from 'standard' for Docker Desktop compatibility
 ---
 apiVersion: v1
 kind: Service

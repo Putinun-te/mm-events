@@ -24,7 +24,6 @@ coverage/
 .env.local
 .nitro/
 .cache/
-package-lock.json
 
 # === IDE / Editor ===
 .vscode/

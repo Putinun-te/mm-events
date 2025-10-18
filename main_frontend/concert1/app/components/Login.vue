@@ -98,12 +98,16 @@ const handleSubmit = async () => {
           </div>
           <div>
             <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input 
+            <input
               v-model="password" 
-              id="password" 
+              type="password"
+              minlength="8"
+              id="password"
               placeholder="Password" 
               class="w-full py-2 px-3 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition"
               :disabled="isLoading"
+              autocomplete="new-password"
+              required 
               />
           </div>
         </div>
@@ -143,3 +147,15 @@ const handleSubmit = async () => {
     </form>
   </div>
 </template>
+<!-- <style scoped>
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-contacts-auto-fill-button,
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-textfield-decoration-container,
+input[type="password"]::-webkit-clear-button,
+input[type="password"]::-webkit-inner-spin-button {
+  display: none !important;
+  appearance: none;
+}
+</style> -->

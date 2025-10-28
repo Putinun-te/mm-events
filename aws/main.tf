@@ -26,7 +26,6 @@ provider "aws" {
       Project     = "Concert"
       Environment = var.environment
       ManagedBy   = "Terraform"
-      CreatedAt   = timestamp()
     }
   }
 }
@@ -39,6 +38,10 @@ resource "aws_vpc" "concert" {
 
   tags = {
     Name = "${var.project_name}-vpc"
+  }
+
+  lifecycle {
+    ignore_changes = [tags_all]
   }
 }
 
@@ -304,6 +307,10 @@ resource "aws_cloudwatch_log_group" "ecs" {
   tags = {
     Name = "${var.project_name}-logs"
   }
+
+  lifecycle {
+    ignore_changes = [tags_all]
+  }
 }
 
 # ECS Cluster
@@ -317,6 +324,10 @@ resource "aws_ecs_cluster" "concert" {
 
   tags = {
     Name = "${var.project_name}-cluster"
+  }
+
+  lifecycle {
+    ignore_changes = [tags_all]
   }
 }
 
@@ -414,6 +425,10 @@ resource "aws_ecr_repository" "backend" {
   tags = {
     Name = "${var.project_name}-backend-repo"
   }
+
+  lifecycle {
+    ignore_changes = [tags_all]
+  }
 }
 
 # ECR Repository for Frontend
@@ -427,6 +442,10 @@ resource "aws_ecr_repository" "frontend" {
 
   tags = {
     Name = "${var.project_name}-frontend-repo"
+  }
+
+  lifecycle {
+    ignore_changes = [tags_all]
   }
 }
 
@@ -447,6 +466,10 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 
   tags = {
     Name = "${var.project_name}-ecs-task-execution-role"
+  }
+
+  lifecycle {
+    ignore_changes = [tags_all]
   }
 }
 
@@ -473,6 +496,10 @@ resource "aws_iam_role" "ecs_task_role" {
 
   tags = {
     Name = "${var.project_name}-ecs-task-role"
+  }
+
+  lifecycle {
+    ignore_changes = [tags_all]
   }
 }
 

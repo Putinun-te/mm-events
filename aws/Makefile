@@ -103,14 +103,14 @@ aws-login:
 aws-build-backend:
 	@echo "Building and pushing backend image..."
 	cd ../main_backend && \
-	docker build -f Dockerfile.k8s -t concert-backend:latest . && \
+	docker build -f Dockerfile -t concert-backend:latest . && \
 	docker tag concert-backend:latest $$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$(AWS_REGION).amazonaws.com/concert/concert-backend:latest && \
 	docker push $$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$(AWS_REGION).amazonaws.com/concert/concert-backend:latest
 
 aws-build-frontend:
 	@echo "Building and pushing frontend image..."
 	cd ../main_frontend/concert1 && \
-	docker build -f Dockerfile.k8s -t concert-frontend:latest . && \
+	docker build -f Dockerfile -t concert-frontend:latest . && \
 	docker tag concert-frontend:latest $$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$(AWS_REGION).amazonaws.com/concert/concert-frontend:latest && \
 	docker push $$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$(AWS_REGION).amazonaws.com/concert/concert-frontend:latest
 

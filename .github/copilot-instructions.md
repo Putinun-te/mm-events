@@ -1,4 +1,4 @@
-# Copilot Instructions for this Repo
+<!-- # Copilot Instructions for this Repo
 
 Purpose: Enable AI agents to be productive quickly in this monorepo by following the project’s actual patterns and workflows.
 
@@ -69,4 +69,4 @@ Purpose: Enable AI agents to be productive quickly in this monorepo by following
 - Frontend auth UI and calls: `app/components/{Login.vue,Register.vue}`, `server/{login,register}/*.ts`.
 - Test examples: `src/test/java/com/concert/controller/*Test.java`, `repository/*DockerTest.java`.
 
-If anything here seems outdated or unclear, ask which part to refine and I’ll update these instructions.
+If anything here seems outdated or unclear, ask which part to refine and I’ll update these instructions. -->

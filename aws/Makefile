@@ -116,6 +116,25 @@ aws-build-frontend:
 
 aws-build-all: aws-login aws-build-backend aws-build-frontend
 
+deploy-services:
+	@echo "Deploying services to ECS..."
+	@echo "Forcing backend service to update..."
+	aws ecs update-service \
+		--cluster concert-cluster \
+		--service concert-backend-service \
+		--force-new-deployment \
+		--region $(AWS_REGION) \
+		--output json | jq '.service | {serviceName, status, runningCount, desiredCount}'
+	@echo "Forcing frontend service to update..."
+	aws ecs update-service \
+		--cluster concert-cluster \
+		--service concert-frontend-service \
+		--force-new-deployment \
+		--region $(AWS_REGION) \
+		--output json | jq '.service | {serviceName, status, runningCount, desiredCount}'
+	@echo ""
+	@echo "Services are updating. Run 'make status' to check progress."
+
 # Monitoring targets
 monitor-services:
 	@echo "Checking ECS services status..."

@@ -1,0 +1,46 @@
+# AWS Configuration
+aws_region = "us-east-1"
+
+# Project Configuration
+project_name = "concert"
+environment  = "dev"
+
+# Network Configuration
+vpc_cidr              = "10.0.0.0/16"
+availability_zones    = ["us-east-1a", "us-east-1b"]
+public_subnet_cidrs   = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs  = ["10.0.11.0/24", "10.0.12.0/24"]
+
+# Database Configuration
+db_instance_class      = "db.t3.micro"
+db_allocated_storage   = 20
+db_name                = "concert_db"
+db_username            = "concert_user"
+db_password            = "REDACTED_DB_MASTER_PASSWORD" # IMPORTANT: Change this!
+db_multi_az            = false
+skip_final_snapshot    = true
+backup_retention_period = 7
+
+# ECS Configuration - Backend
+backend_cpu            = 256
+backend_memory         = 512
+backend_desired_count  = 2
+backend_min_capacity   = 1
+backend_max_capacity   = 4
+backend_port           = 8080
+
+# ECS Configuration - Frontend
+frontend_cpu           = 256
+frontend_memory        = 512
+frontend_desired_count = 2
+frontend_min_capacity  = 1
+frontend_max_capacity  = 4
+frontend_port          = 3000
+
+# Logging
+log_retention_days = 7
+
+# Docker image URIs (update with your AWS account ID and region)
+# Format: <account-id>.dkr.ecr.<region>.amazonaws.com/<repository>:<tag>
+backend_image_uri  = "123456789012.dkr.ecr.us-east-1.amazonaws.com/concert/concert-backend:latest"
+frontend_image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/concert/concert-frontend:latest"

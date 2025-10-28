@@ -121,7 +121,7 @@ onMounted(loadEvents)
             <button 
               v-if="searchQuery"
               @click="searchQuery = ''"
-              class="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-all"
+              class="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-all pr-7"
               aria-label="Clear search"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

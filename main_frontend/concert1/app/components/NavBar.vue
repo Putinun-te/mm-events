@@ -6,10 +6,13 @@ import { useToast } from '~/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
-const { loadFromStorage, isLoggedIn, clearAuth } = useAuth()
+// const { loadFromStorage, isLoggedIn, clearAuth } = useAuth()
+const { loadFromStorage, clearAuth } = useAuth()
+
 const { success } = useToast()
 const showLogoutModal = ref(false)
 
+const isLoggedIn = ref(false)
 const isMenuOpen = ref(false)
 
 const pages = ref([
@@ -60,41 +63,46 @@ function confirmLogout() {
 function cancelLogout() {
   showLogoutModal.value = false
 }
-</script>
-
-<template>
+</script><template>
   <nav class="bg-black text-white fixed w-full z-20 top-0 left-0 border-b">
     <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
+        <!-- Logo -->
         <div class="flex items-center">
           <NuxtLink to="/" class="flex items-center">
             <span class="text-2xl font-semibold whitespace-nowrap">MM concerts</span>
           </NuxtLink>
         </div>
 
-        <!-- Desktop Links -->
-        <div class="hidden md:flex md:items-center md:space-x-4">
-          <ul class="flex items-center space-x-2">
-            <li v-if="!isLoggedIn" v-for="page in authPages" :key="page.value">
-              <NuxtLink :to="page.value" class="px-3 py-2 rounded hover:text-blue-400 transition">
-                {{ page.text }}
-              </NuxtLink>
-            </li>
+        <!-- Right side (Login/Register + Hamburger) -->
+        <div class="flex items-center space-x-3">
+          <!-- Login/Register button (visible if not logged in) -->
+          <div v-if="!isLoggedIn">
+            <NuxtLink
+              to="/LoginPage"
+              class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition"
+            >
+              Login / Register
+            </NuxtLink>
+          </div>
 
-            <li v-if="isLoggedIn">
-              <NuxtLink to="/CreateEventPage" class="px-3 py-2 rounded hover:text-blue-400 transition">Create Event</NuxtLink>
-            </li>
+          <!-- When logged in -->
+          <div v-else class="flex items-center space-x-2">
+            <!-- <NuxtLink
+              to="/CreateEventPage"
+              class="px-3 py-2 rounded hover:text-blue-400 transition"
+            >
+              Create Event
+            </NuxtLink> -->
+            <button
+              @click="handleLogout"
+              class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-sm"
+            >
+              Logout
+            </button>
+          </div>
 
-            <li v-if="isLoggedIn">
-              <button @click="handleLogout" class="ml-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-sm">
-                🚪 Logout
-              </button>
-            </li>
-          </ul>
-        </div>
-
-        <!-- Mobile hamburger -->
-        <div class="md:hidden flex items-center">
+          <!-- Always visible hamburger -->
           <button
             @click="toggleMenu"
             aria-label="Toggle menu"
@@ -112,39 +120,63 @@ function cancelLogout() {
       </div>
     </div>
 
-    <!-- Mobile menu panel -->
+    <!-- Always visible mobile-style menu -->
     <transition name="fade">
-      <div v-show="isMenuOpen" class="md:hidden bg-black/95 border-t">
+      <div v-show="isMenuOpen" class="bg-black/95 border-t">
         <div class="px-4 pt-4 pb-6 space-y-2">
           <ul class="flex flex-col">
-            <li v-if="!isLoggedIn" v-for="page in authPages" :key="page.value">
+            <!-- Not logged in: show only View Events -->
+            <li v-if="!isLoggedIn">
               <NuxtLink
-                :to="page.value"
+                to="/ProductPage"
                 class="block px-3 py-2 rounded text-white hover:bg-white/5"
                 @click="isMenuOpen = false"
               >
-                {{ page.text }}
+                Browse Events
               </NuxtLink>
             </li>
 
-            <li v-if="isLoggedIn">
-              <NuxtLink
-                to="/CreateEventPage"
-                class="block px-3 py-2 rounded text-white hover:bg-white/5"
-                @click="isMenuOpen = false"
-              >
-                Create Event
-              </NuxtLink>
-            </li>
+            <!-- Logged in: show Profile, Create Event, View Events -->
+            <template v-else>
+              <li>
+                <NuxtLink
+                  to="/ProfilePage"
+                  class="block px-3 py-2 rounded text-white hover:bg-white/5"
+                  @click="isMenuOpen = false"
+                >
+                  Profile Page
+                </NuxtLink>
+              </li>
 
-            <li v-if="isLoggedIn">
-              <button
-                @click="() => { handleLogout(); isMenuOpen = false }"
-                class="w-full text-left px-3 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
-              >
-                🚪 Logout
-              </button>
-            </li>
+              <li>
+                <NuxtLink
+                  to="/CreateEventPage"
+                  class="block px-3 py-2 rounded text-white hover:bg-white/5"
+                  @click="isMenuOpen = false"
+                >
+                  Create Event
+                </NuxtLink>
+              </li>
+
+              <li>
+                <NuxtLink
+                  to="/ViewEventPage"
+                  class="block px-3 py-2 rounded text-white hover:bg-white/5"
+                  @click="isMenuOpen = false"
+                >
+                  View Events
+                </NuxtLink>
+              </li>
+
+              <!-- <li>
+                <button
+                  @click="() => { handleLogout(); isMenuOpen = false }"
+                  class="w-full text-left px-3 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
+                >
+                  🚪 Logout
+                </button>
+              </li> -->
+            </template>
           </ul>
         </div>
       </div>
@@ -158,12 +190,3 @@ function cancelLogout() {
     />
   </nav>
 </template>
-
-<style scoped>
-.fade-enter-active, .fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.fade-enter-from, .fade-leave-to {
-  opacity: 0;
-}
-</style>

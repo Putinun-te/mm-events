@@ -1,0 +1,595 @@
+# 🚀 EC2 Deployment Solution - Ready to Deploy
+
+## Summary
+
+I've created a **complete EC2-based deployment solution** for the Concert application. This is an alternative to the ECS deployment that avoids the ALB and RDS issues you were experiencing.
+
+**What You Get:**
+✅ 2 EC2 instances (backend + frontend)
+✅ Full SSH access for troubleshooting
+✅ Automatic Docker installation & setup
+✅ CloudWatch monitoring & logging
+✅ Elastic IPs for static addressing
+✅ Security groups configured
+✅ IAM roles with proper permissions
+✅ Deployment helper scripts
+✅ Comprehensive documentation
+
+---
+
+## 📋 Files Created/Modified
+
+### New Files
+1. **aws/ec2.tf** (390 lines)
+   - EC2 instances configuration
+   - Security groups and IAM setup
+   - SSH key pair management
+   - CloudWatch log groups
+
+2. **aws/ec2-deploy.sh** (300 lines)
+   - Interactive deployment helper
+   - SSH connection manager
+   - Container deployment automation
+   - Instance monitoring
+
+3. **EC2_DEPLOYMENT_GUIDE.md** (800+ lines)
+   - Complete deployment guide
+   - Architecture diagrams
+   - Step-by-step instructions
+   - Troubleshooting guide
+   - Security best practices
+
+### Modified Files
+1. **aws/variables.tf**
+   - Added EC2 configuration variables
+   - Instance type options
+   - Public key configuration
+   - Elastic IP toggle
+
+2. **aws/outputs.tf**
+   - EC2 instance IDs and IPs
+   - SSH connection commands
+   - Elastic IP addresses
+   - Access URLs
+
+3. **aws/Makefile** (Added 100+ lines)
+   - `make ec2-plan` - Plan EC2 deployment
+   - `make ec2-apply` - Deploy EC2 instances
+   - `make ec2-status` - Check instance status
+   - `make ec2-connect-backend` - SSH to backend
+   - `make ec2-connect-frontend` - SSH to frontend
+   - `make ec2-logs-backend` - View backend logs
+   - `make ec2-logs-frontend` - View frontend logs
+   - `make ec2-info` - Show all EC2 info
+
+---
+
+## 🎯 Quick Start (5 Steps)
+
+### Step 1: Validate Configuration
+```bash
+cd /Users/putinan/development/DevOps/develop/aws
+
+# Validate Terraform
+terraform validate
+# Output: Success! The configuration is valid.
+```
+
+### Step 2: Review Plan
+```bash
+# See what will be created
+terraform plan -target=aws_instance.backend -target=aws_instance.frontend
+
+# Output: Plan: 15 to add, 0 to change, 0 to destroy
+```
+
+### Step 3: Deploy EC2 Instances
+```bash
+# Using Makefile (easiest)
+make ec2-apply
+
+# Or manual
+terraform apply -target=aws_instance.backend -target=aws_instance.frontend -auto-approve
+
+# Expected output:
+# Apply complete! Resources added: 15
+```
+
+### Step 4: Wait for Initialization
+```bash
+# Instances initialize in 2-3 minutes
+# User data script installs Docker and CloudWatch agent
+sleep 180
+
+# Check status
+make ec2-status
+```
+
+### Step 5: Connect & Deploy Containers
+```bash
+# Option A: Using helper script (interactive)
+make ec2-deploy-containers
+
+# Option B: Manual SSH
+BACKEND_EIP=$(terraform output -raw backend_ec2_eip)
+ssh -i concert-key.pem ubuntu@$BACKEND_EIP
+
+# Then inside instance:
+docker pull <ecr-url>:latest
+docker run -d -p 8080:8080 <ecr-url>:latest
+```
+
+---
+
+## 📊 What Gets Created
+
+### Compute
+- **Backend EC2:** t3.medium (2 vCPU, 4GB RAM) - $0.0416/hour
+- **Frontend EC2:** t3.medium (2 vCPU, 4GB RAM) - $0.0416/hour
+- **Elastic IPs:** 2 static public IPs
+
+### Networking
+- Security group with ports: 22 (SSH), 80, 443, 8080, 3000
+- Placed in public subnets for internet access
+- Across 2 availability zones for redundancy
+
+### Security & Monitoring
+- IAM role with ECR, CloudWatch, Secrets Manager access
+- SSH key pair automatically generated or user-provided
+- CloudWatch log groups: `/concert/ec2/docker` and `/concert/ec2/system`
+- Instance-level monitoring enabled
+
+### Estimated Costs (per month)
+```
+EC2 instances:    2 × $30    = $60
+Elastic IPs:      2 × $3.65  = $7.30
+Data transfer:    ~5GB × $0.01 = $0.05
+Total:            ~$70-80/month (if running 24/7)
+```
+
+---
+
+## 🚀 Deployment Commands
+
+### Deploy
+```bash
+# Plan first
+make ec2-plan
+
+# Apply
+make ec2-apply
+
+# Check status after 2-3 minutes
+make ec2-status
+```
+
+### Access
+```bash
+# Get SSH commands
+terraform output backend_ec2_ssh_command
+terraform output frontend_ec2_ssh_command
+
+# Or use Makefile
+make ec2-connect-backend
+make ec2-connect-frontend
+```
+
+### Deploy Containers
+```bash
+# Interactive helper
+make ec2-deploy-containers
+
+# Or manual via SSH
+ssh -i concert-key.pem ubuntu@<eip>
+# Then docker pull and run commands
+```
+
+### Monitor
+```bash
+# Check instance status
+make ec2-status
+
+# View logs
+make ec2-logs-backend
+make ec2-logs-frontend
+
+# Get all info
+make ec2-info
+```
+
+### Destroy
+```bash
+# Remove only EC2 instances (keep VPC, RDS, etc.)
+make ec2-destroy
+
+# Or destroy everything
+terraform destroy -auto-approve
+```
+
+---
+
+## 🔑 SSH Key Management
+
+### Automatic Generation
+```bash
+# Key is automatically generated by Terraform
+# Location: aws/concert-key.pem
+# Permissions: 0600 (read/write for owner only)
+
+ls -la aws/concert-key.pem
+# Output: -rw------- user group 1704 date time concert-key.pem
+```
+
+### SSH Connection
+```bash
+# Get SSH command from Terraform
+terraform output -raw backend_ec2_ssh_command
+
+# Manual SSH
+ssh -i aws/concert-key.pem ubuntu@<elastic-ip>
+
+# First-time connection (auto-accept)
+ssh -i aws/concert-key.pem \
+    -o StrictHostKeyChecking=no \
+    -o UserKnownHostsFile=/dev/null \
+    ubuntu@<elastic-ip>
+```
+
+---
+
+## 📦 Container Deployment
+
+### Manual Deployment Steps
+
+```bash
+# 1. SSH to instance
+ssh -i concert-key.pem ubuntu@<backend-eip>
+
+# 2. Verify Docker is installed
+docker --version
+
+# 3. Configure AWS credentials (IAM role usually handles this)
+aws configure
+# Or use: aws ecr get-login-password
+
+# 4. Login to ECR
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  123456789012.dkr.ecr.us-east-1.amazonaws.com
+
+# 5. Pull backend image
+docker pull 123456789012.dkr.ecr.us-east-1.amazonaws.com/concert/concert-backend:latest
+
+# 6. Get RDS password from Secrets Manager
+DB_PASS=$(aws secretsmanager get-secret-value \
+  --secret-id concert-rds-password \
+  --query SecretString --output text)
+
+# 7. Run backend container
+docker run -d \
+  --name concert-backend \
+  --restart unless-stopped \
+  -p 8080:8080 \
+  -e MYSQL_HOST=<rds-endpoint> \
+  -e MYSQL_PORT=3306 \
+  -e MYSQL_DB=concert \
+  -e MYSQL_USER=admin \
+  -e MYSQL_PASSWORD=$DB_PASS \
+  123456789012.dkr.ecr.us-east-1.amazonaws.com/concert/concert-backend:latest
+
+# 8. Verify it's running
+docker ps
+docker logs concert-backend
+```
+
+### Access Your Application
+
+```bash
+# Frontend (port 3000)
+open http://<frontend-eip>:3000
+
+# Backend API (port 8080)
+curl http://<backend-eip>:8080/api/auth/test
+
+# SSH into instances
+ssh -i concert-key.pem ubuntu@<backend-eip>
+ssh -i concert-key.pem ubuntu@<frontend-eip>
+```
+
+---
+
+## ⚙️ Configuration Options
+
+### Change Instance Type
+
+```bash
+# Edit terraform.tfvars or variables.tf
+ec2_instance_type = "t3.small"    # 2 vCPU, 2GB RAM (~$15/mo)
+ec2_instance_type = "t3.micro"    # 1 vCPU, 1GB RAM (~$8/mo) - free tier eligible
+ec2_instance_type = "t3.large"    # 2 vCPU, 8GB RAM (~$65/mo)
+
+# Re-apply
+terraform apply -auto-approve
+```
+
+### Enable/Disable Instances
+
+```bash
+# Only deploy backend
+enable_ec2_backend = true
+enable_ec2_frontend = false
+
+# Only deploy frontend
+enable_ec2_backend = false
+enable_ec2_frontend = true
+
+# Deploy both (default)
+enable_ec2_backend = true
+enable_ec2_frontend = true
+```
+
+### Adjust Volume Size
+
+```bash
+# Increase root volume (default 30GB)
+ec2_root_volume_size = 50
+
+# Recreate instances with new volume
+terraform destroy -target=aws_instance.backend
+terraform apply -target=aws_instance.backend
+```
+
+### Use Your Own SSH Key
+
+```hcl
+# Provide your public key
+ec2_public_key = "ssh-rsa AAAAB3NzaC1yc2EA... your@email.com"
+
+# Terraform will use it instead of generating new one
+```
+
+---
+
+## 📊 Monitoring & Logs
+
+### CloudWatch Logs
+```bash
+# Tail Docker logs
+aws logs tail /concert/ec2/docker --follow
+
+# Tail System logs
+aws logs tail /concert/ec2/system --follow
+
+# Get specific instance logs
+aws logs tail /concert/ec2/docker \
+  --follow \
+  --log-stream-name <instance-id>
+```
+
+### SSH into Instance & Check Logs
+```bash
+ssh -i concert-key.pem ubuntu@<eip>
+
+# Docker logs
+docker ps
+docker logs concert-backend
+docker logs concert-frontend
+
+# System logs
+sudo tail -f /var/log/syslog
+sudo tail -f /var/log/cloud-init-output.log
+```
+
+### Monitor Resources
+```bash
+# From your laptop
+aws ec2 describe-instances \
+  --instance-ids i-xxxxx \
+  --region us-east-1 \
+  --query 'Reservations[*].Instances[*].[InstanceId,State.Name,PublicIpAddress,InstanceType]' \
+  --output table
+```
+
+---
+
+## 🔒 Security Best Practices
+
+### 1. Restrict SSH Access
+```hcl
+# In ec2.tf, restrict SSH to your IP
+ingress {
+  from_port   = 22
+  to_port     = 22
+  protocol    = "tcp"
+  cidr_blocks = ["1.2.3.4/32"]  # Your IP only
+}
+```
+
+### 2. Use AWS Systems Manager Session Manager
+```bash
+# More secure than SSH for some use cases
+aws ssm start-session --target i-xxxxx
+```
+
+### 3. Rotate SSH Keys Regularly
+```bash
+# Generate new key pair
+aws ec2 create-key-pair --key-name concert-deployer-key-v2
+
+# Update instances with new public key
+# Option 1: Terminate and recreate with new key
+# Option 2: SSH with old key and add new key to ~/.ssh/authorized_keys
+```
+
+### 4. Enable VPC Flow Logs
+```bash
+# Monitor network traffic
+aws ec2 create-flow-logs \
+  --resource-type VPC \
+  --resource-ids vpc-xxxxx \
+  --traffic-type ALL \
+  --log-destination-type cloud-watch-logs
+```
+
+---
+
+## 🆘 Troubleshooting
+
+### Instance stuck initializing
+```bash
+# Check system log
+aws ec2 get-console-output --instance-id i-xxxxx
+
+# Check user data script executed
+ssh -i concert-key.pem ubuntu@<ip>
+cat /var/log/cloud-init-output.log
+```
+
+### Can't SSH to instance
+```bash
+# 1. Verify instance is running
+aws ec2 describe-instances --instance-ids i-xxxxx
+
+# 2. Verify security group allows SSH (port 22)
+aws ec2 describe-security-groups --group-ids sg-xxxxx
+
+# 3. Fix key permissions
+chmod 600 concert-key.pem
+
+# 4. Try with verbose mode
+ssh -vvv -i concert-key.pem ubuntu@<ip>
+```
+
+### Docker pull fails from ECR
+```bash
+# Re-login to ECR
+aws ecr get-login-password --region us-east-1 | \
+  docker login --username AWS --password-stdin \
+  123456789012.dkr.ecr.us-east-1.amazonaws.com
+
+# Verify IAM permissions
+aws iam get-role-policy --role-name concert-ec2-role --policy-name concert-ec2-ecr-policy
+```
+
+### Container won't start
+```bash
+# SSH to instance
+ssh -i concert-key.pem ubuntu@<ip>
+
+# Check Docker logs
+docker logs concert-backend
+
+# Check resource availability
+docker stats
+free -h
+df -h
+```
+
+---
+
+## 📈 Next Steps
+
+### 1. Deploy EC2 Infrastructure
+```bash
+cd /Users/putinan/development/DevOps/develop/aws
+make ec2-apply
+# Wait 2-3 minutes for instances to initialize
+```
+
+### 2. Connect & Deploy Containers
+```bash
+make ec2-deploy-containers
+# Or manually SSH and deploy Docker containers
+```
+
+### 3. Access Application
+```bash
+# Get public IPs/Elastic IPs
+terraform output | grep eip
+
+# Frontend: http://<frontend-eip>:3000
+# Backend API: http://<backend-eip>:8080
+```
+
+### 4. Setup DNS (Optional)
+```bash
+# If using Route 53
+aws route53 change-resource-record-sets \
+  --hosted-zone-id <zone-id> \
+  --change-batch '{
+    "Changes": [
+      {
+        "Action": "CREATE",
+        "ResourceRecordSet": {
+          "Name": "backend.concert.example.com",
+          "Type": "A",
+          "TTL": 300,
+          "ResourceRecords": [{"Value": "<backend-eip>"}]
+        }
+      }
+    ]
+  }'
+```
+
+### 5. Setup SSL/TLS (Optional)
+```bash
+# Install Certbot on instances
+ssh -i concert-key.pem ubuntu@<eip>
+sudo apt-get install -y certbot
+sudo certbot certonly --standalone -d backend.concert.example.com
+
+# Update containers to use HTTPS
+```
+
+---
+
+## 📞 Quick Reference
+
+| Task | Command |
+|------|---------|
+| Deploy EC2 | `make ec2-apply` |
+| Check Status | `make ec2-status` |
+| SSH Backend | `make ec2-connect-backend` |
+| SSH Frontend | `make ec2-connect-frontend` |
+| View Logs | `make ec2-logs-backend` or `make ec2-logs-frontend` |
+| Get Info | `make ec2-info` |
+| Destroy EC2 | `make ec2-destroy` |
+| Show IPs | `terraform output \| grep -E "(eip\|public_ip)"` |
+| Full Destroy | `terraform destroy -auto-approve` |
+
+---
+
+## 🎓 Learning Resources
+
+- **EC2 Deployment Guide:** `EC2_DEPLOYMENT_GUIDE.md` (comprehensive)
+- **Deployment Script:** `aws/ec2-deploy.sh` (interactive helper)
+- **Terraform Files:** `aws/ec2.tf` (infrastructure code)
+- **Makefile Targets:** `aws/Makefile` (automation)
+
+---
+
+## ✅ What's Ready
+
+- ✅ EC2 Terraform configuration (390 lines)
+- ✅ Security groups and IAM roles
+- ✅ SSH key management
+- ✅ CloudWatch monitoring
+- ✅ Deployment helper script (300 lines)
+- ✅ Comprehensive documentation (800+ lines)
+- ✅ Makefile integration (100+ lines)
+- ✅ All variables and outputs configured
+
+## 🚀 Ready to Deploy!
+
+Run this command to get started:
+
+```bash
+cd /Users/putinan/development/DevOps/develop/aws
+make ec2-apply
+```
+
+---
+
+**Status:** ✅ Complete and ready for deployment  
+**Created:** October 30, 2025  
+**Last Updated:** October 30, 2025

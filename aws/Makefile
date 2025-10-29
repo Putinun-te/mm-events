@@ -185,3 +185,89 @@ status:
 
 version:
 	@terraform version
+
+# EC2 Targets
+ec2-plan:
+	@echo "Planning EC2 deployment..."
+	terraform plan -target=aws_instance.backend -target=aws_instance.frontend -target=aws_security_group.ec2 -out=ec2.plan
+
+ec2-apply:
+	@echo "Applying EC2 deployment..."
+	@if [ -f ec2.plan ]; then \
+		terraform apply ec2.plan; \
+	else \
+		terraform apply -target=aws_instance.backend -target=aws_instance.frontend -target=aws_security_group.ec2 -auto-approve; \
+	fi
+	@echo ""
+	@echo "✓ EC2 instances deployed!"
+	@echo ""
+	@echo "Access your instances:"
+	@echo "Backend SSH:  $$(terraform output -raw backend_ec2_ssh_command 2>/dev/null || echo 'N/A')"
+	@echo "Frontend SSH: $$(terraform output -raw frontend_ec2_ssh_command 2>/dev/null || echo 'N/A')"
+	@echo ""
+	@echo "Wait 2-3 minutes for instances to fully initialize..."
+
+ec2-destroy:
+	@echo "Destroying EC2 instances..."
+	terraform destroy -target=aws_instance.backend -target=aws_instance.frontend -target=aws_security_group.ec2 -auto-approve
+
+ec2-status:
+	@echo "EC2 Instances Status"
+	@echo "===================="
+	@echo ""
+	@aws ec2 describe-instances \
+		--filters "Name=tag:Project,Values=Concert" \
+		--region $(AWS_REGION) \
+		--query 'Reservations[*].Instances[*].[InstanceId,Tags[?Key==`Name`].Value|[0],State.Name,PublicIpAddress,InstanceType]' \
+		--output table
+
+ec2-connect-backend:
+	@echo "Connecting to backend EC2 instance..."
+	@BACKEND_EIP=$$(terraform output -raw backend_ec2_eip 2>/dev/null || terraform output -raw backend_ec2_public_ip 2>/dev/null); \
+	if [ -z "$$BACKEND_EIP" ]; then \
+		echo "Backend instance not found or not deployed"; \
+	else \
+		ssh -i concert-key.pem -o StrictHostKeyChecking=no ubuntu@$$BACKEND_EIP; \
+	fi
+
+ec2-connect-frontend:
+	@echo "Connecting to frontend EC2 instance..."
+	@FRONTEND_EIP=$$(terraform output -raw frontend_ec2_eip 2>/dev/null || terraform output -raw frontend_ec2_public_ip 2>/dev/null); \
+	if [ -z "$$FRONTEND_EIP" ]; then \
+		echo "Frontend instance not found or not deployed"; \
+	else \
+		ssh -i concert-key.pem -o StrictHostKeyChecking=no ubuntu@$$FRONTEND_EIP; \
+	fi
+
+ec2-logs-backend:
+	@echo "Tailing backend EC2 logs..."
+	@BACKEND_ID=$$(terraform output -raw backend_ec2_instance_id 2>/dev/null); \
+	if [ -z "$$BACKEND_ID" ]; then \
+		echo "Backend instance not found"; \
+	else \
+		aws logs tail /concert/ec2/docker --follow --log-stream-name-prefix $$BACKEND_ID; \
+	fi
+
+ec2-logs-frontend:
+	@echo "Tailing frontend EC2 logs..."
+	@FRONTEND_ID=$$(terraform output -raw frontend_ec2_instance_id 2>/dev/null); \
+	if [ -z "$$FRONTEND_ID" ]; then \
+		echo "Frontend instance not found"; \
+	else \
+		aws logs tail /concert/ec2/docker --follow --log-stream-name-prefix $$FRONTEND_ID; \
+	fi
+
+ec2-deploy-containers:
+	@echo "Starting EC2 deployment helper..."
+	@chmod +x ec2-deploy.sh
+	@./ec2-deploy.sh
+
+ec2-info:
+	@echo "EC2 Deployment Information"
+	@echo "=========================="
+	@echo ""
+	@echo "Backend Instance:"
+	@terraform output backend_ec2_instance_id backend_ec2_public_ip backend_ec2_eip backend_ec2_ssh_command 2>/dev/null || echo "Not deployed"
+	@echo ""
+	@echo "Frontend Instance:"
+	@terraform output frontend_ec2_instance_id frontend_ec2_public_ip frontend_ec2_eip frontend_ec2_ssh_command 2>/dev/null || echo "Not deployed"

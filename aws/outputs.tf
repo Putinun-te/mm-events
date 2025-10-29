@@ -93,3 +93,44 @@ output "api_url" {
   description = "API URL (backend)"
   value       = "http://${aws_lb.concert.dns_name}/api"
 }
+
+# EC2 Outputs
+output "backend_ec2_instance_id" {
+  description = "Backend EC2 instance ID"
+  value       = var.enable_ec2_backend ? aws_instance.backend[0].id : null
+}
+
+output "backend_ec2_public_ip" {
+  description = "Backend EC2 public IP"
+  value       = var.enable_ec2_backend ? aws_instance.backend[0].public_ip : null
+}
+
+output "backend_ec2_eip" {
+  description = "Backend EC2 Elastic IP"
+  value       = var.enable_ec2_backend && var.associate_eip ? aws_eip.backend[0].public_ip : null
+}
+
+output "frontend_ec2_instance_id" {
+  description = "Frontend EC2 instance ID"
+  value       = var.enable_ec2_frontend ? aws_instance.frontend[0].id : null
+}
+
+output "frontend_ec2_public_ip" {
+  description = "Frontend EC2 public IP"
+  value       = var.enable_ec2_frontend ? aws_instance.frontend[0].public_ip : null
+}
+
+output "frontend_ec2_eip" {
+  description = "Frontend EC2 Elastic IP"
+  value       = var.enable_ec2_frontend && var.associate_eip ? aws_eip.frontend[0].public_ip : null
+}
+
+output "backend_ec2_ssh_command" {
+  description = "SSH command to connect to backend"
+  value       = var.enable_ec2_backend ? "ssh -i ${var.project_name}-key.pem ubuntu@${aws_instance.backend[0].public_ip}" : null
+}
+
+output "frontend_ec2_ssh_command" {
+  description = "SSH command to connect to frontend"
+  value       = var.enable_ec2_frontend ? "ssh -i ${var.project_name}-key.pem ubuntu@${aws_instance.frontend[0].public_ip}" : null
+}

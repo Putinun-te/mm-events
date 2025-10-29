@@ -182,3 +182,41 @@ variable "log_retention_days" {
   type        = number
   default     = 7
 }
+
+# EC2 Configuration
+variable "enable_ec2_backend" {
+  description = "Enable EC2 deployment for backend"
+  type        = bool
+  default     = true
+}
+
+variable "enable_ec2_frontend" {
+  description = "Enable EC2 deployment for frontend"
+  type        = bool
+  default     = true
+}
+
+variable "ec2_instance_type" {
+  description = "EC2 instance type"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "ec2_root_volume_size" {
+  description = "EC2 root volume size in GB"
+  type        = number
+  default     = 30
+}
+
+variable "ec2_public_key" {
+  description = "Public SSH key for EC2 access"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "associate_eip" {
+  description = "Associate Elastic IPs to EC2 instances"
+  type        = bool
+  default     = true
+}

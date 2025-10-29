@@ -17,6 +17,13 @@ help:
 	@echo "  plan           - Plan the deployment"
 	@echo "  apply          - Apply the deployment"
 	@echo "  destroy        - Destroy all resources"
+	@echo ""
+	@echo "FREE TIER TARGETS (Recommended for new AWS accounts):"
+	@echo "  free-tier-plan - Plan free-tier deployment (S3+CloudFront+RDS+EC2, no ALB)"
+	@echo "  free-tier-apply - Apply free-tier deployment"
+	@echo "  free-tier-destroy - Destroy free-tier resources"
+	@echo ""
+	@echo "Other targets:"
 	@echo "  outputs        - Show Terraform outputs"
 	@echo "  logs           - Follow CloudWatch logs"
 	@echo "  console        - Open Terraform console"
@@ -115,6 +122,117 @@ aws-build-frontend:
 	docker push $$(aws sts get-caller-identity --query Account --output text).dkr.ecr.$(AWS_REGION).amazonaws.com/concert/concert-frontend:latest
 
 aws-build-all: aws-login aws-build-backend aws-build-frontend
+
+# Sync built frontend files to S3 (expects ./main_frontend/concert1/.output or build dir)
+.PHONY: s3-sync cf-invalidate
+
+s3-sync:
+	@echo "Syncing frontend build to S3..."
+	@FRONTEND_DIR=../main_frontend/concert1/dist || FRONTEND_DIR=../main_frontend/concert1/.output
+	@BUCKET=$$(terraform output -raw frontend_s3_bucket_name 2>/dev/null || echo ""); \
+	if [ -z "$$BUCKET" ]; then \
+		echo "S3 bucket not found in terraform outputs. Run 'make apply' or 'terraform apply' first."; exit 1; \
+	fi; \
+	# prefer dist then .output
+	if [ -d ../main_frontend/concert1/dist ]; then \
+		aws s3 sync ../main_frontend/concert1/dist s3://$$BUCKET --delete --acl public-read --region $(AWS_REGION); \
+	else \
+		aws s3 sync ../main_frontend/concert1/.output s3://$$BUCKET --delete --acl public-read --region $(AWS_REGION); \
+	fi
+
+cf-invalidate:
+	@echo "Invalidating CloudFront distribution cache..."
+	@DIST_ID=$$(terraform output -raw frontend_cdn_id 2>/dev/null || terraform output -raw frontend_cdn_id 2>/dev/null || echo ""); \
+	if [ -z "$$DIST_ID" ]; then \
+		echo "CloudFront distribution id not found in terraform outputs. Run 'make apply' or 'terraform apply' first."; exit 1; \
+	fi; \
+	aws cloudfront create-invalidation --distribution-id $$DIST_ID --paths "/*" --region $(AWS_REGION) >/dev/null; \
+	echo "Invalidation requested for $$DIST_ID"
+
+# FREE TIER TARGETS
+.PHONY: free-tier-plan free-tier-apply free-tier-destroy free-tier-status
+
+free-tier-plan:
+	@echo "=========================================="
+	@echo "Planning FREE TIER deployment"
+	@echo "=========================================="
+	@echo ""
+	@echo "✓ S3 + CloudFront (frontend)"
+	@echo "✓ RDS (db.t3.micro, 20 GB)"
+	@echo "✓ EC2 (t3.micro instances)"
+	@echo "✗ ALB (not free-tier eligible)"
+	@echo "✗ NAT Gateway (extra costs)"
+	@echo "✗ ECS Fargate (costs per CPU/hour)"
+	@echo ""
+	@echo "Cost: $0 for 12 months (first-time AWS account)"
+	@echo ""
+	terraform plan \
+		-var="enable_alb=false" \
+		-var="enable_nat_gateway=false" \
+		-var="enable_ecs_fargate=false" \
+		-var="free_tier_mode=true" \
+		-var="ec2_instance_type=t3.micro" \
+		-var="db_allocated_storage=20" \
+		-var="db_instance_class=db.t3.micro" \
+		-out=tfplan-free-tier
+
+free-tier-apply:
+	@echo "=========================================="
+	@echo "Applying FREE TIER deployment"
+	@echo "=========================================="
+	@if [ -f tfplan-free-tier ]; then \
+		terraform apply tfplan-free-tier; \
+		echo ""; \
+		echo "✅ Deployment complete!"; \
+		echo ""; \
+		echo "Frontend (CloudFront):"; \
+		echo "  $$(terraform output -raw cloudfront_domain_name 2>/dev/null || echo 'N/A')"; \
+		echo ""; \
+		echo "Backend (EC2):"; \
+		echo "  $$(terraform output -raw backend_ec2_eip 2>/dev/null || echo 'N/A'):8080"; \
+		echo ""; \
+		echo "Database (RDS):"; \
+		echo "  $$(terraform output -raw rds_endpoint 2>/dev/null || echo 'N/A')"; \
+		echo ""; \
+		echo "Next steps:"; \
+		echo "  1. Build frontend: cd ../main_frontend/concert1 && npm run build"; \
+		echo "  2. Sync to S3: make s3-sync"; \
+		echo "  3. Invalidate CloudFront: make cf-invalidate"; \
+		echo "  4. Visit CloudFront domain in browser"; \
+	else \
+		echo "Plan file not found. Run 'make free-tier-plan' first."; \
+		exit 1; \
+	fi
+
+free-tier-destroy:
+	@echo "WARNING: This will destroy all free-tier AWS resources!"
+	@read -p "Are you sure? (yes/no): " response; \
+	if [ "$$response" = "yes" ]; then \
+		terraform destroy \
+			-var="enable_alb=false" \
+			-var="enable_nat_gateway=false" \
+			-var="enable_ecs_fargate=false" \
+			-var="free_tier_mode=true"; \
+	else \
+		echo "Destroy cancelled."; \
+	fi
+
+free-tier-status:
+	@echo "=========================================="
+	@echo "FREE TIER Deployment Status"
+	@echo "=========================================="
+	@echo ""
+	@echo "S3 Bucket:"
+	@terraform output frontend_s3_bucket_name 2>/dev/null || echo "Not deployed"
+	@echo ""
+	@echo "CloudFront Domain:"
+	@terraform output cloudfront_domain_name 2>/dev/null || echo "Not deployed"
+	@echo ""
+	@echo "Backend EC2:"
+	@terraform output backend_ec2_eip 2>/dev/null || echo "Not deployed"
+	@echo ""
+	@echo "RDS Endpoint:"
+	@terraform output rds_endpoint 2>/dev/null || echo "Not deployed"
 
 deploy-services:
 	@echo "Deploying services to ECS..."

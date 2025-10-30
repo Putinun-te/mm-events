@@ -143,6 +143,12 @@ variable "cloudwatch_log_group_name" {
 # TAGS
 # ============================================================================
 
+variable "frontend_domain" {
+  description = "Frontend domain for CORS configuration"
+  type        = string
+  default     = "localhost:3000"
+}
+
 variable "tags" {
   description = "Common tags to apply to all resources"
   type        = map(string)

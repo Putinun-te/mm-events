@@ -89,9 +89,9 @@ resource "aws_sns_topic" "alerts" {
 resource "aws_sqs_queue" "email_queue" {
   name                       = "concert-email-queue-${var.environment}"
   delay_seconds              = 0
-  max_message_size           = 262144  # 256 KB
-  message_retention_seconds  = 345600  # 4 days
-  visibility_timeout_seconds = 300     # 5 minutes
+  max_message_size           = 262144 # 256 KB
+  message_retention_seconds  = 345600 # 4 days
+  visibility_timeout_seconds = 300    # 5 minutes
   kms_master_key_id          = "alias/aws/sqs"
 
   tags = {
@@ -100,9 +100,9 @@ resource "aws_sqs_queue" "email_queue" {
 }
 
 resource "aws_sqs_queue" "email_queue_dlq" {
-  name              = "concert-email-queue-dlq-${var.environment}"
-  message_retention_seconds = 1209600  # 14 days
-  kms_master_key_id = "alias/aws/sqs"
+  name                      = "concert-email-queue-dlq-${var.environment}"
+  message_retention_seconds = 1209600 # 14 days
+  kms_master_key_id         = "alias/aws/sqs"
 
   tags = {
     Name = "concert-email-queue-dlq-${var.environment}"
@@ -111,7 +111,7 @@ resource "aws_sqs_queue" "email_queue_dlq" {
 
 resource "aws_sqs_queue_redrive_policy" "email_queue" {
   queue_url = aws_sqs_queue.email_queue.url
-  
+
   redrive_policy = jsonencode({
     deadLetterTargetArn = aws_sqs_queue.email_queue_dlq.arn
     maxReceiveCount     = 3
@@ -138,7 +138,7 @@ resource "aws_sqs_queue" "refund_queue" {
   delay_seconds              = 0
   max_message_size           = 262144
   message_retention_seconds  = 345600
-  visibility_timeout_seconds = 900  # 15 minutes for refund processing
+  visibility_timeout_seconds = 900 # 15 minutes for refund processing
   kms_master_key_id          = "alias/aws/sqs"
 
   tags = {
@@ -151,11 +151,11 @@ resource "aws_sqs_queue" "analytics_queue" {
   name                       = "concert-analytics-queue-${var.environment}"
   delay_seconds              = 0
   max_message_size           = 262144
-  message_retention_seconds  = 604800  # 7 days
+  message_retention_seconds  = 604800 # 7 days
   visibility_timeout_seconds = 300
   kms_master_key_id          = "alias/aws/sqs"
 
-  receive_wait_time_seconds = 20  # Long polling
+  receive_wait_time_seconds = 20 # Long polling
 
   tags = {
     Name = "concert-analytics-queue-${var.environment}"
@@ -235,7 +235,7 @@ resource "aws_cloudwatch_metric_alarm" "sqs_email_queue_age" {
   namespace           = "AWS/SQS"
   period              = 300
   statistic           = "Average"
-  threshold           = 300  # 5 minutes
+  threshold           = 300 # 5 minutes
   alarm_description   = "Alert when email queue message age is high"
   treat_missing_data  = "notBreaching"
 

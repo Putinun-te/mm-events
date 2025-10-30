@@ -1,7 +1,7 @@
 # S3 Buckets for File Storage
 resource "aws_s3_bucket" "event_pictures" {
   bucket = "${var.project_name}-event-pictures-${data.aws_caller_identity.current.account_id}"
-  
+
   tags = {
     Name        = "Concert Event Pictures"
     Environment = var.environment
@@ -11,7 +11,7 @@ resource "aws_s3_bucket" "event_pictures" {
 
 resource "aws_s3_bucket" "user_avatars" {
   bucket = "${var.project_name}-user-avatars-${data.aws_caller_identity.current.account_id}"
-  
+
   tags = {
     Name        = "Concert User Avatars"
     Environment = var.environment
@@ -22,7 +22,7 @@ resource "aws_s3_bucket" "user_avatars" {
 # Enable versioning for event pictures
 resource "aws_s3_bucket_versioning" "event_pictures" {
   bucket = aws_s3_bucket.event_pictures.id
-  
+
   versioning_configuration {
     status = "Enabled"
   }
@@ -78,9 +78,9 @@ resource "aws_s3_bucket_cors_configuration" "event_pictures" {
     allowed_methods = ["GET", "PUT", "POST"]
     allowed_origins = [
       "https://${var.frontend_domain}",
-      "http://localhost:3000"  # Development
+      "http://localhost:3000" # Development
     ]
-    expose_headers = ["ETag", "x-amz-version-id"]
+    expose_headers  = ["ETag", "x-amz-version-id"]
     max_age_seconds = 3000
   }
 }
@@ -94,9 +94,9 @@ resource "aws_s3_bucket_cors_configuration" "user_avatars" {
     allowed_methods = ["GET", "PUT", "POST"]
     allowed_origins = [
       "https://${var.frontend_domain}",
-      "http://localhost:3000"  # Development
+      "http://localhost:3000" # Development
     ]
-    expose_headers = ["ETag", "x-amz-version-id"]
+    expose_headers  = ["ETag", "x-amz-version-id"]
     max_age_seconds = 3000
   }
 }
@@ -109,11 +109,11 @@ resource "aws_s3_bucket_policy" "event_pictures" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "PublicRead"
-        Effect = "Allow"
+        Sid       = "PublicRead"
+        Effect    = "Allow"
         Principal = "*"
-        Action = "s3:GetObject"
-        Resource = "${aws_s3_bucket.event_pictures.arn}/*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.event_pictures.arn}/*"
       },
       {
         Sid    = "BackendWrite"
@@ -140,11 +140,11 @@ resource "aws_s3_bucket_policy" "user_avatars" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "PublicRead"
-        Effect = "Allow"
+        Sid       = "PublicRead"
+        Effect    = "Allow"
         Principal = "*"
-        Action = "s3:GetObject"
-        Resource = "${aws_s3_bucket.user_avatars.arn}/*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.user_avatars.arn}/*"
       },
       {
         Sid    = "BackendWrite"
@@ -195,7 +195,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "user_avatars" {
     status = "Enabled"
 
     expiration {
-      days = 1825  # 5 years
+      days = 1825 # 5 years
     }
   }
 }

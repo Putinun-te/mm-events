@@ -19,45 +19,45 @@ resource "aws_db_subnet_group" "concert" {
 # ============================================================================
 
 resource "aws_db_instance" "concert" {
-  identifier              = "concert-mysql-${var.environment}"
-  engine                  = "mysql"
-  engine_version          = "8.0.35"
-  instance_class          = var.rds_instance_class
-  allocated_storage       = var.rds_allocated_storage
-  storage_encrypted       = true
-  storage_type            = "gp3"
-  
+  identifier        = "concert-mysql-${var.environment}"
+  engine            = "mysql"
+  engine_version    = "8.0.35"
+  instance_class    = var.rds_instance_class
+  allocated_storage = var.rds_allocated_storage
+  storage_encrypted = true
+  storage_type      = "gp3"
+
   # Credentials
   db_name  = var.rds_database_name
   username = var.rds_username
   password = random_password.rds_password.result
-  
+
   # Networking
   db_subnet_group_name   = aws_db_subnet_group.concert.name
   vpc_security_group_ids = [var.rds_security_group_id]
   publicly_accessible    = false
-  
+
   # Backups & Maintenance
   backup_retention_period = 30
-  backup_window          = "03:00-04:00"
-  maintenance_window     = "sun:04:00-sun:05:00"
-  multi_az               = var.environment == "prod" ? true : false
-  
+  backup_window           = "03:00-04:00"
+  maintenance_window      = "sun:04:00-sun:05:00"
+  multi_az                = var.environment == "prod" ? true : false
+
   # High Availability
   skip_final_snapshot       = var.environment != "prod"
   final_snapshot_identifier = "concert-mysql-final-snapshot-${var.environment}-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
-  
+
   # Monitoring
   performance_insights_enabled    = var.environment == "prod" ? true : false
   monitoring_interval             = var.environment == "prod" ? 60 : 0
   monitoring_role_arn             = aws_iam_role.rds_monitoring.arn
   enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
-  
+
   # Advanced Options
   parameter_group_name = aws_db_parameter_group.concert.name
   option_group_name    = aws_db_option_group.concert.name
   deletion_protection  = var.environment == "prod" ? true : false
-  
+
   tags = {
     Name = "concert-mysql-${var.environment}"
   }
@@ -176,11 +176,11 @@ resource "aws_secretsmanager_secret_version" "rds_credentials" {
 # ============================================================================
 
 resource "aws_db_instance" "read_replica" {
-  count              = var.environment == "prod" ? 1 : 0
-  identifier         = "concert-mysql-read-replica-${var.environment}"
+  count               = var.environment == "prod" ? 1 : 0
+  identifier          = "concert-mysql-read-replica-${var.environment}"
   replicate_source_db = aws_db_instance.concert.identifier
-  instance_class     = var.rds_instance_class
-  storage_encrypted  = true
+  instance_class      = var.rds_instance_class
+  storage_encrypted   = true
   publicly_accessible = false
 
   tags = {
@@ -234,7 +234,7 @@ resource "aws_cloudwatch_metric_alarm" "rds_storage" {
   namespace           = "AWS/RDS"
   period              = 300
   statistic           = "Average"
-  threshold           = 5368709120  # 5GB in bytes
+  threshold           = 5368709120 # 5GB in bytes
   alarm_description   = "Alert when free storage space is low"
   treat_missing_data  = "notBreaching"
 

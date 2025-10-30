@@ -8,10 +8,10 @@ resource "aws_apigatewayv2_api" "file_upload" {
       "https://${var.frontend_domain}",
       "http://localhost:3000"
     ]
-    allow_methods = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    allow_headers = ["*"]
+    allow_methods  = ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_headers  = ["*"]
     expose_headers = ["content-length", "content-type", "x-amz-version-id"]
-    max_age = 300
+    max_age        = 300
   }
 
   tags = {
@@ -79,8 +79,8 @@ resource "aws_iam_role_policy_attachment" "lambda_logs" {
 
 # Policy for Lambda to access S3
 resource "aws_iam_role_policy" "lambda_s3_policy" {
-  name   = "${var.project_name}-lambda-s3-policy"
-  role   = aws_iam_role.lambda_presigned_url_role.id
+  name = "${var.project_name}-lambda-s3-policy"
+  role = aws_iam_role.lambda_presigned_url_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -111,8 +111,8 @@ resource "aws_lambda_function" "generate_presigned_url" {
 
   environment {
     variables = {
-      EVENT_PICTURES_BUCKET = aws_s3_bucket.event_pictures.id
-      USER_AVATARS_BUCKET   = aws_s3_bucket.user_avatars.id
+      EVENT_PICTURES_BUCKET    = aws_s3_bucket.event_pictures.id
+      USER_AVATARS_BUCKET      = aws_s3_bucket.user_avatars.id
       PRESIGNED_URL_EXPIRATION = "3600"
     }
   }
@@ -131,10 +131,10 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 
 # API Gateway Integration with Lambda
 resource "aws_apigatewayv2_integration" "lambda_integration" {
-  api_id           = aws_apigatewayv2_api.file_upload.id
-  integration_type = "AWS_PROXY"
+  api_id                 = aws_apigatewayv2_api.file_upload.id
+  integration_type       = "AWS_PROXY"
   payload_format_version = "2.0"
-  
+
   integration_uri = aws_lambda_function.generate_presigned_url.invoke_arn
 }
 

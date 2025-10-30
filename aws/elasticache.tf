@@ -6,35 +6,35 @@
 # ============================================================================
 
 resource "aws_elasticache_replication_group" "concert" {
-  replication_group_id          = "concert-redis-${var.environment}"
-  description                   = "Concert Redis cluster for caching and sessions"
-  engine                        = "redis"
-  engine_version                = "7.0"
-  node_type                     = var.elasticache_node_type
-  num_cache_clusters            = var.environment == "prod" ? 3 : 1
-  parameter_group_name          = aws_elasticache_parameter_group.concert.name
-  port                          = 6379
-  
+  replication_group_id = "concert-redis-${var.environment}"
+  description          = "Concert Redis cluster for caching and sessions"
+  engine               = "redis"
+  engine_version       = "7.0"
+  node_type            = var.elasticache_node_type
+  num_cache_clusters   = var.environment == "prod" ? 3 : 1
+  parameter_group_name = aws_elasticache_parameter_group.concert.name
+  port                 = 6379
+
   # Networking
-  subnet_group_name       = aws_elasticache_subnet_group.concert.name
-  security_group_ids      = [var.elasticache_security_group_id]
-  
+  subnet_group_name  = aws_elasticache_subnet_group.concert.name
+  security_group_ids = [var.elasticache_security_group_id]
+
   # High Availability
   automatic_failover_enabled = var.environment == "prod" ? true : false
-  multi_az_enabled          = var.environment == "prod" ? true : false
-  
+  multi_az_enabled           = var.environment == "prod" ? true : false
+
   # Encryption
   transit_encryption_enabled = true
   auth_token                 = random_password.elasticache_auth_token.result
   at_rest_encryption_enabled = true
-  
+
   # Snapshots
   snapshot_retention_limit = var.environment == "prod" ? 30 : 5
   snapshot_window          = "03:00-05:00"
-  
+
   # Maintenance
   maintenance_window = "sun:04:00-sun:05:00"
-  
+
   tags = {
     Name = "concert-redis-cluster-${var.environment}"
   }
@@ -54,30 +54,30 @@ resource "aws_elasticache_parameter_group" "concert" {
   # Memory Management
   parameter {
     name  = "maxmemory-policy"
-    value = "allkeys-lru"  # Evict using LRU when max memory reached
+    value = "allkeys-lru" # Evict using LRU when max memory reached
   }
 
   # Connection Settings
   parameter {
     name  = "timeout"
-    value = "300"  # Close connection after 300s idle
+    value = "300" # Close connection after 300s idle
   }
 
   parameter {
     name  = "tcp-keepalive"
-    value = "60"  # TCP keepalive
+    value = "60" # TCP keepalive
   }
 
   # Performance
   parameter {
     name  = "databases"
-    value = "16"  # Number of databases
+    value = "16" # Number of databases
   }
 
   # Eviction
   parameter {
     name  = "maxmemory-samples"
-    value = "3"  # Number of samples for LRU
+    value = "3" # Number of samples for LRU
   }
 
   tags = {

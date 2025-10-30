@@ -23,8 +23,8 @@ resource "aws_iam_role" "backend_ec2_role" {
 
 # Inline policy for S3 access
 resource "aws_iam_role_policy" "backend_s3_policy" {
-  name   = "${var.project_name}-backend-s3-policy"
-  role   = aws_iam_role.backend_ec2_role.id
+  name = "${var.project_name}-backend-s3-policy"
+  role = aws_iam_role.backend_ec2_role.id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -99,8 +99,8 @@ resource "aws_iam_group" "admins" {
 
 # IAM Policy for Developer S3 Access
 resource "aws_iam_group_policy" "developer_s3_policy" {
-  name   = "${var.project_name}-developer-s3-policy"
-  group  = aws_iam_group.developers.name
+  name  = "${var.project_name}-developer-s3-policy"
+  group = aws_iam_group.developers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -137,8 +137,8 @@ resource "aws_iam_group_policy" "developer_s3_policy" {
 
 # Developer - EC2 and RDS Access
 resource "aws_iam_group_policy" "developer_compute_policy" {
-  name   = "${var.project_name}-developer-compute-policy"
-  group  = aws_iam_group.developers.name
+  name  = "${var.project_name}-developer-compute-policy"
+  group = aws_iam_group.developers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -182,8 +182,8 @@ resource "aws_iam_group_policy" "developer_compute_policy" {
 
 # Developer - API Gateway and Lambda Access
 resource "aws_iam_group_policy" "developer_apigateway_policy" {
-  name   = "${var.project_name}-developer-apigateway-policy"
-  group  = aws_iam_group.developers.name
+  name  = "${var.project_name}-developer-apigateway-policy"
+  group = aws_iam_group.developers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -214,8 +214,8 @@ resource "aws_iam_group_policy" "developer_apigateway_policy" {
 
 # Developer - Lambda Invocation
 resource "aws_iam_group_policy" "developer_lambda_policy" {
-  name   = "${var.project_name}-developer-lambda-policy"
-  group  = aws_iam_group.developers.name
+  name  = "${var.project_name}-developer-lambda-policy"
+  group = aws_iam_group.developers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -234,8 +234,8 @@ resource "aws_iam_group_policy" "developer_lambda_policy" {
 
 # Developer - CloudWatch Logs Access
 resource "aws_iam_group_policy" "developer_logs_policy" {
-  name   = "${var.project_name}-developer-logs-policy"
-  group  = aws_iam_group.developers.name
+  name  = "${var.project_name}-developer-logs-policy"
+  group = aws_iam_group.developers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -257,8 +257,8 @@ resource "aws_iam_group_policy" "developer_logs_policy" {
 
 # Developer - Self-Service Credentials
 resource "aws_iam_group_policy" "developer_self_service_policy" {
-  name   = "${var.project_name}-developer-self-service-policy"
-  group  = aws_iam_group.developers.name
+  name  = "${var.project_name}-developer-self-service-policy"
+  group = aws_iam_group.developers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -313,8 +313,8 @@ resource "aws_iam_group_policy" "developer_self_service_policy" {
 
 # Tester - S3 Test Access
 resource "aws_iam_group_policy" "tester_s3_policy" {
-  name   = "${var.project_name}-tester-s3-policy"
-  group  = aws_iam_group.testers.name
+  name  = "${var.project_name}-tester-s3-policy"
+  group = aws_iam_group.testers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -350,8 +350,8 @@ resource "aws_iam_group_policy" "tester_s3_policy" {
 
 # Tester - EC2 and RDS Test Access
 resource "aws_iam_group_policy" "tester_compute_policy" {
-  name   = "${var.project_name}-tester-compute-policy"
-  group  = aws_iam_group.testers.name
+  name  = "${var.project_name}-tester-compute-policy"
+  group = aws_iam_group.testers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -393,8 +393,8 @@ resource "aws_iam_group_policy" "tester_compute_policy" {
 
 # Tester - API Gateway and Lambda Test Access
 resource "aws_iam_group_policy" "tester_api_policy" {
-  name   = "${var.project_name}-tester-api-policy"
-  group  = aws_iam_group.testers.name
+  name  = "${var.project_name}-tester-api-policy"
+  group = aws_iam_group.testers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -428,8 +428,8 @@ resource "aws_iam_group_policy" "tester_api_policy" {
 
 # Tester - CloudWatch and Monitoring
 resource "aws_iam_group_policy" "tester_monitoring_policy" {
-  name   = "${var.project_name}-tester-monitoring-policy"
-  group  = aws_iam_group.testers.name
+  name  = "${var.project_name}-tester-monitoring-policy"
+  group = aws_iam_group.testers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -461,8 +461,8 @@ resource "aws_iam_group_policy" "tester_monitoring_policy" {
 
 # Tester - Self-Service Credentials
 resource "aws_iam_group_policy" "tester_self_service_policy" {
-  name   = "${var.project_name}-tester-self-service-policy"
-  group  = aws_iam_group.testers.name
+  name  = "${var.project_name}-tester-self-service-policy"
+  group = aws_iam_group.testers.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -487,8 +487,8 @@ resource "aws_iam_group_policy" "tester_self_service_policy" {
 
 # Deployment - EC2 Instance Management
 resource "aws_iam_group_policy" "deployment_ec2_policy" {
-  name   = "${var.project_name}-deployment-ec2-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-ec2-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -516,8 +516,8 @@ resource "aws_iam_group_policy" "deployment_ec2_policy" {
 
 # Deployment - ECS Task Management
 resource "aws_iam_group_policy" "deployment_ecs_policy" {
-  name   = "${var.project_name}-deployment-ecs-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-ecs-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -548,8 +548,8 @@ resource "aws_iam_group_policy" "deployment_ecs_policy" {
 
 # Deployment - RDS Management
 resource "aws_iam_group_policy" "deployment_rds_policy" {
-  name   = "${var.project_name}-deployment-rds-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-rds-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -576,8 +576,8 @@ resource "aws_iam_group_policy" "deployment_rds_policy" {
 
 # Deployment - S3 and Terraform State
 resource "aws_iam_group_policy" "deployment_s3_terraform_policy" {
-  name   = "${var.project_name}-deployment-s3-terraform-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-s3-terraform-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -634,8 +634,8 @@ resource "aws_iam_group_policy" "deployment_s3_terraform_policy" {
 
 # Deployment - Lambda Deployment
 resource "aws_iam_group_policy" "deployment_lambda_policy" {
-  name   = "${var.project_name}-deployment-lambda-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-lambda-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -662,8 +662,8 @@ resource "aws_iam_group_policy" "deployment_lambda_policy" {
 
 # Deployment - API Gateway and CloudFormation
 resource "aws_iam_group_policy" "deployment_api_cf_policy" {
-  name   = "${var.project_name}-deployment-api-cf-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-api-cf-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -705,8 +705,8 @@ resource "aws_iam_group_policy" "deployment_api_cf_policy" {
 
 # Deployment - IAM PassRole (limited)
 resource "aws_iam_group_policy" "deployment_pass_role_policy" {
-  name   = "${var.project_name}-deployment-pass-role-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-pass-role-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -737,8 +737,8 @@ resource "aws_iam_group_policy" "deployment_pass_role_policy" {
 
 # Deployment - CloudWatch Logs
 resource "aws_iam_group_policy" "deployment_logs_policy" {
-  name   = "${var.project_name}-deployment-logs-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-logs-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -761,8 +761,8 @@ resource "aws_iam_group_policy" "deployment_logs_policy" {
 
 # Deployment - Self-Service Credentials
 resource "aws_iam_group_policy" "deployment_self_service_policy" {
-  name   = "${var.project_name}-deployment-self-service-policy"
-  group  = aws_iam_group.deployment.name
+  name  = "${var.project_name}-deployment-self-service-policy"
+  group = aws_iam_group.deployment.name
 
   policy = jsonencode({
     Version = "2012-10-17"

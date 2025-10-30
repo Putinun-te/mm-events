@@ -6,10 +6,10 @@
 # ============================================================================
 
 resource "aws_dynamodb_table" "session_tokens" {
-  name           = "concert-session-tokens-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "token_id"
-  range_key      = "user_id"
+  name         = "concert-session-tokens-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "token_id"
+  range_key    = "user_id"
 
   attribute {
     name = "token_id"
@@ -49,7 +49,7 @@ resource "aws_dynamodb_table" "session_tokens" {
 
 resource "aws_dynamodb_table" "event_details" {
   name         = "concert-event-details-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
+  billing_mode = "PAY_PER_REQUEST"
   hash_key     = "event_id"
 
   attribute {
@@ -84,7 +84,7 @@ resource "aws_dynamodb_table" "event_details" {
 
 resource "aws_dynamodb_table" "booking_cache" {
   name         = "concert-booking-cache-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
+  billing_mode = "PAY_PER_REQUEST"
   hash_key     = "booking_id"
 
   attribute {
@@ -119,7 +119,7 @@ resource "aws_dynamodb_table" "booking_cache" {
 
 resource "aws_dynamodb_table" "user_preferences" {
   name         = "concert-user-preferences-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
+  billing_mode = "PAY_PER_REQUEST"
   hash_key     = "user_id"
 
   attribute {
@@ -138,7 +138,7 @@ resource "aws_dynamodb_table" "user_preferences" {
 
 resource "aws_dynamodb_table" "file_metadata" {
   name         = "concert-file-metadata-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
+  billing_mode = "PAY_PER_REQUEST"
   hash_key     = "file_key"
 
   attribute {
@@ -168,7 +168,7 @@ resource "aws_dynamodb_table" "file_metadata" {
 
 resource "aws_dynamodb_table" "email_log" {
   name         = "concert-email-log-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
+  billing_mode = "PAY_PER_REQUEST"
   hash_key     = "email_id"
 
   attribute {
@@ -203,7 +203,7 @@ resource "aws_dynamodb_table" "email_log" {
 
 resource "aws_dynamodb_table" "payment_cache" {
   name         = "concert-payment-cache-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
+  billing_mode = "PAY_PER_REQUEST"
   hash_key     = "payment_id"
 
   attribute {
@@ -226,10 +226,10 @@ resource "aws_dynamodb_table" "payment_cache" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "analytics_events" {
-  name           = "concert-analytics-events-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"  # Always on-demand for analytics
-  hash_key       = "event_type"
-  range_key      = "timestamp"
+  name         = "concert-analytics-events-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST" # Always on-demand for analytics
+  hash_key     = "event_type"
+  range_key    = "timestamp"
 
   attribute {
     name = "event_type"
@@ -268,9 +268,9 @@ resource "aws_dynamodb_table" "analytics_events" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "audit_cache" {
-  name           = "concert-audit-cache-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "audit_id"
+  name         = "concert-audit-cache-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key     = "audit_id"
 
   attribute {
     name = "audit_id"

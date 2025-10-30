@@ -1,7 +1,7 @@
-# Output the ALB DNS name
+# Output the ALB DNS name (conditional)
 output "alb_dns_name" {
   description = "DNS name of the Application Load Balancer"
-  value       = aws_lb.concert.dns_name
+  value       = var.enable_alb ? aws_lb.concert[0].dns_name : "ALB not enabled in free-tier mode"
 }
 
 # Output the RDS endpoint
@@ -16,16 +16,16 @@ output "ecs_cluster_name" {
   value       = aws_ecs_cluster.concert.name
 }
 
-# Output the backend service name
+# Output the backend service name (conditional)
 output "backend_service_name" {
   description = "Backend ECS service name"
-  value       = aws_ecs_service.backend.name
+  value       = var.enable_alb ? aws_ecs_service.backend[0].name : "Using EC2 instances"
 }
 
-# Output the frontend service name
+# Output the frontend service name (conditional)
 output "frontend_service_name" {
   description = "Frontend ECS service name"
-  value       = aws_ecs_service.frontend.name
+  value       = var.enable_alb ? aws_ecs_service.frontend[0].name : "Using S3/CloudFront"
 }
 
 # Output the ECR repository URLs
@@ -85,13 +85,13 @@ output "cloudwatch_log_group" {
 
 # Output access URLs
 output "application_url" {
-  description = "Application URL (frontend)"
-  value       = "http://${aws_lb.concert.dns_name}"
+  description = "Application URL (frontend via S3/CloudFront)"
+  value       = var.enable_cloudfront ? "https://${aws_cloudfront_distribution.frontend_cdn[0].domain_name}" : "http://${aws_s3_bucket.frontend_site.website_endpoint}"
 }
 
 output "api_url" {
-  description = "API URL (backend)"
-  value       = "http://${aws_lb.concert.dns_name}/api"
+  description = "API URL (backend via EC2)"
+  value       = var.enable_alb ? "http://${aws_lb.concert[0].dns_name}/api" : "Backend accessible via EC2 instance"
 }
 
 # EC2 Outputs

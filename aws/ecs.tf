@@ -108,8 +108,9 @@ resource "aws_ecs_task_definition" "frontend" {
   }
 }
 
-# ECS Service for Backend
+# ECS Service for Backend (only if ALB is enabled)
 resource "aws_ecs_service" "backend" {
+  count           = var.enable_alb ? 1 : 0
   name            = "${var.project_name}-backend-service"
   cluster         = aws_ecs_cluster.concert.id
   task_definition = aws_ecs_task_definition.backend.arn
@@ -123,7 +124,7 @@ resource "aws_ecs_service" "backend" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.backend.arn
+    target_group_arn = aws_lb_target_group.backend[0].arn
     container_name   = "concert-backend"
     container_port   = var.backend_port
   }
@@ -138,8 +139,9 @@ resource "aws_ecs_service" "backend" {
   }
 }
 
-# ECS Service for Frontend
+# ECS Service for Frontend (only if ALB is enabled)
 resource "aws_ecs_service" "frontend" {
+  count           = var.enable_alb ? 1 : 0
   name            = "${var.project_name}-frontend-service"
   cluster         = aws_ecs_cluster.concert.id
   task_definition = aws_ecs_task_definition.frontend.arn
@@ -153,7 +155,7 @@ resource "aws_ecs_service" "frontend" {
   }
 
   load_balancer {
-    target_group_arn = aws_lb_target_group.frontend.arn
+    target_group_arn = aws_lb_target_group.frontend[0].arn
     container_name   = "concert-frontend"
     container_port   = var.frontend_port
   }

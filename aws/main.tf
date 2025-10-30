@@ -215,8 +215,9 @@ resource "aws_security_group" "ecs_tasks" {
   }
 }
 
-# Application Load Balancer
+# Application Load Balancer (conditional - not available in free tier for some accounts)
 resource "aws_lb" "concert" {
+  count              = var.enable_alb ? 1 : 0
   name               = "${var.project_name}-alb"
   internal           = false
   load_balancer_type = "application"
@@ -230,8 +231,9 @@ resource "aws_lb" "concert" {
   }
 }
 
-# Target Group for Backend
+# Target Group for Backend (conditional)
 resource "aws_lb_target_group" "backend" {
+  count       = var.enable_alb ? 1 : 0
   name        = "${var.project_name}-backend-tg"
   port        = 8080
   protocol    = "HTTP"
@@ -252,8 +254,9 @@ resource "aws_lb_target_group" "backend" {
   }
 }
 
-# Target Group for Frontend
+# Target Group for Frontend (conditional)
 resource "aws_lb_target_group" "frontend" {
+  count       = var.enable_alb ? 1 : 0
   name        = "${var.project_name}-frontend-tg"
   port        = 3000
   protocol    = "HTTP"
@@ -274,26 +277,28 @@ resource "aws_lb_target_group" "frontend" {
   }
 }
 
-# ALB Listener for Frontend
+# ALB Listener for Frontend (conditional)
 resource "aws_lb_listener" "frontend" {
-  load_balancer_arn = aws_lb.concert.arn
+  count             = var.enable_alb ? 1 : 0
+  load_balancer_arn = aws_lb.concert[0].arn
   port              = 80
   protocol          = "HTTP"
 
   default_action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.frontend.arn
+    target_group_arn = aws_lb_target_group.frontend[0].arn
   }
 }
 
-# ALB Listener Rule for Backend
+# ALB Listener Rule for Backend (conditional)
 resource "aws_lb_listener_rule" "backend" {
-  listener_arn = aws_lb_listener.frontend.arn
+  count        = var.enable_alb ? 1 : 0
+  listener_arn = aws_lb_listener.frontend[0].arn
   priority     = 100
 
   action {
     type             = "forward"
-    target_group_arn = aws_lb_target_group.backend.arn
+    target_group_arn = aws_lb_target_group.backend[0].arn
   }
 
   condition {
@@ -393,7 +398,7 @@ resource "aws_db_instance" "concert" {
   allocated_storage     = var.db_allocated_storage
   storage_type          = "gp3"
   storage_encrypted     = true
-  iops                  = 3000
+  iops                  = var.enable_rds_iops && var.db_allocated_storage >= 400 ? 3000 : null
   db_name               = var.db_name
   username              = var.db_username
   password              = var.db_password
@@ -526,22 +531,24 @@ resource "aws_iam_role_policy" "ecs_task_execution_role_cloudwatch" {
   })
 }
 
-# Auto Scaling Target for Backend
+# Auto Scaling Target for Backend (conditional)
 resource "aws_appautoscaling_target" "backend" {
+  count              = var.enable_alb ? 1 : 0
   max_capacity       = var.backend_max_capacity
   min_capacity       = var.backend_min_capacity
-  resource_id        = "service/${aws_ecs_cluster.concert.name}/${aws_ecs_service.backend.name}"
+  resource_id        = "service/${aws_ecs_cluster.concert.name}/${aws_ecs_service.backend[0].name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
-# Auto Scaling Policy for Backend (CPU)
+# Auto Scaling Policy for Backend (CPU) (conditional)
 resource "aws_appautoscaling_policy" "backend_cpu" {
+  count              = var.enable_alb ? 1 : 0
   name               = "${var.project_name}-backend-cpu-autoscaling"
   policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.backend.resource_id
-  scalable_dimension = aws_appautoscaling_target.backend.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.backend.service_namespace
+  resource_id        = aws_appautoscaling_target.backend[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.backend[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.backend[0].service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
@@ -551,13 +558,14 @@ resource "aws_appautoscaling_policy" "backend_cpu" {
   }
 }
 
-# Auto Scaling Policy for Backend (Memory)
+# Auto Scaling Policy for Backend (Memory) (conditional)
 resource "aws_appautoscaling_policy" "backend_memory" {
+  count              = var.enable_alb ? 1 : 0
   name               = "${var.project_name}-backend-memory-autoscaling"
   policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.backend.resource_id
-  scalable_dimension = aws_appautoscaling_target.backend.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.backend.service_namespace
+  resource_id        = aws_appautoscaling_target.backend[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.backend[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.backend[0].service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
@@ -567,22 +575,24 @@ resource "aws_appautoscaling_policy" "backend_memory" {
   }
 }
 
-# Auto Scaling Target for Frontend
+# Auto Scaling Target for Frontend (conditional)
 resource "aws_appautoscaling_target" "frontend" {
+  count              = var.enable_alb ? 1 : 0
   max_capacity       = var.frontend_max_capacity
   min_capacity       = var.frontend_min_capacity
-  resource_id        = "service/${aws_ecs_cluster.concert.name}/${aws_ecs_service.frontend.name}"
+  resource_id        = "service/${aws_ecs_cluster.concert.name}/${aws_ecs_service.frontend[0].name}"
   scalable_dimension = "ecs:service:DesiredCount"
   service_namespace  = "ecs"
 }
 
-# Auto Scaling Policy for Frontend (CPU)
+# Auto Scaling Policy for Frontend (CPU) (conditional)
 resource "aws_appautoscaling_policy" "frontend_cpu" {
+  count              = var.enable_alb ? 1 : 0
   name               = "${var.project_name}-frontend-cpu-autoscaling"
   policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.frontend.resource_id
-  scalable_dimension = aws_appautoscaling_target.frontend.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.frontend.service_namespace
+  resource_id        = aws_appautoscaling_target.frontend[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.frontend[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.frontend[0].service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {
@@ -592,13 +602,14 @@ resource "aws_appautoscaling_policy" "frontend_cpu" {
   }
 }
 
-# Auto Scaling Policy for Frontend (Memory)
+# Auto Scaling Policy for Frontend (Memory) (conditional)
 resource "aws_appautoscaling_policy" "frontend_memory" {
+  count              = var.enable_alb ? 1 : 0
   name               = "${var.project_name}-frontend-memory-autoscaling"
   policy_type        = "TargetTrackingScaling"
-  resource_id        = aws_appautoscaling_target.frontend.resource_id
-  scalable_dimension = aws_appautoscaling_target.frontend.scalable_dimension
-  service_namespace  = aws_appautoscaling_target.frontend.service_namespace
+  resource_id        = aws_appautoscaling_target.frontend[0].resource_id
+  scalable_dimension = aws_appautoscaling_target.frontend[0].scalable_dimension
+  service_namespace  = aws_appautoscaling_target.frontend[0].service_namespace
 
   target_tracking_scaling_policy_configuration {
     predefined_metric_specification {

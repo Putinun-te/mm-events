@@ -36,6 +36,12 @@ variable "free_tier_mode" {
   default     = true
 }
 
+variable "enable_cloudfront" {
+  description = "Enable CloudFront CDN (requires account verification)"
+  type        = bool
+  default     = false
+}
+
 variable "ec2_root_volume_size_free_tier" {
   description = "EC2 root volume size in GB for free tier (keep small)"
   type        = number

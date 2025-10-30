@@ -313,7 +313,7 @@ resource "aws_appautoscaling_target" "event_details_write" {
 
 resource "aws_appautoscaling_policy" "event_details_write" {
   count              = var.environment == "prod" ? 1 : 0
-  policy_name        = "concert-event-details-write-scaling"
+  name               = "concert-event-details-write-scaling"
   policy_type        = "TargetTrackingScaling"
   resource_id        = aws_appautoscaling_target.event_details_write[0].resource_id
   scalable_dimension = aws_appautoscaling_target.event_details_write[0].scalable_dimension

@@ -7,7 +7,7 @@
 
 resource "aws_elasticache_replication_group" "concert" {
   replication_group_id          = "concert-redis-${var.environment}"
-  replication_group_description = "Concert Redis cluster for caching and sessions"
+  description                   = "Concert Redis cluster for caching and sessions"
   engine                        = "redis"
   engine_version                = "7.0"
   node_type                     = var.elasticache_node_type
@@ -31,22 +31,9 @@ resource "aws_elasticache_replication_group" "concert" {
   # Snapshots
   snapshot_retention_limit = var.environment == "prod" ? 30 : 5
   snapshot_window          = "03:00-05:00"
-  snapshot_name_prefix     = "concert-redis"
   
   # Maintenance
   maintenance_window = "sun:04:00-sun:05:00"
-  notification_topic_arn = var.sns_topic_arn
-  
-  # Logging
-  log_delivery_configuration {
-    destination      = var.cloudwatch_log_group_name
-    destination_type = "cloudwatch-logs"
-    log_format       = "json"
-    enabled          = true
-  }
-  
-  # Backup
-  automatic_backup_enabled = true
   
   tags = {
     Name = "concert-redis-cluster-${var.environment}"

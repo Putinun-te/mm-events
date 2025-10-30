@@ -110,9 +110,12 @@ resource "aws_sqs_queue" "email_queue_dlq" {
 }
 
 resource "aws_sqs_queue_redrive_policy" "email_queue" {
-  queue_url              = aws_sqs_queue.email_queue.url
-  dead_letter_target_arn = aws_sqs_queue.email_queue_dlq.arn
-  max_receive_count      = 3
+  queue_url = aws_sqs_queue.email_queue.url
+  
+  redrive_policy = jsonencode({
+    deadLetterTargetArn = aws_sqs_queue.email_queue_dlq.arn
+    maxReceiveCount     = 3
+  })
 }
 
 # Notification Queue

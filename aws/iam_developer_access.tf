@@ -71,55 +71,26 @@ resource "aws_iam_instance_profile" "backend_ec2_profile" {
 
 # IAM Group for Developers
 resource "aws_iam_group" "developers" {
-  name        = "${var.project_name}-developers"
-  path        = "/teams/"
-  description = "Developer team - Code development, local testing, and feature branches"
-
-  tags = {
-    Team        = "Development"
-    Purpose     = "Application Development"
-    Environment = "dev"
-  }
+  name = "${var.project_name}-developers"
+  path = "/teams/"
 }
 
 # IAM Group for Testers
 resource "aws_iam_group" "testers" {
-  name        = "${var.project_name}-testers"
-  path        = "/teams/"
-  description = "QA/Testing team - Test environment access, test data management, reporting"
-
-  tags = {
-    Team        = "QA"
-    Purpose     = "Quality Assurance"
-    Environment = "test"
-  }
+  name = "${var.project_name}-testers"
+  path = "/teams/"
 }
 
 # IAM Group for Deployment/DevOps
 resource "aws_iam_group" "deployment" {
-  name        = "${var.project_name}-deployment"
-  path        = "/teams/"
-  description = "Deployment/DevOps team - CI/CD pipelines, infrastructure updates, deployments"
-
-  tags = {
-    Team        = "DevOps"
-    Purpose     = "Deployment Operations"
-    Environment = "all"
-  }
+  name = "${var.project_name}-deployment"
+  path = "/teams/"
 }
 
 # IAM Group for Admins
 resource "aws_iam_group" "admins" {
-  name        = "${var.project_name}-admins"
-  path        = "/teams/"
-  description = "Administrator team - Full AWS access for infrastructure and security management"
-
-  tags = {
-    Team        = "Administration"
-    Purpose     = "Infrastructure Administration"
-    Environment = "all"
-    Sensitive   = "true"
-  }
+  name = "${var.project_name}-admins"
+  path = "/teams/"
 }
 
 # ============================================================================

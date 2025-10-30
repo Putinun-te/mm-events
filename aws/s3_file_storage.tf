@@ -171,6 +171,10 @@ resource "aws_s3_bucket_lifecycle_configuration" "event_pictures" {
     id     = "archive-old-pictures"
     status = "Enabled"
 
+    filter {
+      prefix = ""
+    }
+
     noncurrent_version_expiration {
       noncurrent_days = 90
     }

@@ -6,6 +6,7 @@
 # ============================================================================
 
 resource "aws_elasticache_replication_group" "concert" {
+  replication_group_id          = "concert-redis-${var.environment}"
   replication_group_description = "Concert Redis cluster for caching and sessions"
   engine                        = "redis"
   engine_version                = "7.0"
@@ -60,7 +61,7 @@ resource "aws_elasticache_replication_group" "concert" {
 
 resource "aws_elasticache_parameter_group" "concert" {
   family      = "redis7"
-  name_prefix = "concert-"
+  name        = "concert-redis-params-${var.environment}"
   description = "Concert Redis parameters"
 
   # Memory Management

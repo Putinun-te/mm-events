@@ -48,15 +48,15 @@ resource "aws_db_instance" "concert" {
   final_snapshot_identifier = "concert-mysql-final-snapshot-${var.environment}-${formatdate("YYYY-MM-DD-hhmm", timestamp())}"
   
   # Monitoring
-  performance_insights_enabled = var.environment == "prod" ? true : false
-  monitor_interval            = var.environment == "prod" ? 60 : 0
-  monitoring_role_arn         = aws_iam_role.rds_monitoring.arn
+  performance_insights_enabled    = var.environment == "prod" ? true : false
+  monitoring_interval             = var.environment == "prod" ? 60 : 0
+  monitoring_role_arn             = aws_iam_role.rds_monitoring.arn
+  enabled_cloudwatch_logs_exports = ["error", "general", "slowquery"]
   
   # Advanced Options
-  parameter_group_name       = aws_db_parameter_group.concert.name
-  option_group_name          = aws_db_option_group.concert.name
-  deletion_protection        = var.environment == "prod" ? true : false
-  enable_cloudwatch_logs_exports = ["error", "general", "slowquery"]
+  parameter_group_name = aws_db_parameter_group.concert.name
+  option_group_name    = aws_db_option_group.concert.name
+  deletion_protection  = var.environment == "prod" ? true : false
   
   tags = {
     Name = "concert-mysql-${var.environment}"
@@ -138,19 +138,6 @@ resource "aws_iam_role" "rds_monitoring" {
 resource "aws_iam_role_policy_attachment" "rds_monitoring" {
   role       = aws_iam_role.rds_monitoring.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonRDSEnhancedMonitoringRole"
-}
-
-# ============================================================================
-# RDS BACKUP CONFIGURATION
-# ============================================================================
-
-resource "aws_db_snapshot_copy_retention" "concert" {
-  source_db_snapshot_identifier = aws_db_instance.concert.id
-  retention_days                = 30
-
-  tags = {
-    Name = "concert-snapshot-copy-${var.environment}"
-  }
 }
 
 # ============================================================================

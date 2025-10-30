@@ -110,7 +110,7 @@ resource "aws_sqs_queue" "email_queue_dlq" {
 }
 
 resource "aws_sqs_queue_redrive_policy" "email_queue" {
-  queue_url              = aws_sqs_queue.email_queue.id
+  queue_url              = aws_sqs_queue.email_queue.url
   dead_letter_target_arn = aws_sqs_queue.email_queue_dlq.arn
   max_receive_count      = 3
 }
@@ -152,7 +152,7 @@ resource "aws_sqs_queue" "analytics_queue" {
   visibility_timeout_seconds = 300
   kms_master_key_id          = "alias/aws/sqs"
 
-  receive_message_wait_time_seconds = 20  # Long polling
+  receive_wait_time_seconds = 20  # Long polling
 
   tags = {
     Name = "concert-analytics-queue-${var.environment}"
@@ -257,12 +257,6 @@ resource "aws_cloudwatch_metric_alarm" "sns_email_failures" {
     TopicName = aws_sns_topic.email.name
   }
 }
-
-# ============================================================================
-# DATA SOURCES
-# ============================================================================
-
-data "aws_caller_identity" "current" {}
 
 # ============================================================================
 # OUTPUTS

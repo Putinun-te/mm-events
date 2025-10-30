@@ -133,9 +133,9 @@ resource "aws_cloudwatch_log_group" "lambda_logs" {
 resource "aws_apigatewayv2_integration" "lambda_integration" {
   api_id           = aws_apigatewayv2_api.file_upload.id
   integration_type = "AWS_PROXY"
-  integration_method = "POST"
   payload_format_version = "2.0"
-  target = aws_lambda_function.generate_presigned_url.arn
+  
+  integration_uri = aws_lambda_function.generate_presigned_url.invoke_arn
 }
 
 # Allow API Gateway to invoke Lambda

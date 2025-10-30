@@ -99,28 +99,28 @@ variable "elasticache_node_type" {
   default     = "cache.t3.micro"
 }
 
-variable "elasticache_security_group_id" {
-  description = "ElastiCache security group ID"
-  type        = string
-}
-
-# ============================================================================
-# NETWORK VARIABLES
-# ============================================================================
-
 variable "private_subnet_ids" {
   description = "List of private subnet IDs"
   type        = list(string)
+  default     = []
 }
 
 variable "rds_security_group_id" {
   description = "RDS security group ID"
   type        = string
+  default     = ""
 }
 
 variable "lambda_security_group_id" {
   description = "Lambda security group ID"
   type        = string
+  default     = ""
+}
+
+variable "elasticache_security_group_id" {
+  description = "ElastiCache security group ID"
+  type        = string
+  default     = ""
 }
 
 # ============================================================================

@@ -7,9 +7,7 @@
 
 resource "aws_dynamodb_table" "session_tokens" {
   name           = "concert-session-tokens-${var.environment}"
-  billing_mode   = var.environment == "prod" ? "PAY_PER_REQUEST" : "PROVISIONED"
-  read_capacity_units  = var.environment == "prod" ? null : 5
-  write_capacity_units = var.environment == "prod" ? null : 5
+  billing_mode   = "PAY_PER_REQUEST"
   hash_key       = "token_id"
   range_key      = "user_id"
 
@@ -38,8 +36,6 @@ resource "aws_dynamodb_table" "session_tokens" {
     hash_key        = "user_id"
     range_key       = "expires_at"
     projection_type = "ALL"
-    read_capacity_units  = var.environment == "prod" ? null : 5
-    write_capacity_units = var.environment == "prod" ? null : 5
   }
 
   tags = {
@@ -52,11 +48,9 @@ resource "aws_dynamodb_table" "session_tokens" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "event_details" {
-  name           = "concert-event-details-${var.environment}"
-  billing_mode   = var.environment == "prod" ? "PAY_PER_REQUEST" : "PROVISIONED"
-  read_capacity_units  = var.environment == "prod" ? null : 10
-  write_capacity_units = var.environment == "prod" ? null : 10
-  hash_key       = "event_id"
+  name         = "concert-event-details-${var.environment}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key     = "event_id"
 
   attribute {
     name = "event_id"
@@ -77,8 +71,6 @@ resource "aws_dynamodb_table" "event_details" {
     name            = "created_at-index"
     hash_key        = "created_at"
     projection_type = "ALL"
-    read_capacity_units  = var.environment == "prod" ? null : 5
-    write_capacity_units = var.environment == "prod" ? null : 5
   }
 
   tags = {
@@ -91,11 +83,9 @@ resource "aws_dynamodb_table" "event_details" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "booking_cache" {
-  name           = "concert-booking-cache-${var.environment}"
-  billing_mode   = var.environment == "prod" ? "PAY_PER_REQUEST" : "PROVISIONED"
-  read_capacity_units  = var.environment == "prod" ? null : 10
-  write_capacity_units = var.environment == "prod" ? null : 10
-  hash_key       = "booking_id"
+  name         = "concert-booking-cache-${var.environment}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key     = "booking_id"
 
   attribute {
     name = "booking_id"
@@ -116,8 +106,6 @@ resource "aws_dynamodb_table" "booking_cache" {
     name            = "user_id-index"
     hash_key        = "user_id"
     projection_type = "ALL"
-    read_capacity_units  = var.environment == "prod" ? null : 5
-    write_capacity_units = var.environment == "prod" ? null : 5
   }
 
   tags = {
@@ -130,11 +118,9 @@ resource "aws_dynamodb_table" "booking_cache" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "user_preferences" {
-  name           = "concert-user-preferences-${var.environment}"
-  billing_mode   = var.environment == "prod" ? "PAY_PER_REQUEST" : "PROVISIONED"
-  read_capacity_units  = var.environment == "prod" ? null : 5
-  write_capacity_units = var.environment == "prod" ? null : 5
-  hash_key       = "user_id"
+  name         = "concert-user-preferences-${var.environment}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key     = "user_id"
 
   attribute {
     name = "user_id"
@@ -151,11 +137,9 @@ resource "aws_dynamodb_table" "user_preferences" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "file_metadata" {
-  name           = "concert-file-metadata-${var.environment}"
-  billing_mode   = var.environment == "prod" ? "PAY_PER_REQUEST" : "PROVISIONED"
-  read_capacity_units  = var.environment == "prod" ? null : 5
-  write_capacity_units = var.environment == "prod" ? null : 5
-  hash_key       = "file_key"
+  name         = "concert-file-metadata-${var.environment}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key     = "file_key"
 
   attribute {
     name = "file_key"
@@ -171,8 +155,6 @@ resource "aws_dynamodb_table" "file_metadata" {
     name            = "user_id-index"
     hash_key        = "user_id"
     projection_type = "ALL"
-    read_capacity_units  = var.environment == "prod" ? null : 5
-    write_capacity_units = var.environment == "prod" ? null : 5
   }
 
   tags = {
@@ -185,11 +167,9 @@ resource "aws_dynamodb_table" "file_metadata" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "email_log" {
-  name           = "concert-email-log-${var.environment}"
-  billing_mode   = var.environment == "prod" ? "PAY_PER_REQUEST" : "PROVISIONED"
-  read_capacity_units  = var.environment == "prod" ? null : 10
-  write_capacity_units = var.environment == "prod" ? null : 10
-  hash_key       = "email_id"
+  name         = "concert-email-log-${var.environment}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key     = "email_id"
 
   attribute {
     name = "email_id"
@@ -210,8 +190,6 @@ resource "aws_dynamodb_table" "email_log" {
     name            = "created_at-index"
     hash_key        = "created_at"
     projection_type = "ALL"
-    read_capacity_units  = var.environment == "prod" ? null : 5
-    write_capacity_units = var.environment == "prod" ? null : 5
   }
 
   tags = {
@@ -224,11 +202,9 @@ resource "aws_dynamodb_table" "email_log" {
 # ============================================================================
 
 resource "aws_dynamodb_table" "payment_cache" {
-  name           = "concert-payment-cache-${var.environment}"
-  billing_mode   = var.environment == "prod" ? "PAY_PER_REQUEST" : "PROVISIONED"
-  read_capacity_units  = var.environment == "prod" ? null : 10
-  write_capacity_units = var.environment == "prod" ? null : 10
-  hash_key       = "payment_id"
+  name         = "concert-payment-cache-${var.environment}"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key     = "payment_id"
 
   attribute {
     name = "payment_id"

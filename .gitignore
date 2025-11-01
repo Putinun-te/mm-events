@@ -61,3 +61,12 @@ desktop.ini
 # Keep README and env example
 !.env.example
 !README.md
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+terraform.tfstate
+terraform.tfstate.backup
+*.tfplan
+*.tfvars
+.terraform.tfstate.lock.info

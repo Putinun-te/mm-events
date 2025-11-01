@@ -1,0 +1,89 @@
+name: Frontend E2E
+
+on:
+  push:
+    branches: [ main, FE-Testing ]
+    paths:
+      - 'main_frontend/concert1/**'
+      - 'main_backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/frontend-e2e.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'main_frontend/concert1/**'
+      - 'main_backend/**'
+      - 'docker-compose.yml'
+      - '.github/workflows/frontend-e2e.yml'
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      - name: Install deps
+        working-directory: main_frontend/concert1
+        run: |
+          npm ci
+
+      - name: Install Docker Compose
+        run: |
+          sudo curl -L "https://github.com/docker/compose/releases/download/v2.23.0/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          sudo chmod +x /usr/local/bin/docker-compose
+          docker-compose --version
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('main_backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-
+
+      - name: Start backend stack (MySQL + backend)
+        run: |
+          docker-compose up -d mysql backend
+          echo "Waiting for backend..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/actuator/health | grep 'UP'; then echo OK; break; fi; sleep 2; done
+
+      - name: Start frontend
+        working-directory: main_frontend/concert1
+        run: |
+          npm run dev &
+          echo $! > /tmp/nuxt.pid
+          for i in {1..60}; do
+            if curl -sf http://localhost:3000/concert/ >/dev/null; then echo "Frontend up"; break; fi; sleep 2; done
+
+      - name: Run Cypress tests
+        working-directory: main_frontend/concert1
+        run: npm run test:e2e
+
+      - name: Upload Cypress screenshots/videos (if exist)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-artifacts
+          path: |
+            main_frontend/concert1/cypress/screenshots
+            main_frontend/concert1/cypress/videos
+          if-no-files-found: ignore
+
+      - name: Cleanup
+        if: always()
+        run: |
+          if [ -f /tmp/nuxt.pid ]; then kill $(cat /tmp/nuxt.pid) || true; fi
+          docker-compose down

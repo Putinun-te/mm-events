@@ -1,0 +1,96 @@
+name: Unit Tests
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop, FE-tester ]
+    paths:
+      - 'main_frontend/concert1/**'
+      - 'main_backend/src/**'
+      - 'main_backend/pom.xml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'main_frontend/concert1/**'
+      - 'main_backend/src/**'
+      - 'main_backend/pom.xml'
+
+jobs:
+  frontend-unit-tests:
+    name: Frontend Unit Tests (Vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 📦 Install dependencies
+        working-directory: main_frontend/concert1
+        run: npm ci
+
+      - name: 🧪 Run unit tests with coverage
+        working-directory: main_frontend/concert1
+        run: npm run test:coverage
+
+      - name: 📤 Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./main_frontend/concert1/coverage/lcov.info
+          flags: frontend-unit
+          name: frontend-unit-tests
+        continue-on-error: true
+
+  backend-unit-tests:
+    name: Backend Unit Tests (Maven Only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 📦 Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('main_backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: 🧪 Run unit tests only (fast)
+        working-directory: main_backend
+        run: |
+          mvn -B clean test
+
+      - name: 📊 Generate JaCoCo report
+        working-directory: main_backend
+        run: mvn jacoco:report
+        if: always()
+
+      - name: 📤 Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./main_backend/target/site/jacoco/jacoco.xml
+          flags: backend
+          name: backend-tests
+        continue-on-error: true
+
+      - name: 📤 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: main_backend/target/surefire-reports/

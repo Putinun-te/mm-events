@@ -1,0 +1,58 @@
+# Dependabot configuration to prevent excessive workflow runs
+version: 2
+updates:
+  # Frontend npm dependencies
+  - package-ecosystem: "npm"
+    directory: "/main_frontend/concert1"
+    schedule:
+      interval: "monthly"  # Only check monthly to reduce noise
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 3  # Reduced limit
+    reviewers:
+      - "MorningMores"
+    labels:
+      - "dependencies"
+      - "frontend"
+    ignore:
+      # Ignore ALL updates for testing libraries (pinned versions)
+      - dependency-name: "happy-dom"
+      - dependency-name: "jsdom"
+      - dependency-name: "vitest"
+      - dependency-name: "@vitest/*"
+      - dependency-name: "cypress"
+      - dependency-name: "@cypress/*"
+      - dependency-name: "@nuxt/test-utils"
+      - dependency-name: "@testing-library/*"
+      - dependency-name: "@vue/test-utils"
+    
+  # Backend Maven dependencies
+  - package-ecosystem: "maven"
+    directory: "/main_backend"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "MorningMores"
+    labels:
+      - "dependencies"
+      - "backend"
+    ignore:
+      # Ignore ALL Spring Boot updates (managed manually)
+      - dependency-name: "org.springframework.boot:*"
+      # Ignore ALL Maven plugin updates (build stability)
+      - dependency-name: "org.apache.maven.plugins:*"
+      - dependency-name: "org.jacoco:*"
+      - dependency-name: "org.springframework.boot:spring-boot-maven-plugin"
+  
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci-cd"

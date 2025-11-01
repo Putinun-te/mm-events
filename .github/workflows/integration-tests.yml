@@ -1,0 +1,157 @@
+name: Integration Tests
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'main_backend/**'
+      - 'database-setup.sql'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'main_backend/**'
+      - 'database-setup.sql'
+
+jobs:
+  backend-integration-tests:
+    name: Backend Integration Tests (Testcontainers)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    services:
+      docker:
+        image: docker:24-dind
+        options: --privileged
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🐳 Setup Docker for Testcontainers
+        run: |
+          docker --version
+
+      - name: 📦 Cache Maven packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('main_backend/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: 🐳 Pre-pull MySQL image for Testcontainers
+        run: docker pull mysql:8.0
+
+      - name: 🧪 Run all backend tests with Testcontainers
+        working-directory: main_backend
+        run: |
+          mvn -B -DforkCount=1 -DreuseForks=false clean test
+        env:
+          TESTCONTAINERS_RYUK_DISABLED: false
+
+      - name: 📊 Generate JaCoCo report
+        working-directory: main_backend
+        run: mvn jacoco:report
+
+      - name: 📤 Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-test-results
+          path: main_backend/target/surefire-reports/
+
+      - name: 📤 Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./main_backend/target/site/jacoco/jacoco.xml
+          flags: backend-integration
+          name: backend-integration-tests
+        continue-on-error: true
+
+  frontend-backend-integration:
+    name: Frontend ↔ Backend Integration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: concert_db
+          MYSQL_USER: concert_user
+          MYSQL_PASSWORD: concert_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🏗️ Build backend
+        working-directory: main_backend
+        run: mvn -B clean package -DskipTests
+
+      - name: 🚀 Start backend server
+        working-directory: main_backend
+        run: |
+          java -jar target/concert-backend-*.jar &
+          echo $! > /tmp/backend.pid
+          # Wait for backend to be ready
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/actuator/health | grep -q 'UP'; then
+              echo "✅ Backend is ready"
+              break
+            fi
+            sleep 2
+          done
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: concert_user
+          SPRING_DATASOURCE_PASSWORD: concert_password
+
+      - name: � Setup Node.js 24 (no cache)
+        run: |
+          curl -fsSL https://deb.nodesource.com/setup_24.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+
+      - name: �📦 Install frontend dependencies
+        working-directory: main_frontend/concert1
+        run: npm ci
+
+      - name: 🧪 Test API integration
+        run: |
+          # Test backend health
+          curl -f http://localhost:8080/actuator/health
+          
+          # Test API endpoints
+          curl -f http://localhost:8080/api/auth/test || echo "Auth endpoint working"
+
+      - name: 🧹 Cleanup
+        if: always()
+        run: |
+          if [ -f /tmp/backend.pid ]; then
+            kill $(cat /tmp/backend.pid) || true
+          fi

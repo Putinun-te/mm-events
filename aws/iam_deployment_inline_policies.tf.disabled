@@ -1,0 +1,513 @@
+resource "aws_iam_group_policy" "deployment_ec2_policy" {
+  name  = "${var.project_name}-deployment-ec2-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "EC2InstanceManagement"
+        Effect = "Allow"
+        Action = [
+          "ec2:DescribeInstances",
+          "ec2:DescribeSecurityGroups",
+          "ec2:DescribeTags",
+          "ec2:DescribeImages",
+          "ec2:DescribeSnapshots",
+          "ec2:StartInstances",
+          "ec2:StopInstances",
+          "ec2:RebootInstances",
+          "ec2:CreateTags",
+          "ec2:DeleteTags",
+          "ec2:DescribeInstanceStatus",
+          "ec2:DescribeInstanceAttribute"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "EC2SSMAccess"
+        Effect = "Allow"
+        Action = [
+          "ssm:SendCommand",
+          "ssm:GetCommandInvocation",
+          "ssm:ListCommands",
+          "ssm:ListCommandInvocations",
+          "ssm:DescribeInstanceInformation"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "EC2AutoScaling"
+        Effect = "Allow"
+        Action = [
+          "autoscaling:DescribeAutoScalingGroups",
+          "autoscaling:DescribeAutoScalingInstances",
+          "autoscaling:DescribeLaunchConfigurations",
+          "autoscaling:DescribeScalingActivities",
+          "autoscaling:UpdateAutoScalingGroup",
+          "autoscaling:SetDesiredCapacity"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Deployment - ECR Full Access
+resource "aws_iam_group_policy" "deployment_ecr_policy" {
+  name  = "${var.project_name}-deployment-ecr-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ECRFullAccess"
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:DescribeRepositories",
+          "ecr:CreateRepository",
+          "ecr:DeleteRepository",
+          "ecr:ListImages",
+          "ecr:DescribeImages",
+          "ecr:DeleteImage",
+          "ecr:TagResource",
+          "ecr:UntagResource"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Deployment - ElastiCache Management
+resource "aws_iam_group_policy" "deployment_elasticache_policy" {
+  name  = "${var.project_name}-deployment-elasticache-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ElastiCacheManagement"
+        Effect = "Allow"
+        Action = [
+          "elasticache:DescribeCacheClusters",
+          "elasticache:DescribeCacheSubnetGroups",
+          "elasticache:DescribeCacheParameterGroups",
+          "elasticache:DescribeReplicationGroups",
+          "elasticache:ModifyCacheCluster",
+          "elasticache:ModifyReplicationGroup",
+          "elasticache:RebootCacheCluster",
+          "elasticache:ListTagsForResource",
+          "elasticache:AddTagsToResource",
+          "elasticache:RemoveTagsFromResource"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Deployment - ECS Task Management
+resource "aws_iam_group_policy" "deployment_ecs_policy" {
+  name  = "${var.project_name}-deployment-ecs-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ECSTaskExecution"
+        Effect = "Allow"
+        Action = [
+          "ecs:DescribeTasks",
+          "ecs:DescribeTaskDefinition",
+          "ecs:DescribeServices",
+          "ecs:ListTasks",
+          "ecs:ListServices",
+          "ecs:UpdateService",
+          "ecs:RegisterTaskDefinition",
+          "ecs:RunTask",
+          "ecs:StopTask"
+        ]
+        Resource = [
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.project_name}-*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.project_name}-*",
+          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.project_name}-*:*"
+        ]
+      }
+    ]
+  })
+}
+
+# Deployment - RDS Management
+resource "aws_iam_group_policy" "deployment_rds_policy" {
+  name  = "${var.project_name}-deployment-rds-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "RDSManagement"
+        Effect = "Allow"
+        Action = [
+          "rds:DescribeDBInstances",
+          "rds:DescribeDBClusters",
+          "rds:DescribeDBSnapshots",
+          "rds:ModifyDBInstance",
+          "rds:ModifyDBCluster",
+          "rds:RestoreDBInstanceFromDBSnapshot",
+          "rds:ListTagsForResource",
+          "rds:AddTagsToResource",
+          "rds:RemoveTagsFromResource"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Deployment - S3 and Terraform State
+resource "aws_iam_group_policy" "deployment_s3_terraform_policy" {
+  name  = "${var.project_name}-deployment-s3-terraform-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "S3DeploymentAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:ListBucket",
+          "s3:GetBucketVersioning",
+          "s3:GetObjectVersion",
+          "s3:PutBucketVersioning",
+          "s3:PutObjectAcl",
+          "s3:GetObjectAcl",
+          "s3:PutBucketAcl",
+          "s3:GetBucketAcl",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts",
+          "s3:ListBucketMultipartUploads",
+          "s3:PutBucketPolicy",
+          "s3:GetBucketPolicy",
+          "s3:DeleteBucketPolicy"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.project_name}-*-dev/*",
+          "arn:aws:s3:::${var.project_name}-*-dev",
+          "arn:aws:s3:::${var.project_name}-*-test/*",
+          "arn:aws:s3:::${var.project_name}-*-test",
+          "arn:aws:s3:::${var.project_name}-*-staging/*",
+          "arn:aws:s3:::${var.project_name}-*-staging"
+        ]
+      },
+      {
+        Sid    = "TerraformStateAccess"
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucket",
+          "s3:GetObject",
+          "s3:PutObject",
+          "s3:DeleteObject",
+          "s3:GetObjectVersion",
+          "s3:ListBucketMultipartUploads",
+          "s3:AbortMultipartUpload"
+        ]
+        Resource = [
+          "arn:aws:s3:::${var.project_name}-terraform-state",
+          "arn:aws:s3:::${var.project_name}-terraform-state/*"
+        ]
+      },
+      {
+        Sid    = "DynamoDBStateLocking"
+        Effect = "Allow"
+        Action = [
+          "dynamodb:DescribeTable",
+          "dynamodb:GetItem",
+          "dynamodb:PutItem",
+          "dynamodb:DeleteItem"
+        ]
+        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${var.project_name}-terraform-lock"
+      }
+    ]
+  })
+}
+
+# Deployment - Lambda Deployment
+resource "aws_iam_group_policy" "deployment_lambda_policy" {
+  name  = "${var.project_name}-deployment-lambda-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "LambdaDeployment"
+        Effect = "Allow"
+        Action = [
+          "lambda:UpdateFunctionCode",
+          "lambda:UpdateFunctionConfiguration",
+          "lambda:PublishVersion",
+          "lambda:CreateAlias",
+          "lambda:UpdateAlias",
+          "lambda:DeleteAlias",
+          "lambda:GetFunction",
+          "lambda:ListFunctions",
+          "lambda:ListVersionsByFunction"
+        ]
+        Resource = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-*"
+      }
+    ]
+  })
+}
+
+# Deployment - API Gateway and CloudFormation
+resource "aws_iam_group_policy" "deployment_api_cf_policy" {
+  name  = "${var.project_name}-deployment-api-cf-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "APIGatewayDeployment"
+        Effect = "Allow"
+        Action = [
+          "apigateway:GET",
+          "apigateway:POST",
+          "apigateway:PUT",
+          "apigateway:PATCH",
+          "apigateway:DELETE",
+          "apigateway:CreateDeployment",
+          "apigateway:UpdateStage"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudFormationManagement"
+        Effect = "Allow"
+        Action = [
+          "cloudformation:DescribeStacks",
+          "cloudformation:DescribeStackEvents",
+          "cloudformation:DescribeStackResource",
+          "cloudformation:DescribeStackResources",
+          "cloudformation:GetTemplate",
+          "cloudformation:ListStacks",
+          "cloudformation:ListStackResources",
+          "cloudformation:CreateStack",
+          "cloudformation:UpdateStack",
+          "cloudformation:DeleteStack"
+        ]
+        Resource = "arn:aws:cloudformation:${var.aws_region}:${data.aws_caller_identity.current.account_id}:stack/${var.project_name}-*"
+      }
+    ]
+  })
+}
+
+# Deployment - IAM PassRole (limited)
+resource "aws_iam_group_policy" "deployment_pass_role_policy" {
+  name  = "${var.project_name}-deployment-pass-role-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "PassRoleForServices"
+        Effect = "Allow"
+        Action = [
+          "iam:PassRole"
+        ]
+        Resource = [
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecsTaskExecutionRole",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecsTaskRole",
+          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-lambda-execution-role"
+        ]
+        Condition = {
+          StringEquals = {
+            "iam:PassedToService" = [
+              "ecs-tasks.amazonaws.com",
+              "lambda.amazonaws.com"
+            ]
+          }
+        }
+      }
+    ]
+  })
+}
+
+# Deployment - CloudWatch Logs
+resource "aws_iam_group_policy" "deployment_logs_policy" {
+  name  = "${var.project_name}-deployment-logs-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CloudWatchLogsAccess"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogGroups",
+          "logs:DescribeLogStreams",
+          "logs:GetLogEvents",
+          "logs:FilterLogEvents",
+          "logs:TailLogStream",
+          "logs:DeleteLogGroup",
+          "logs:DeleteLogStream"
+        ]
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/${var.project_name}/*",
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/concert/*"
+        ]
+      },
+      {
+        Sid    = "CloudWatchAlarmsAndDashboards"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricAlarm",
+          "cloudwatch:DeleteAlarms",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:PutDashboard",
+          "cloudwatch:DeleteDashboards",
+          "cloudwatch:GetDashboard",
+          "cloudwatch:ListDashboards",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:PutMetricData"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Deployment - Secrets Manager Full Access
+resource "aws_iam_group_policy" "deployment_secrets_policy" {
+  name  = "${var.project_name}-deployment-secrets-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SecretsManagerFullAccess"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:CreateSecret",
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:PutSecretValue",
+          "secretsmanager:UpdateSecret",
+          "secretsmanager:DeleteSecret",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecrets",
+          "secretsmanager:TagResource",
+          "secretsmanager:UntagResource",
+          "secretsmanager:RotateSecret"
+        ]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.project_name}/*"
+      }
+    ]
+  })
+}
+
+# Deployment - SNS for Alerts
+resource "aws_iam_group_policy" "deployment_sns_policy" {
+  name  = "${var.project_name}-deployment-sns-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SNSManagement"
+        Effect = "Allow"
+        Action = [
+          "sns:CreateTopic",
+          "sns:DeleteTopic",
+          "sns:Subscribe",
+          "sns:Unsubscribe",
+          "sns:Publish",
+          "sns:ListTopics",
+          "sns:ListSubscriptions",
+          "sns:GetTopicAttributes",
+          "sns:SetTopicAttributes"
+        ]
+        Resource = "arn:aws:sns:${var.aws_region}:${data.aws_caller_identity.current.account_id}:${var.project_name}-*"
+      }
+    ]
+  })
+}
+
+# Deployment - Cognito Management
+resource "aws_iam_group_policy" "deployment_cognito_policy" {
+  name  = "${var.project_name}-deployment-cognito-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CognitoManagement"
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:DescribeUserPool",
+          "cognito-idp:DescribeUserPoolClient",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:AdminCreateUser",
+          "cognito-idp:AdminDeleteUser",
+          "cognito-idp:AdminDisableUser",
+          "cognito-idp:AdminEnableUser",
+          "cognito-idp:AdminResetUserPassword",
+          "cognito-idp:UpdateUserPool",
+          "cognito-idp:UpdateUserPoolClient",
+          "cognito-idp:ListUserPoolClients",
+          "cognito-idp:ListUserPools"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Deployment - Self-Service Credentials
+resource "aws_iam_group_policy" "deployment_self_service_policy" {
+  name  = "${var.project_name}-deployment-self-service-policy"
+  group = aws_iam_group.deployment.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ViewOwnCredentials"
+        Effect = "Allow"
+        Action = [
+          "iam:GetUser",
+          "iam:ListAccessKeys",
+          "iam:GetLoginProfile"
+        ]
+        Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}"
+      }
+    ]
+  })
+}
+

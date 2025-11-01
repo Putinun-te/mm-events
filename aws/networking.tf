@@ -1,319 +1,93 @@
-# VPC and Networking Setup
-# Complete network infrastructure for Concert application
-
-terraform {
-  required_version = ">= 1.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 6.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-
-  default_tags {
-    tags = {}
-  }
-}
-
-# ============================================================================
-# VPC CONFIGURATION
-# ============================================================================
-
-resource "aws_vpc" "concert" {
+resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
-
+  
   tags = {
-    Name = "concert-vpc-${var.environment}"
+    Name = "${var.project_name}-vpc-${var.environment}"
   }
 }
 
-# ============================================================================
-# PUBLIC SUBNETS (API Gateway, NAT)
-# ============================================================================
-
-resource "aws_subnet" "public_1" {
-  vpc_id                  = aws_vpc.concert.id
-  cidr_block              = var.public_subnet_1_cidr
-  availability_zone       = data.aws_availability_zones.available.names[0]
+resource "aws_subnet" "public" {
+  count                   = 2
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = cidrsubnet(var.vpc_cidr, 8, count.index)
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
   map_public_ip_on_launch = true
-
+  
   tags = {
-    Name = "concert-public-subnet-1-${var.environment}"
-    Type = "Public"
+    Name = "${var.project_name}-public-${count.index + 1}"
   }
 }
 
-resource "aws_subnet" "public_2" {
-  vpc_id                  = aws_vpc.concert.id
-  cidr_block              = var.public_subnet_2_cidr
-  availability_zone       = data.aws_availability_zones.available.names[1]
-  map_public_ip_on_launch = true
-
+resource "aws_subnet" "private" {
+  count             = 2
+  vpc_id            = aws_vpc.main.id
+  cidr_block        = cidrsubnet(var.vpc_cidr, 8, count.index + 10)
+  availability_zone = data.aws_availability_zones.available.names[count.index]
+  
   tags = {
-    Name = "concert-public-subnet-2-${var.environment}"
-    Type = "Public"
+    Name = "${var.project_name}-private-${count.index + 1}"
   }
 }
 
-# ============================================================================
-# PRIVATE SUBNETS (Lambda, RDS, ElastiCache)
-# ============================================================================
-
-resource "aws_subnet" "private_1" {
-  vpc_id            = aws_vpc.concert.id
-  cidr_block        = var.private_subnet_1_cidr
-  availability_zone = data.aws_availability_zones.available.names[0]
-
+resource "aws_internet_gateway" "main" {
+  vpc_id = aws_vpc.main.id
+  
   tags = {
-    Name = "concert-private-subnet-1-${var.environment}"
-    Type = "Private"
+    Name = "${var.project_name}-igw"
   }
 }
 
-resource "aws_subnet" "private_2" {
-  vpc_id            = aws_vpc.concert.id
-  cidr_block        = var.private_subnet_2_cidr
-  availability_zone = data.aws_availability_zones.available.names[1]
+# NAT Gateway removed to save $32/month
+# resource "aws_eip" "nat" {
+#   domain = "vpc"
+#   tags = {
+#     Name = "${var.project_name}-nat-eip"
+#   }
+# }
 
-  tags = {
-    Name = "concert-private-subnet-2-${var.environment}"
-    Type = "Private"
-  }
-}
+# resource "aws_nat_gateway" "main" {
+#   allocation_id = aws_eip.nat.id
+#   subnet_id     = aws_subnet.public[0].id
+#   
+#   tags = {
+#     Name = "${var.project_name}-nat"
+#   }
+# }
 
-# ============================================================================
-# INTERNET GATEWAY
-# ============================================================================
-
-resource "aws_internet_gateway" "concert" {
-  vpc_id = aws_vpc.concert.id
-
-  tags = {
-    Name = "concert-igw-${var.environment}"
-  }
-}
-
-# ============================================================================
-# NAT GATEWAY (For Lambda to reach internet via private subnets)
-# ============================================================================
-
-resource "aws_eip" "nat" {
-  domain = "vpc"
-
-  tags = {
-    Name = "concert-nat-eip-${var.environment}"
-  }
-
-  depends_on = [aws_internet_gateway.concert]
-}
-
-resource "aws_nat_gateway" "concert" {
-  allocation_id = aws_eip.nat.id
-  subnet_id     = aws_subnet.public_1.id
-
-  tags = {
-    Name = "concert-nat-${var.environment}"
-  }
-
-  depends_on = [aws_internet_gateway.concert]
-}
-
-# ============================================================================
-# ROUTE TABLES
-# ============================================================================
-
-# Public Route Table
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.concert.id
-
+  vpc_id = aws_vpc.main.id
+  
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.concert.id
+    gateway_id = aws_internet_gateway.main.id
   }
-
+  
   tags = {
-    Name = "concert-public-rt-${var.environment}"
+    Name = "${var.project_name}-public-rt"
   }
 }
 
-resource "aws_route_table_association" "public_1" {
-  subnet_id      = aws_subnet.public_1.id
-  route_table_id = aws_route_table.public.id
-}
-
-resource "aws_route_table_association" "public_2" {
-  subnet_id      = aws_subnet.public_2.id
-  route_table_id = aws_route_table.public.id
-}
-
-# Private Route Table
+# Private subnets now have no internet access (cost optimization)
 resource "aws_route_table" "private" {
-  vpc_id = aws_vpc.concert.id
-
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.concert.id
-  }
-
+  vpc_id = aws_vpc.main.id
+  
+  # No NAT Gateway route
+  
   tags = {
-    Name = "concert-private-rt-${var.environment}"
+    Name = "${var.project_name}-private-rt"
   }
 }
 
-resource "aws_route_table_association" "private_1" {
-  subnet_id      = aws_subnet.private_1.id
+resource "aws_route_table_association" "public" {
+  count          = 2
+  subnet_id      = aws_subnet.public[count.index].id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private" {
+  count          = 2
+  subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private.id
-}
-
-resource "aws_route_table_association" "private_2" {
-  subnet_id      = aws_subnet.private_2.id
-  route_table_id = aws_route_table.private.id
-}
-
-# ============================================================================
-# SECURITY GROUPS
-# ============================================================================
-
-# Lambda Security Group
-resource "aws_security_group" "lambda" {
-  name_prefix = "concert-lambda-"
-  description = "Security group for Lambda functions"
-  vpc_id      = aws_vpc.concert.id
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "concert-lambda-sg-${var.environment}"
-  }
-}
-
-# RDS Security Group
-resource "aws_security_group" "rds" {
-  name_prefix = "concert-rds-"
-  description = "Security group for RDS"
-  vpc_id      = aws_vpc.concert.id
-
-  ingress {
-    from_port       = 3306
-    to_port         = 3306
-    protocol        = "tcp"
-    security_groups = [aws_security_group.lambda.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "concert-rds-sg-${var.environment}"
-  }
-}
-
-# ElastiCache Security Group
-resource "aws_security_group" "elasticache" {
-  name_prefix = "concert-elasticache-"
-  description = "Security group for ElastiCache"
-  vpc_id      = aws_vpc.concert.id
-
-  ingress {
-    from_port       = 6379
-    to_port         = 6379
-    protocol        = "tcp"
-    security_groups = [aws_security_group.lambda.id]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "concert-elasticache-sg-${var.environment}"
-  }
-}
-
-# ============================================================================
-# VPC ENDPOINTS (For private Lambda access to AWS services)
-# ============================================================================
-
-resource "aws_vpc_endpoint" "s3" {
-  vpc_id       = aws_vpc.concert.id
-  service_name = "com.amazonaws.${var.aws_region}.s3"
-  route_table_ids = [
-    aws_route_table.private.id
-  ]
-
-  tags = {
-    Name = "concert-s3-endpoint-${var.environment}"
-  }
-}
-
-resource "aws_vpc_endpoint" "dynamodb" {
-  vpc_id       = aws_vpc.concert.id
-  service_name = "com.amazonaws.${var.aws_region}.dynamodb"
-  route_table_ids = [
-    aws_route_table.private.id
-  ]
-
-  tags = {
-    Name = "concert-dynamodb-endpoint-${var.environment}"
-  }
-}
-
-# ============================================================================
-# DATA SOURCES
-# ============================================================================
-
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
-# ============================================================================
-# OUTPUTS
-# ============================================================================
-
-output "vpc_id" {
-  value       = aws_vpc.concert.id
-  description = "VPC ID"
-}
-
-output "private_subnet_ids" {
-  value       = [aws_subnet.private_1.id, aws_subnet.private_2.id]
-  description = "Private subnet IDs"
-}
-
-output "public_subnet_ids" {
-  value       = [aws_subnet.public_1.id, aws_subnet.public_2.id]
-  description = "Public subnet IDs"
-}
-
-output "lambda_security_group_id" {
-  value       = aws_security_group.lambda.id
-  description = "Lambda security group ID"
-}
-
-output "rds_security_group_id" {
-  value       = aws_security_group.rds.id
-  description = "RDS security group ID"
-}
-
-output "elasticache_security_group_id" {
-  value       = aws_security_group.elasticache.id
-  description = "ElastiCache security group ID"
 }

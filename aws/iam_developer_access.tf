@@ -48,12 +48,125 @@ resource "aws_iam_role_policy" "backend_s3_policy" {
           "s3:GetObject",
           "s3:PutObject",
           "s3:DeleteObject",
-          "s3:GetObjectVersion"
+          "s3:GetObjectVersion",
+          "s3:PutObjectAcl",
+          "s3:GetObjectAcl",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts"
         ]
         Resource = [
           "${aws_s3_bucket.event_pictures.arn}/*",
           "${aws_s3_bucket.user_avatars.arn}/*"
         ]
+      },
+      {
+        Sid    = "S3MultipartUpload"
+        Effect = "Allow"
+        Action = [
+          "s3:ListBucketMultipartUploads"
+        ]
+        Resource = [
+          aws_s3_bucket.event_pictures.arn,
+          aws_s3_bucket.user_avatars.arn
+        ]
+      }
+    ]
+  })
+}
+
+# Policy for SSM Session Manager
+resource "aws_iam_role_policy" "backend_ssm_policy" {
+  name = "${var.project_name}-backend-ssm-policy"
+  role = aws_iam_role.backend_ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SSMSessionManager"
+        Effect = "Allow"
+        Action = [
+          "ssm:UpdateInstanceInformation",
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "CloudWatchLogsForSSM"
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/concert/*"
+      }
+    ]
+  })
+}
+
+# Policy for ElastiCache access (if needed by application)
+resource "aws_iam_role_policy" "backend_elasticache_policy" {
+  name = "${var.project_name}-backend-elasticache-policy"
+  role = aws_iam_role.backend_ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ElastiCacheDescribe"
+        Effect = "Allow"
+        Action = [
+          "elasticache:DescribeCacheClusters",
+          "elasticache:DescribeReplicationGroups"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Policy for CloudWatch Metrics
+resource "aws_iam_role_policy" "backend_cloudwatch_policy" {
+  name = "${var.project_name}-backend-cloudwatch-policy"
+  role = aws_iam_role.backend_ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CloudWatchMetrics"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:PutMetricData",
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Policy for Secrets Manager (for DB credentials)
+resource "aws_iam_role_policy" "backend_secrets_policy" {
+  name = "${var.project_name}-backend-secrets-policy"
+  role = aws_iam_role.backend_ec2_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SecretsManagerGetValue"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret"
+        ]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.project_name}/*"
       }
     ]
   })
@@ -113,7 +226,12 @@ resource "aws_iam_group_policy" "developer_s3_policy" {
           "s3:GetObject",
           "s3:PutObject",
           "s3:DeleteObject",
-          "s3:GetObjectVersion"
+          "s3:GetObjectVersion",
+          "s3:PutObjectAcl",
+          "s3:GetObjectAcl",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts",
+          "s3:ListBucketMultipartUploads"
         ]
         Resource = [
           "${aws_s3_bucket.event_pictures.arn}",
@@ -247,9 +365,122 @@ resource "aws_iam_group_policy" "developer_logs_policy" {
           "logs:DescribeLogGroups",
           "logs:DescribeLogStreams",
           "logs:GetLogEvents",
-          "logs:FilterLogEvents"
+          "logs:FilterLogEvents",
+          "logs:TailLogStream"
         ]
-        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/concert/*"
+        Resource = [
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/concert/*",
+          "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/aws/concert/*"
+        ]
+      },
+      {
+        Sid    = "CloudWatchMetrics"
+        Effect = "Allow"
+        Action = [
+          "cloudwatch:GetMetricStatistics",
+          "cloudwatch:ListMetrics",
+          "cloudwatch:DescribeAlarms",
+          "cloudwatch:GetDashboard",
+          "cloudwatch:ListDashboards"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Developer - ElastiCache Access
+resource "aws_iam_group_policy" "developer_elasticache_policy" {
+  name  = "${var.project_name}-developer-elasticache-policy"
+  group = aws_iam_group.developers.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ElastiCacheRead"
+        Effect = "Allow"
+        Action = [
+          "elasticache:DescribeCacheClusters",
+          "elasticache:DescribeCacheSubnetGroups",
+          "elasticache:DescribeCacheParameterGroups",
+          "elasticache:DescribeReplicationGroups",
+          "elasticache:ListTagsForResource"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Developer - ECR Access
+resource "aws_iam_group_policy" "developer_ecr_policy" {
+  name  = "${var.project_name}-developer-ecr-policy"
+  group = aws_iam_group.developers.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ECRRepositoryAccess"
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken",
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:DescribeRepositories",
+          "ecr:ListImages",
+          "ecr:DescribeImages"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Developer - Cognito Access
+resource "aws_iam_group_policy" "developer_cognito_policy" {
+  name  = "${var.project_name}-developer-cognito-policy"
+  group = aws_iam_group.developers.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CognitoUserPoolRead"
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:DescribeUserPool",
+          "cognito-idp:DescribeUserPoolClient",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:ListUserPoolClients",
+          "cognito-idp:ListUserPools"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Developer - Secrets Manager Read Access
+resource "aws_iam_group_policy" "developer_secrets_policy" {
+  name  = "${var.project_name}-developer-secrets-policy"
+  group = aws_iam_group.developers.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SecretsManagerRead"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecrets"
+        ]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.project_name}/*"
       }
     ]
   })
@@ -326,7 +557,12 @@ resource "aws_iam_group_policy" "tester_s3_policy" {
           "s3:ListBucket",
           "s3:GetObject",
           "s3:PutObject",
-          "s3:DeleteObject"
+          "s3:DeleteObject",
+          "s3:PutObjectAcl",
+          "s3:GetObjectAcl",
+          "s3:AbortMultipartUpload",
+          "s3:ListMultipartUploadParts",
+          "s3:ListBucketMultipartUploads"
         ]
         Resource = [
           "${aws_s3_bucket.event_pictures.arn}-test",
@@ -481,305 +717,85 @@ resource "aws_iam_group_policy" "tester_self_service_policy" {
   })
 }
 
+# Tester - ElastiCache Read Access
+resource "aws_iam_group_policy" "tester_elasticache_policy" {
+  name  = "${var.project_name}-tester-elasticache-policy"
+  group = aws_iam_group.testers.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ElastiCacheTestRead"
+        Effect = "Allow"
+        Action = [
+          "elasticache:DescribeCacheClusters",
+          "elasticache:DescribeCacheSubnetGroups",
+          "elasticache:DescribeCacheParameterGroups",
+          "elasticache:DescribeReplicationGroups",
+          "elasticache:ListTagsForResource"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Tester - Cognito Test Access
+resource "aws_iam_group_policy" "tester_cognito_policy" {
+  name  = "${var.project_name}-tester-cognito-policy"
+  group = aws_iam_group.testers.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "CognitoTestAccess"
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:DescribeUserPool",
+          "cognito-idp:DescribeUserPoolClient",
+          "cognito-idp:ListUsers",
+          "cognito-idp:AdminGetUser",
+          "cognito-idp:ListUserPoolClients",
+          "cognito-idp:ListUserPools"
+        ]
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+# Tester - Secrets Manager Read Access
+resource "aws_iam_group_policy" "tester_secrets_policy" {
+  name  = "${var.project_name}-tester-secrets-policy"
+  group = aws_iam_group.testers.name
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "SecretsManagerTestRead"
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue",
+          "secretsmanager:DescribeSecret",
+          "secretsmanager:ListSecrets"
+        ]
+        Resource = "arn:aws:secretsmanager:${var.aws_region}:${data.aws_caller_identity.current.account_id}:secret:${var.project_name}-test-*"
+      }
+    ]
+  })
+}
+
 # ============================================================================
 # DEPLOYMENT GROUP POLICIES
 # ============================================================================
 
-# Deployment - EC2 Instance Management
-resource "aws_iam_group_policy" "deployment_ec2_policy" {
-  name  = "${var.project_name}-deployment-ec2-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "EC2InstanceManagement"
-        Effect = "Allow"
-        Action = [
-          "ec2:DescribeInstances",
-          "ec2:DescribeSecurityGroups",
-          "ec2:DescribeTags",
-          "ec2:DescribeImages",
-          "ec2:DescribeSnapshots",
-          "ec2:StartInstances",
-          "ec2:StopInstances",
-          "ec2:RebootInstances",
-          "ec2:CreateTags",
-          "ec2:DeleteTags"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-# Deployment - ECS Task Management
-resource "aws_iam_group_policy" "deployment_ecs_policy" {
-  name  = "${var.project_name}-deployment-ecs-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "ECSTaskExecution"
-        Effect = "Allow"
-        Action = [
-          "ecs:DescribeTasks",
-          "ecs:DescribeTaskDefinition",
-          "ecs:DescribeServices",
-          "ecs:ListTasks",
-          "ecs:ListServices",
-          "ecs:UpdateService",
-          "ecs:RegisterTaskDefinition",
-          "ecs:RunTask",
-          "ecs:StopTask"
-        ]
-        Resource = [
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:cluster/${var.project_name}-*",
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:service/${var.project_name}-*",
-          "arn:aws:ecs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:task-definition/${var.project_name}-*:*"
-        ]
-      }
-    ]
-  })
-}
-
-# Deployment - RDS Management
-resource "aws_iam_group_policy" "deployment_rds_policy" {
-  name  = "${var.project_name}-deployment-rds-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "RDSManagement"
-        Effect = "Allow"
-        Action = [
-          "rds:DescribeDBInstances",
-          "rds:DescribeDBClusters",
-          "rds:DescribeDBSnapshots",
-          "rds:ModifyDBInstance",
-          "rds:ModifyDBCluster",
-          "rds:RestoreDBInstanceFromDBSnapshot",
-          "rds:ListTagsForResource",
-          "rds:AddTagsToResource",
-          "rds:RemoveTagsFromResource"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
-
-# Deployment - S3 and Terraform State
-resource "aws_iam_group_policy" "deployment_s3_terraform_policy" {
-  name  = "${var.project_name}-deployment-s3-terraform-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "S3DeploymentAccess"
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject",
-          "s3:ListBucket",
-          "s3:GetBucketVersioning",
-          "s3:GetObjectVersion",
-          "s3:PutBucketVersioning"
-        ]
-        Resource = [
-          "arn:aws:s3:::${var.project_name}-*-dev/*",
-          "arn:aws:s3:::${var.project_name}-*-dev",
-          "arn:aws:s3:::${var.project_name}-*-test/*",
-          "arn:aws:s3:::${var.project_name}-*-test",
-          "arn:aws:s3:::${var.project_name}-*-staging/*",
-          "arn:aws:s3:::${var.project_name}-*-staging"
-        ]
-      },
-      {
-        Sid    = "TerraformStateAccess"
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket",
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject"
-        ]
-        Resource = [
-          "arn:aws:s3:::${var.project_name}-terraform-state",
-          "arn:aws:s3:::${var.project_name}-terraform-state/*"
-        ]
-      },
-      {
-        Sid    = "DynamoDBStateLocking"
-        Effect = "Allow"
-        Action = [
-          "dynamodb:DescribeTable",
-          "dynamodb:GetItem",
-          "dynamodb:PutItem",
-          "dynamodb:DeleteItem"
-        ]
-        Resource = "arn:aws:dynamodb:${var.aws_region}:${data.aws_caller_identity.current.account_id}:table/${var.project_name}-terraform-lock"
-      }
-    ]
-  })
-}
-
-# Deployment - Lambda Deployment
-resource "aws_iam_group_policy" "deployment_lambda_policy" {
-  name  = "${var.project_name}-deployment-lambda-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "LambdaDeployment"
-        Effect = "Allow"
-        Action = [
-          "lambda:UpdateFunctionCode",
-          "lambda:UpdateFunctionConfiguration",
-          "lambda:PublishVersion",
-          "lambda:CreateAlias",
-          "lambda:UpdateAlias",
-          "lambda:DeleteAlias",
-          "lambda:GetFunction",
-          "lambda:ListFunctions",
-          "lambda:ListVersionsByFunction"
-        ]
-        Resource = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-*"
-      }
-    ]
-  })
-}
-
-# Deployment - API Gateway and CloudFormation
-resource "aws_iam_group_policy" "deployment_api_cf_policy" {
-  name  = "${var.project_name}-deployment-api-cf-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "APIGatewayDeployment"
-        Effect = "Allow"
-        Action = [
-          "apigateway:GET",
-          "apigateway:POST",
-          "apigateway:PUT",
-          "apigateway:PATCH",
-          "apigateway:DELETE",
-          "apigateway:CreateDeployment",
-          "apigateway:UpdateStage"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "CloudFormationManagement"
-        Effect = "Allow"
-        Action = [
-          "cloudformation:DescribeStacks",
-          "cloudformation:DescribeStackEvents",
-          "cloudformation:DescribeStackResource",
-          "cloudformation:DescribeStackResources",
-          "cloudformation:GetTemplate",
-          "cloudformation:ListStacks",
-          "cloudformation:ListStackResources",
-          "cloudformation:CreateStack",
-          "cloudformation:UpdateStack",
-          "cloudformation:DeleteStack"
-        ]
-        Resource = "arn:aws:cloudformation:${var.aws_region}:${data.aws_caller_identity.current.account_id}:stack/${var.project_name}-*"
-      }
-    ]
-  })
-}
-
-# Deployment - IAM PassRole (limited)
-resource "aws_iam_group_policy" "deployment_pass_role_policy" {
-  name  = "${var.project_name}-deployment-pass-role-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "PassRoleForServices"
-        Effect = "Allow"
-        Action = [
-          "iam:PassRole"
-        ]
-        Resource = [
-          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecsTaskExecutionRole",
-          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/ecsTaskRole",
-          "arn:aws:iam::${data.aws_caller_identity.current.account_id}:role/${var.project_name}-lambda-execution-role"
-        ]
-        Condition = {
-          StringEquals = {
-            "iam:PassedToService" = [
-              "ecs-tasks.amazonaws.com",
-              "lambda.amazonaws.com"
-            ]
-          }
-        }
-      }
-    ]
-  })
-}
-
-# Deployment - CloudWatch Logs
-resource "aws_iam_group_policy" "deployment_logs_policy" {
-  name  = "${var.project_name}-deployment-logs-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "CloudWatchLogsAccess"
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents",
-          "logs:DescribeLogGroups",
-          "logs:DescribeLogStreams"
-        ]
-        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:log-group:/${var.project_name}/*"
-      }
-    ]
-  })
-}
-
-# Deployment - Self-Service Credentials
-resource "aws_iam_group_policy" "deployment_self_service_policy" {
-  name  = "${var.project_name}-deployment-self-service-policy"
-  group = aws_iam_group.deployment.name
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "ViewOwnCredentials"
-        Effect = "Allow"
-        Action = [
-          "iam:GetUser",
-          "iam:ListAccessKeys",
-          "iam:GetLoginProfile"
-        ]
-        Resource = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:user/$${aws:username}"
-      }
-    ]
-  })
-}
+# NOTE: Deployment group inline policies have been moved to iam_deployment_managed.tf
+# This avoids the AWS IAM group inline policy size limit (5120 bytes total)
+# The old inline policies are preserved in iam_deployment_inline_policies.tf.disabled
+# New approach uses AWS PowerUserAccess managed policy + minimal inline policies
 
 # ============================================================================
 # ADMIN GROUP POLICY
@@ -867,5 +883,4 @@ output "backend_ec2_instance_profile_name" {
   description = "Name of the EC2 instance profile for backend"
 }
 
-# Data source to get current AWS account ID
-data "aws_caller_identity" "current" {}
+# Note: aws_caller_identity data source is defined in main.tf

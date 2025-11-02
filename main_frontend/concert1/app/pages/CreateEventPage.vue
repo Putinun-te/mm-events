@@ -3,6 +3,7 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
+import { useApi } from '../../composables/useApi'
 
 interface CreateEventForm {
   title: string
@@ -24,6 +25,7 @@ interface CreateEventForm {
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 const { success, error } = useToast()
+const { apiFetch } = useApi()
 
 const submitting = ref(false)
 
@@ -100,7 +102,7 @@ async function handleSubmit() {
     }
     
     // Save to JSON file
-    await $fetch('/api/events/json', {
+    await apiFetch('/api/events/json', {
       method: 'POST',
       body: payload,
       headers: { Authorization: `Bearer ${token}` }

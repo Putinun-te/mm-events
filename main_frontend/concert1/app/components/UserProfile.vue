@@ -3,7 +3,8 @@
     <!-- Profile Header -->
     <div class="profile-header">
       <div class="profile-banner">
-        <img src="@/assets/images/profile-banner.svg" alt="Profile Banner" class="banner-image" />
+        <!-- <img src="@/assets/images/profile-banner.svg" alt="Profile Banner" class="banner-image" /> -->
+        <div class="banner-placeholder" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); height: 200px;"></div>
       </div>
       
       <div class="profile-info">
@@ -62,6 +63,18 @@
         <span class="stat-value">{{ userStats.reviews }}</span>
         <span class="stat-label">Reviews</span>
       </div>
+    </div>
+
+    <!-- Loading State -->
+    <div v-if="isLoading" class="loading-state">
+      <p>Loading profile...</p>
+    </div>
+
+    <!-- Error State -->
+    <div v-if="loadError" class="error-state">
+      <p style="color: #e53e3e; background: #fed7d7; padding: 12px; border-radius: 8px; margin: 20px;">
+        {{ loadError }}
+      </p>
     </div>
 
     <!-- Edit Profile Form -->
@@ -133,7 +146,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useApi } from '../composables/useApi'
+import { useAuth } from '../composables/useAuth'
 
 interface EditFormData {
   fullName: string
@@ -157,6 +172,8 @@ const userEmail = ref('john@example.com')
 const userStatus = ref('Verified Member')
 const userAvatar = ref('https://i.pravatar.cc/150?img=1')
 const defaultAvatar = 'https://i.pravatar.cc/150?img=1'
+const loadError = ref<string | null>(null)
+const isLoading = ref(false)
 
 // Edit state
 const isEditing = ref(false)
@@ -177,6 +194,50 @@ const userStats = ref<UserStats>({
   reviews: 18
 })
 
+// Load user profile from backend
+const loadProfile = async () => {
+  try {
+    isLoading.value = true
+    loadError.value = null
+    
+    const { apiFetch } = useApi()
+    const { getToken } = useAuth()
+    const token = getToken()
+    
+    if (!token) {
+      loadError.value = 'Please login to view your profile'
+      return
+    }
+    
+    const response = await apiFetch('/api/users/me', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    
+    // Update user data from response
+    userName.value = response.name || 'User'
+    userEmail.value = response.email || ''
+    editForm.value.fullName = response.name || ''
+    editForm.value.email = response.email || ''
+    editForm.value.phone = response.phone || ''
+    editForm.value.location = response.address || ''
+    editForm.value.website = response.website || ''
+    
+  } catch (error: any) {
+    console.error('Failed to load profile:', error)
+    loadError.value = error?.data?.message || error?.message || 'Not Found'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Load profile on component mount
+onMounted(() => {
+  loadProfile()
+})
+
 // Computed
 const userStatusClass = computed(() => {
   if (userStatus.value === 'Verified Member') return 'verified'
@@ -195,20 +256,49 @@ const toggleEdit = () => {
 
 const saveProfile = async () => {
   try {
+    const { apiFetch } = useApi()
+    const { getToken } = useAuth()
+    const token = getToken()
+    
+    if (!token) {
+      console.error('No authentication token found')
+      alert('Please login to update your profile')
+      return
+    }
+    
+    // Parse name into firstName and lastName
+    const nameParts = editForm.value.fullName.trim().split(' ')
+    const firstName = nameParts[0] || ''
+    const lastName = nameParts.slice(1).join(' ') || ''
+    
+    // Call API to save profile
+    const response = await apiFetch('/api/users/me', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      },
+      body: {
+        firstName: firstName,
+        lastName: lastName,
+        phone: editForm.value.phone,
+        address: editForm.value.location,
+        city: '',
+        country: '',
+        pincode: '',
+        website: editForm.value.website
+      }
+    })
+    
     // Update profile data
     userName.value = editForm.value.fullName
     
-    // Call API to save
-    // await $fetch('/api/user/profile', {
-    //   method: 'PUT',
-    //   body: editForm.value
-    // })
-    
     isEditing.value = false
-    // Show success toast
-  } catch (error) {
+    alert('Profile updated successfully!')
+  } catch (error: any) {
     console.error('Failed to save profile:', error)
-    // Show error toast
+    const errorMsg = error?.data?.message || error?.message || 'Failed to update profile'
+    alert('Error: ' + errorMsg)
   }
 }
 

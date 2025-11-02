@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { buildBackendUrl } from '../../utils/backend'
 
 export default defineEventHandler(async (event: H3Event) => {
   const body = await readBody(event)
@@ -11,7 +12,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    return await $fetch(`${backend}/api/bookings`, {
+  return await $fetch(buildBackendUrl(backend, '/api/bookings'), {
       method: 'POST',
       body,
       headers: { Authorization: token }

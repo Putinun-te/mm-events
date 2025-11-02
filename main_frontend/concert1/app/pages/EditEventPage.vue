@@ -3,6 +3,7 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
+import { useApi } from '../../composables/useApi'
 
 interface CreateEventForm {
   title: string
@@ -25,6 +26,7 @@ const router = useRouter()
 const route = useRoute()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 const { success, error } = useToast()
+const { apiFetch } = useApi()
 
 const submitting = ref(false)
 const loading = ref(true)
@@ -79,7 +81,7 @@ async function loadEventData() {
       return
     }
     
-    const event: any = await $fetch(`/api/events/json/${eventId}`, {
+    const event: any = await apiFetch(`/api/events/json/${eventId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     
@@ -169,7 +171,7 @@ async function handleSubmit() {
     }
     
     // Update event
-    await $fetch(`/api/events/json/${eventId}`, {
+    await apiFetch(`/api/events/json/${eventId}`, {
       method: 'PUT',
       body: payload,
       headers: { Authorization: `Bearer ${token}` }
@@ -202,7 +204,7 @@ async function confirmDelete() {
   }
 
   try {
-    await $fetch(`/api/events/json/${eventId}`, {
+    await apiFetch(`/api/events/json/${eventId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })

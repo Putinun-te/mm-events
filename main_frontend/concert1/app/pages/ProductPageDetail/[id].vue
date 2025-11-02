@@ -3,11 +3,13 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
+import { useApi } from '../../../composables/useApi'
 
 const route = useRoute()
 const router = useRouter()
 const { loadFromStorage, isLoggedIn } = useAuth()
 const { success, error } = useToast()
+const { apiFetch } = useApi()
 
 const productId = route.params.id
 const event = ref<any>(null)
@@ -98,7 +100,7 @@ onMounted(async () => {
   event.value = window.history.state?.event ?? null
   if (!event.value) {
     try {
-      const data = await $fetch(`/api/events/json/${productId}`)
+  const data = await apiFetch(`/api/events/json/${productId}`)
       event.value = data
     } catch (e) {
       console.error('Failed to load event', e)
@@ -145,7 +147,7 @@ async function addToCart() {
 
   try {
     // Step 1: Create booking
-    await $fetch('/api/bookings', {
+    await apiFetch('/api/bookings', {
       method: 'POST',
       body: {
         eventId: String(event.value.id),
@@ -162,7 +164,7 @@ async function addToCart() {
     let userId = null
     let userName = 'Anonymous'
     try {
-      const userProfile: any = await $fetch('/api/auth/me', {
+      const userProfile: any = await apiFetch('/api/auth/me', {
         headers: { Authorization: `Bearer ${token}` }
       })
       userId = userProfile.id
@@ -174,7 +176,7 @@ async function addToCart() {
     // Step 3: Add user to event participants (non-blocking)
     if (userId) {
       try {
-        await $fetch(`/api/events/json/${event.value.id}/add-participant`, {
+        await apiFetch(`/api/events/json/${event.value.id}/add-participant`, {
           method: 'POST',
           body: {
             userId,
@@ -185,7 +187,7 @@ async function addToCart() {
         
         // Step 4: Reload event data to show updated participant count
         try {
-          const updatedEvent = await $fetch(`/api/events/json/${event.value.id}`)
+          const updatedEvent = await apiFetch(`/api/events/json/${event.value.id}`)
           event.value = updatedEvent
         } catch (reloadError) {
           console.warn('Failed to reload event data:', reloadError)

@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
 import { useUnauthorizedHandler } from '~/composables/useUnauthorizedHandler'
-import { $fetch } from 'ofetch'
+import { useApi } from '../../composables/useApi'
 
 interface Booking {
   id: number
@@ -22,6 +22,7 @@ const router = useRouter()
 const { loadFromStorage, isLoggedIn } = useAuth()
 const { success, error } = useToast()
 const { handleApiError } = useUnauthorizedHandler()
+const { apiFetch, resolveApiUrl } = useApi()
 
 const bookings = ref<Booking[]>([])
 const loading = ref(true)
@@ -51,7 +52,7 @@ async function fetchBookings() {
       // Middleware will handle redirect
       return
     }
-    const res: any = await $fetch('/api/bookings/me', {
+    const res: any = await apiFetch('/api/bookings/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
     bookings.value = Array.isArray(res) ? res : []
@@ -98,7 +99,7 @@ async function confirmCancelBooking() {
     }
 
     // Use native fetch to handle DELETE properly
-    const response = await fetch(`/api/bookings/${bookingId}`, {
+    const response = await fetch(resolveApiUrl(`/api/bookings/${bookingId}`), {
       method: 'DELETE',
       headers: { 
         'Authorization': `Bearer ${token}`,

@@ -22,7 +22,8 @@
       </div>
 
       <div class="mt-12">
-        <NuxtLink to="/ContactPage" class="inline-block bg-indigo-600 text-white px-5 py-2 rounded-md font-medium hover:bg-indigo-700">Contact us</NuxtLink>
+        <!-- ContactPage doesn't exist yet, commenting out for now -->
+        <!-- <NuxtLink to="/ContactPage" class="inline-block bg-indigo-600 text-white px-5 py-2 rounded-md font-medium hover:bg-indigo-700">Contact us</NuxtLink> -->
       </div>
     </div>
   </div>

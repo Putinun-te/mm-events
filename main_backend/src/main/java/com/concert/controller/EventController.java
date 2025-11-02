@@ -2,16 +2,19 @@ package com.concert.controller;
 
 import com.concert.dto.CreateEventRequest;
 import com.concert.dto.EventResponse;
+import com.concert.dto.EventPhotoResponse;
 import com.concert.model.User;
 import com.concert.repository.UserRepository;
 import com.concert.service.EventService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -58,6 +61,23 @@ public class EventController {
         User currentUser = getUserOrNull(authentication);
         EventResponse event = eventService.getEvent(id, currentUser);
         return ResponseEntity.ok(event);
+    }
+
+    @PostMapping("/{id}/photo")
+    public ResponseEntity<EventPhotoResponse> uploadEventPhoto(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestParam("file") MultipartFile file) {
+        User organizer = getCurrentUser(authentication);
+        EventPhotoResponse response = eventService.uploadEventPhoto(id, organizer, file);
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/photo")
+    public ResponseEntity<EventPhotoResponse> getEventPhoto(
+            @PathVariable Long id) {
+        EventPhotoResponse response = eventService.getEventPhoto(id);
+        return ResponseEntity.ok(response);
     }
 
     private User getCurrentUser(Authentication authentication) {

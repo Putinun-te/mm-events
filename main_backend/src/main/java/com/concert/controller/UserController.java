@@ -13,7 +13,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = {
+    "http://localhost:3000",
+    "http://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com",
+    "https://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com"
+})
 public class UserController {
     
     @Autowired
@@ -29,6 +33,34 @@ public class UserController {
         }
     }
     
+    @GetMapping("/me")
+    public ResponseEntity<?> getMe(Authentication authentication) {
+        try {
+            String username = authentication.getName();
+            return userRepository.findByUsername(username)
+                    .map(user -> {
+                        UserProfileResponse profile = new UserProfileResponse(
+                            user.getId(),
+                            user.getUsername(),
+                            user.getEmail(),
+                            user.getName(),
+                            user.getPhone(),
+                            user.getAddress(),
+                            user.getCity(),
+                            user.getCountry(),
+                            user.getPincode(),
+                            user.getProfilePhoto(),
+                            user.getCompany(),
+                            user.getWebsite()
+                        );
+                        return ResponseEntity.ok(profile);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         try {

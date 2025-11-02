@@ -59,6 +59,28 @@ export function useAuth() {
     localStorage.removeItem('jwt_token')
     sessionStorage.removeItem('jwt_token')
     localStorage.removeItem('profile_data')
+    localStorage.removeItem('user_email')
+    localStorage.removeItem('remember_me')
+  }
+
+  const saveAuth = (authData: { token: string; email?: string; username?: string }, rememberMe: boolean = false) => {
+    setToken(authData.token, rememberMe)
+    if (authData.email || authData.username) {
+      setProfile({
+        email: authData.email,
+        username: authData.username
+      })
+    }
+    if (authData.email) {
+      localStorage.setItem('user_email', authData.email)
+    }
+    localStorage.setItem('remember_me', rememberMe.toString())
+  }
+
+  const shouldCompleteProfile = (): boolean => {
+    const profileData = getProfile()
+    // Check if profile is incomplete (missing name, phone, etc.)
+    return !profileData || !profileData.firstName || !profileData.lastName
   }
 
   return {
@@ -70,6 +92,8 @@ export function useAuth() {
     getToken,
     setProfile,
     getProfile,
-    logout
+    logout,
+    saveAuth,
+    shouldCompleteProfile
   }
 }

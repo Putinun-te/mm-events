@@ -3,7 +3,7 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useRouter } from 'vue-router'
 import { useToast } from '~/composables/useToast'
-import { $fetch } from 'ofetch'
+import { useApi } from '../../composables/useApi'
 
 interface UserForm {
   fullName: string;
@@ -30,6 +30,7 @@ const saving = ref(false)
 const message = ref('')
 const successFlag = ref(false)
 const { success, error } = useToast()
+const { apiFetch } = useApi()
 const activeTab = ref<'profile' | 'stats'>('profile')
 const showLogoutConfirm = ref(false)
 
@@ -76,7 +77,7 @@ async function loadUserData() {
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     if (!token) return
     
-    const me = await $fetch<any>('/api/auth/me', { 
+    const me = await apiFetch<any>('/api/auth/me', { 
       headers: { Authorization: `Bearer ${token}` } 
     })
     
@@ -98,7 +99,15 @@ async function loadUserData() {
     }
   } catch (e: any) {
     console.error('Failed to load profile', e)
-    message.value = e?.statusMessage || 'Failed to load profile'
+    const status = e?.statusCode || e?.response?.status || e?.status
+    if (status === 404) {
+      message.value = 'We could not retrieve your profile. Please save your details again after relogging.'
+    } else if (status === 401 || status === 403) {
+      message.value = 'Your session expired. Please login again.'
+      router.push('/LoginPage')
+    } else {
+      message.value = e?.statusMessage || 'Failed to load profile'
+    }
   }
 }
 
@@ -108,8 +117,8 @@ async function loadUserStats() {
     if (!token) return
 
     const [eventsRes, bookingsRes] = await Promise.all([
-      $fetch('/api/events/json/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => []),
-      $fetch('/api/bookings/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => [])
+  apiFetch('/api/events/json/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => []),
+  apiFetch('/api/bookings/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => [])
     ])
 
     stats.value.eventsCreated = Array.isArray(eventsRes) ? eventsRes.length : 0
@@ -123,8 +132,12 @@ async function loadUserStats() {
         return eventDate && eventDate > now
       }).length
     }
-  } catch (e) {
+  } catch (e: any) {
     console.error('Failed to load stats', e)
+    const status = e?.statusCode || e?.response?.status || e?.status
+    if (status === 401 || status === 403) {
+      router.push('/LoginPage')
+    }
   }
 }
 
@@ -156,7 +169,7 @@ async function handlesubmit () {
       pincode: userData.pincode ? String(userData.pincode) : null,
     }
     
-    const res: any = await $fetch('/api/users/me', {
+    const res: any = await apiFetch('/api/users/me', {
       method: 'PUT',
       body: payload,
       headers: { Authorization: `Bearer ${token}` }
@@ -184,8 +197,19 @@ async function handlesubmit () {
     success('Profile saved successfully!', 'Profile Updated')
   } catch (e: any) {
     console.error('Save error:', e)
-    message.value = e?.statusMessage || e?.data?.message || 'Failed to save profile.'
-    error(message.value, 'Save Failed')
+    const status = e?.statusCode || e?.response?.status || e?.status
+    if (status === 401 || status === 403) {
+      message.value = 'Your session expired. Please login again to continue.'
+      error(message.value, 'Session Expired')
+      router.push('/LoginPage')
+    } else if (status === 404) {
+      message.value = 'We could not find your account. Please login again so we can resync.'
+      error(message.value, 'Profile Missing')
+      router.push('/LoginPage')
+    } else {
+      message.value = e?.statusMessage || e?.data?.message || 'Failed to save profile.'
+      error(message.value, 'Save Failed')
+    }
   } finally {
     saving.value = false
   }

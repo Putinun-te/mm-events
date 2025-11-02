@@ -54,6 +54,12 @@ public class Event {
     @Column(name = "ticket_price")
     private Double ticketPrice;
 
+    @Column(name = "photo_id")
+    private String photoId;
+
+    @Column(name = "photo_url")
+    private String photoUrl;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User organizer;
@@ -204,6 +210,22 @@ public class Event {
 
     public void setTicketPrice(Double ticketPrice) {
         this.ticketPrice = ticketPrice;
+    }
+
+    public String getPhotoId() {
+        return photoId;
+    }
+
+    public void setPhotoId(String photoId) {
+        this.photoId = photoId;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
     }
 
     public User getOrganizer() {

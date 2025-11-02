@@ -22,7 +22,9 @@ public class ConcertBackendMainMethodTest {
                     "--spring.datasource.driver-class-name=org.h2.Driver",
                     "--spring.datasource.username=sa",
                     "--spring.datasource.password=",
-                    "--spring.jpa.hibernate.ddl-auto=none"
+                    "--spring.jpa.hibernate.ddl-auto=none",
+                    "--aws.s3.event-pictures-bucket=test-bucket",
+                    "--aws.region=us-east-1"
             };
 
             try (ConfigurableApplicationContext ctx = app.run(args)) {
@@ -42,7 +44,9 @@ public class ConcertBackendMainMethodTest {
                 "--spring.datasource.username=sa",
                 "--spring.datasource.password=",
                 "--spring.jpa.hibernate.ddl-auto=none",
-                "--logging.level.root=ERROR"
+                "--logging.level.root=ERROR",
+                "--aws.s3.event-pictures-bucket=test-bucket",
+                "--aws.region=us-east-1"
         };
         assertDoesNotThrow(() -> ConcertBackendApplication.main(args));
     }

@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { $fetch } from 'ofetch'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useUnauthorizedHandler } from '~/composables/useUnauthorizedHandler'
+import { useApi } from '../../composables/useApi'
 
 type MyEvent = any
 
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 const { handleApiError } = useUnauthorizedHandler()
+const { apiFetch } = useApi()
 
 const events = ref<MyEvent[]>([])
 const loading = ref(true)
@@ -63,7 +64,7 @@ async function fetchEvents() {
       // Middleware will handle redirect
       return
     }
-    const res: any = await $fetch('/api/events/json/me', {
+    const res: any = await apiFetch('/api/events/json/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
     events.value = Array.isArray(res) ? res : []

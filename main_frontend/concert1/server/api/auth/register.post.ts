@@ -1,11 +1,12 @@
 import type { H3Event } from 'h3'
+import { buildBackendUrl } from '../../utils/backend'
 
 export default defineEventHandler(async (event: H3Event): Promise<any> => {
   const body = await readBody(event);
   const config = useRuntimeConfig();
   const backend = (config.public as any)?.backendBaseUrl || process.env.BACKEND_BASE_URL || 'http://localhost:8080';
   try {
-    const res: any = await $fetch(`${backend}/api/auth/register`, {
+  const res: any = await $fetch(buildBackendUrl(backend, '/api/auth/register'), {
       method: 'POST',
       body,
     });

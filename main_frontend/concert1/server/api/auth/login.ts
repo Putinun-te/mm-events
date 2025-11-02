@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { buildBackendUrl } from '../../utils/backend'
 
 export default defineEventHandler(async (event: H3Event): Promise<any> => {
   // Accept only POST for login, return 405 otherwise
@@ -10,7 +11,7 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
   const config = useRuntimeConfig();
   const backend = (config.public as any)?.backendBaseUrl || process.env.BACKEND_BASE_URL || 'http://localhost:8080';
   try {
-    const res: any = await $fetch(`${backend}/api/auth/login`, {
+  const res: any = await $fetch(buildBackendUrl(backend, '/api/auth/login'), {
       method: 'POST',
       body,
     });

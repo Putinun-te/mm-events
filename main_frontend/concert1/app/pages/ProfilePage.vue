@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { useApi } from '../../composables/useApi'
 
 const { loadFromStorage, isLoggedIn } = useAuth()
+const { apiFetch } = useApi()
 
 const loading = ref(true)
 const message = ref('')
@@ -20,7 +22,7 @@ onMounted(async () => {
   }
   try {
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token') || ''
-    const me: any = await $fetch('/api/auth/me', {
+    const me: any = await apiFetch('/api/auth/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
     username.value = me?.username || ''

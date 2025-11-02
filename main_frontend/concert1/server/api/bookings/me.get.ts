@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { buildBackendUrl } from '../../utils/backend'
 
 export default defineEventHandler(async (event: H3Event) => {
   const config = useRuntimeConfig()
@@ -10,7 +11,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-    return await $fetch(`${backend}/api/bookings/me`, {
+  return await $fetch(buildBackendUrl(backend, '/api/bookings/me'), {
       headers: { Authorization: token }
     })
   } catch (err: any) {

@@ -6,7 +6,7 @@ export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   app: {
-    baseURL: '/concert/'
+    baseURL: '/'  // Changed from '/concert/' for S3 root deployment
   },
   runtimeConfig: {
     public: {

@@ -1,4 +1,5 @@
 import type { H3Event } from 'h3'
+import { buildBackendUrl } from '../../utils/backend'
 
 export default defineEventHandler(async (event: H3Event) => {
   const query = getQuery(event)
@@ -8,7 +9,8 @@ export default defineEventHandler(async (event: H3Event) => {
   const config = useRuntimeConfig()
   const backend = (config.public as any)?.backendBaseUrl || process.env.BACKEND_BASE_URL || 'http://localhost:8080'
 
-  const url = new URL('/api/events', backend)
+  const baseUrl = buildBackendUrl(backend, '/api/events')
+  const url = new URL(baseUrl)
   url.searchParams.set('page', page.toString())
   url.searchParams.set('size', size.toString())
 

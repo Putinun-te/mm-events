@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
+import { buildBackendUrl } from '../../../../utils/backend'
 
 const JSON_FILE_PATH = join(process.cwd(), 'data', 'events.json')
 
@@ -25,7 +26,7 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
   let userName = null
   
   try {
-    const userProfile: any = await $fetch(`${backend}/api/auth/me`, {
+    const userProfile: any = await $fetch(buildBackendUrl(backend, '/api/auth/me'), {
       headers: { Authorization: auth }
     })
     userId = userProfile.id
@@ -88,7 +89,7 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
     
     // Also create a booking in the backend so it shows in "My Bookings"
     try {
-      await $fetch(`${backend}/api/bookings`, {
+  await $fetch(buildBackendUrl(backend, '/api/bookings'), {
         method: 'POST',
         body: {
           eventId: String(foundEvent.id),

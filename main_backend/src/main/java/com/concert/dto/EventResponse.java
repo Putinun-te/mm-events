@@ -17,6 +17,8 @@ public class EventResponse {
     private LocalDateTime startDate;
     private LocalDateTime endDate;
     private Double ticketPrice;
+    private String photoId;
+    private String photoUrl;
     private String organizerName;
     private boolean ownedByCurrentUser;
 
@@ -122,6 +124,22 @@ public class EventResponse {
 
     public void setTicketPrice(Double ticketPrice) {
         this.ticketPrice = ticketPrice;
+    }
+
+    public String getPhotoId() {
+        return photoId;
+    }
+
+    public void setPhotoId(String photoId) {
+        this.photoId = photoId;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
     }
 
     public String getOrganizerName() {

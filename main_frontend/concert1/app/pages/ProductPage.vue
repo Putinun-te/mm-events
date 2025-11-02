@@ -217,7 +217,7 @@ onMounted(loadEvents)
           title="No events yet"
           description="There are no events available at the moment. Check back soon or create your own event!"
           actionText="Create Event"
-          :actionLink="'/concert/CreateEventPage'"
+          :actionLink="'/CreateEventPage'"
         />
 
         <!-- Events Grid -->

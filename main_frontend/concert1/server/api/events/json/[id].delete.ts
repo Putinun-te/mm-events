@@ -1,6 +1,7 @@
 import type { H3Event } from 'h3'
 import { readFile, writeFile } from 'fs/promises'
 import { join } from 'path'
+import { buildBackendUrl } from '../../../utils/backend'
 
 const JSON_FILE_PATH = join(process.cwd(), 'data', 'events.json')
 
@@ -21,7 +22,7 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
     
     let userId = null
     try {
-      const userProfile: any = await $fetch(`${backend}/api/auth/me`, {
+      const userProfile: any = await $fetch(buildBackendUrl(backend, '/api/auth/me'), {
         headers: { Authorization: auth }
       })
       userId = userProfile.id
@@ -65,7 +66,7 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
     
     // Cancel all bookings for this event
     try {
-      await $fetch(`${backend}/api/bookings/event/${eventId}`, {
+      await $fetch(buildBackendUrl(backend, `/api/bookings/event/${eventId}`), {
         method: 'DELETE',
         headers: { Authorization: auth }
       })

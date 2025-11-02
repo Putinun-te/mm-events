@@ -4,10 +4,11 @@ import com.concert.dto.UpdateProfileRequest;
 import com.concert.dto.UserProfileResponse;
 import com.concert.model.User;
 import com.concert.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.concert.service.UserProfileService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -20,8 +21,13 @@ import java.util.List;
 })
 public class UserController {
     
-    @Autowired
-    private UserRepository userRepository;
+    private final UserRepository userRepository;
+    private final UserProfileService userProfileService;
+
+    public UserController(UserRepository userRepository, UserProfileService userProfileService) {
+        this.userRepository = userRepository;
+        this.userProfileService = userProfileService;
+    }
     
     @GetMapping
     public ResponseEntity<List<User>> getAllUsers() {
@@ -36,26 +42,9 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<?> getMe(Authentication authentication) {
         try {
-            String username = authentication.getName();
-            return userRepository.findByUsername(username)
-                    .map(user -> {
-                        UserProfileResponse profile = new UserProfileResponse(
-                            user.getId(),
-                            user.getUsername(),
-                            user.getEmail(),
-                            user.getName(),
-                            user.getPhone(),
-                            user.getAddress(),
-                            user.getCity(),
-                            user.getCountry(),
-                            user.getPincode(),
-                            user.getProfilePhoto(),
-                            user.getCompany(),
-                            user.getWebsite()
-                        );
-                        return ResponseEntity.ok(profile);
-                    })
-                    .orElse(ResponseEntity.notFound().build());
+            User currentUser = getCurrentUser(authentication);
+            UserProfileResponse profile = userProfileService.buildResponse(currentUser);
+            return ResponseEntity.ok(profile);
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
@@ -91,22 +80,8 @@ public class UserController {
                         if (req.getCompany() != null) user.setCompany(req.getCompany());
                         if (req.getWebsite() != null) user.setWebsite(req.getWebsite());
                         User saved = userRepository.save(user);
-                        
-                        // Return full profile response
-                        UserProfileResponse profile = new UserProfileResponse(
-                            saved.getId(),
-                            saved.getUsername(),
-                            saved.getEmail(),
-                            saved.getName(),
-                            saved.getPhone(),
-                            saved.getAddress(),
-                            saved.getCity(),
-                            saved.getCountry(),
-                            saved.getPincode(),
-                            saved.getProfilePhoto(),
-                            saved.getCompany(),
-                            saved.getWebsite()
-                        );
+
+                        UserProfileResponse profile = userProfileService.buildResponse(saved);
                         return ResponseEntity.ok(profile);
                     })
                     .orElse(ResponseEntity.notFound().build());
@@ -114,4 +89,27 @@ public class UserController {
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
+
+    @PostMapping("/me/photo")
+    public ResponseEntity<?> uploadProfilePhoto(Authentication authentication,
+                                                @RequestParam("file") MultipartFile file) {
+        try {
+            User currentUser = getCurrentUser(authentication);
+            UserProfileResponse response = userProfileService.uploadProfilePhoto(currentUser, file);
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
+    private User getCurrentUser(Authentication authentication) {
+        if (authentication == null || authentication.getName() == null) {
+            throw new IllegalArgumentException("Authentication required");
+        }
+        return userRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    }
+
 }

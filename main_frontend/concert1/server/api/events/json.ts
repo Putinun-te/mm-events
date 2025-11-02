@@ -59,10 +59,15 @@ export default defineEventHandler(async (event: H3Event): Promise<any> => {
         }
       }
       
-      // Create new event
+      const backendId = body?.backendId ?? body?.id ?? Date.now()
+
+      // Create new event entry including backend metadata
       const newEvent = {
-        id: Date.now(), // Simple ID generation
+        id: backendId,
+        backendId,
         ...body,
+        photoUrl: body?.photoUrl ?? null,
+        photoId: body?.photoId ?? null,
         userId,
         userName,
         createdAt: new Date().toISOString()

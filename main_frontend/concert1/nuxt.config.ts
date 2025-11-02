@@ -10,7 +10,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      backendBaseUrl: process.env.BACKEND_BASE_URL || 'http://localhost:8080'
+      backendBaseUrl: process.env.API_GATEWAY_URL || process.env.BACKEND_BASE_URL || 'http://localhost:8080'
     }
   },
   css: ['~/assets/css/main.css'],

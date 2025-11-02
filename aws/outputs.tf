@@ -17,3 +17,11 @@ output "vpc_id" {
   value = aws_vpc.main.id
 }
 
+output "http_api_id" {
+  value = aws_apigatewayv2_api.concert_http.id
+}
+
+output "http_api_stage_invoke_url" {
+  value = aws_apigatewayv2_stage.concert_http.invoke_url
+}
+

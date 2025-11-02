@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import placeholderImage from '~/assets/img/apple.jpg'
 
 type LegacyEvent = {
   id: string | number
@@ -70,9 +71,13 @@ function join () {
   })
 }
 
-// const imageUrl = computed(() => {
-//   return `https://picsum.photos/seed/${props.event.id}/400/300`;
-// });
+const photoUrl = computed(() => {
+  const value = (props.event as any).photoUrl
+  if (typeof value === 'string' && value.length) {
+    return value
+  }
+  return placeholderImage
+})
 </script>
 
 <template>
@@ -80,7 +85,7 @@ function join () {
     
     <div class="flex justify-center -mt-16 mb-4">
       <img 
-        src="~/assets/img/apple.jpg" 
+        :src="photoUrl" 
         class="w-32 h-32 object-cover rounded-2xl shadow-xl border-4 border-white" 
       />
     </div>  

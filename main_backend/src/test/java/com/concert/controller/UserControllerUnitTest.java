@@ -1,11 +1,11 @@
 package com.concert.controller;
 
 import com.concert.repository.UserRepository;
+import com.concert.service.UserProfileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.ResponseEntity;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -13,13 +13,14 @@ import static org.mockito.Mockito.*;
 class UserControllerUnitTest {
 
     private UserRepository userRepository;
+    private UserProfileService userProfileService;
     private UserController controller;
 
     @BeforeEach
     void setup() {
         userRepository = Mockito.mock(UserRepository.class);
-        controller = new UserController();
-        ReflectionTestUtils.setField(controller, "userRepository", userRepository);
+        userProfileService = Mockito.mock(UserProfileService.class);
+        controller = new UserController(userRepository, userProfileService);
     }
 
     @Test
@@ -28,7 +29,7 @@ class UserControllerUnitTest {
 
         ResponseEntity<?> response = controller.getAllUsers();
 
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(500, response.getStatusCode().value());
         assertNull(response.getBody());
         verify(userRepository).findAll();
     }
@@ -39,7 +40,7 @@ class UserControllerUnitTest {
 
         ResponseEntity<?> response = controller.getUserById(1L);
 
-        assertEquals(500, response.getStatusCodeValue());
+        assertEquals(500, response.getStatusCode().value());
         assertNull(response.getBody());
         verify(userRepository).findById(1L);
     }

@@ -47,3 +47,24 @@ variable "redis_node_type" {
   type        = string
   default     = "cache.t3.micro"
 }
+
+variable "backend_service_url" {
+  description = "Base URL of the backend service that API Gateway should proxy to (include protocol, no trailing slash)"
+  type        = string
+  default     = "http://localhost:8080"
+}
+
+variable "api_allowed_origins" {
+  description = "List of origins allowed to call the API Gateway (CORS)"
+  type        = list(string)
+  default     = [
+    "http://localhost:3000",
+    "https://localhost:3000"
+  ]
+}
+
+variable "api_stage_name" {
+  description = "Stage name for the HTTP API Gateway deployment"
+  type        = string
+  default     = "prod"
+}

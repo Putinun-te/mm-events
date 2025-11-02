@@ -67,10 +67,10 @@ export const useApi = () => {
     return `${origin}${finalPath}`
   }
 
-  const apiFetch = async <T = unknown>(url: string, options: FetchOptions<'json'> = {}): Promise<T> => {
+  const apiFetch = async <T = unknown>(url: string, options: FetchOptions = {}): Promise<T> => {
     const fullUrl = resolveApiUrl(url)
     const headers = options.headers as Record<string, string> | undefined
-    const fetchOptions: FetchOptions<'json'> = {
+    const fetchOptions: FetchOptions = {
       ...options,
       headers: headers ? { ...headers } : undefined
     }

@@ -1,7 +1,7 @@
 package com.concert.config;
 
 import com.concert.security.JwtAuthenticationFilter;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,18 +12,35 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.util.StringUtils;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
-    @Autowired
-    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final List<String> configuredCorsOrigins;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          @Value("${app.cors.allowed-origins:}") String corsOriginsProperty) {
+        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        if (StringUtils.hasText(corsOriginsProperty)) {
+            this.configuredCorsOrigins = Arrays.stream(corsOriginsProperty.split(","))
+                    .map(String::trim)
+                    .filter(StringUtils::hasText)
+                    .collect(Collectors.toCollection(ArrayList::new));
+        } else {
+            this.configuredCorsOrigins = new ArrayList<>();
+        }
+    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
@@ -63,15 +80,21 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Use specific origin patterns instead of wildcard to work with allowCredentials
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:3000",
-            "http://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com",
-            "https://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com"
-        ));
+        List<String> origins = configuredCorsOrigins.isEmpty()
+                ? Arrays.asList(
+                        "http://localhost:3000",
+                        "http://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com",
+                        "https://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com",
+                        "https://*.execute-api.us-east-1.amazonaws.com"
+                )
+                : configuredCorsOrigins;
+
+        configuration.setAllowedOriginPatterns(origins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

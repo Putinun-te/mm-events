@@ -24,10 +24,14 @@ interface CreateEventForm {
 
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
-const { success, error } = useToast()
+const { success, error, warning } = useToast()
 const { apiFetch } = useApi()
 
 const submitting = ref(false)
+const photoUploading = ref(false)
+const photoInput = ref<HTMLInputElement | null>(null)
+const photoFile = ref<File | null>(null)
+const photoPreview = ref<string | null>(null)
 
 // Event categories matching the catalog
 const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
@@ -101,20 +105,94 @@ async function handleSubmit() {
       location: form.location || null
     }
     
-    // Save to JSON file
-    await apiFetch('/api/events/json', {
+    // Create event in backend
+    const backendEvent: any = await apiFetch('/api/events', {
       method: 'POST',
       body: payload,
       headers: { Authorization: `Bearer ${token}` }
     })
-    
-    success('Event created successfully and saved to JSON!', 'Event Created')
+
+    let photoResult: any = null
+    if (photoFile.value) {
+      const formData = new FormData()
+      formData.append('file', photoFile.value)
+      photoUploading.value = true
+      try {
+        photoResult = await apiFetch(`/api/events/${backendEvent?.id}/photo`, {
+          method: 'POST',
+          body: formData,
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      } catch (uploadErr: any) {
+        const uploadMessage = uploadErr?.statusMessage || uploadErr?.data?.message || 'Event created but photo upload failed.'
+        error(uploadMessage, 'Photo Upload Failed')
+      } finally {
+        photoUploading.value = false
+      }
+    }
+
+    const jsonPayload = {
+      backendId: backendEvent?.id,
+      id: backendEvent?.id,
+      title: backendEvent?.title ?? form.title,
+      description: backendEvent?.description ?? form.description,
+      personLimit: backendEvent?.personLimit ?? form.personLimit,
+      startDate: backendEvent?.startDate ?? payload.startDate,
+      endDate: backendEvent?.endDate ?? payload.endDate,
+      ticketPrice: backendEvent?.ticketPrice ?? payload.ticketPrice,
+      address: backendEvent?.address ?? payload.address,
+      city: backendEvent?.city ?? payload.city,
+      country: backendEvent?.country ?? payload.country,
+      phone: backendEvent?.phone ?? payload.phone,
+      category: backendEvent?.category ?? payload.category,
+      location: backendEvent?.location ?? payload.location,
+      photoUrl: photoResult?.photoUrl ?? backendEvent?.photoUrl ?? null,
+      photoId: photoResult?.photoId ?? backendEvent?.photoId ?? null
+    }
+
+    try {
+      await $fetch('/api/events/json', {
+        method: 'POST',
+        body: jsonPayload,
+        headers: { Authorization: `Bearer ${token}` }
+      })
+    } catch (syncError: any) {
+      console.warn('Event created but JSON sync failed', syncError)
+      warning('Event created but catalogue sync failed. Please refresh in a moment.', 'Sync Warning')
+    }
+
+    success('Event created successfully!', 'Event Created')
     router.push('/ProductPage')
   } catch (e: any) {
     const message = e?.statusMessage || e?.data?.message || 'Failed to create event.'
     error(message, 'Creation Failed')
   } finally {
     submitting.value = false
+  }
+}
+
+function triggerPhotoSelect() {
+  photoInput.value?.click()
+}
+
+function handlePhotoChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) {
+    photoFile.value = null
+    photoPreview.value = null
+    return
+  }
+
+  photoFile.value = file
+  photoPreview.value = URL.createObjectURL(file)
+}
+
+function clearPhoto() {
+  photoFile.value = null
+  photoPreview.value = null
+  if (photoInput.value) {
+    photoInput.value.value = ''
   }
 }
 
@@ -130,12 +208,24 @@ async function handleSubmit() {
           <div class="mt-10">
             <h2 class="text-lg font-semibold leading-7 text-gray-800">Event Picture</h2>
             <div class="mt-4 flex items-center justify-center mb-4">
-              <div class="relative w-32 h-32 bg-gray-200 rounded-full flex items-center justify-center text-gray-400">
-                <!-- <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg> -->
+              <div class="relative w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-gray-400">
+                <template v-if="photoPreview">
+                  <img :src="photoPreview" alt="Event preview" class="w-full h-full object-cover" />
+                  <button type="button" class="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full px-2 py-1 text-xs font-semibold text-gray-700" @click="clearPhoto">
+                    ✕
+                  </button>
+                </template>
+                <template v-else>
+                  <span class="text-sm text-gray-500">No image selected</span>
+                </template>
               </div>
+            </div>
+            <div class="flex flex-col items-center gap-2">
+              <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handlePhotoChange" />
+              <button type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition" @click="triggerPhotoSelect" :disabled="photoUploading || submitting">
+                {{ photoFile ? 'Change Picture' : 'Upload Picture' }}
+              </button>
+              <p v-if="photoUploading" class="text-xs text-gray-500">Uploading photo...</p>
             </div>
           </div>
 

@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
 import { useApi } from '../../../composables/useApi'
+import placeholderImage from '~/assets/img/apple.jpg'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,6 +59,14 @@ const spotsRemaining = computed(() => {
   return remaining > 0 ? remaining : 0
 })
 
+const eventPhotoUrl = computed(() => {
+  const value = event.value?.photoUrl
+  if (typeof value === 'string' && value.length) {
+    return value
+  }
+  return placeholderImage
+})
+
 // Check if event is full
 const isEventFull = computed(() => {
   const limit = availableSeats.value
@@ -99,12 +108,30 @@ onMounted(async () => {
   // Try history state first, then fetch from JSON
   event.value = window.history.state?.event ?? null
   if (!event.value) {
+    let backendData: any = null
+    let jsonData: any = null
     try {
-  const data = await apiFetch(`/api/events/json/${productId}`)
-      event.value = data
-    } catch (e) {
-      console.error('Failed to load event', e)
-      error('Failed to load event details', 'Error')
+      backendData = await apiFetch(`/api/events/${productId}`)
+    } catch (backendError) {
+      console.warn('Backend event lookup failed, falling back to JSON source', backendError)
+    }
+
+    try {
+      jsonData = await apiFetch(`/api/events/json/${productId}`)
+    } catch (jsonError) {
+      if (!backendData) {
+        console.error('Failed to load event', jsonError)
+        error('Failed to load event details', 'Error')
+      }
+    }
+
+    if (backendData || jsonData) {
+      event.value = {
+        ...(jsonData || {}),
+        ...(backendData || {}),
+        photoUrl: backendData?.photoUrl ?? jsonData?.photoUrl ?? null,
+        photoId: backendData?.photoId ?? jsonData?.photoId ?? null
+      }
     }
   }
   loading.value = false
@@ -221,7 +248,7 @@ async function addToCart() {
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 p-6 lg:p-12">
                     <div class="space-y-6">
                         <div class="main-image-container rounded-2xl overflow-hidden bg-gray-100 aspect-square">
-                            <img src="~/assets/img/apple.jpg" class="w-full h-full object-cover"/>
+              <img :src="eventPhotoUrl" class="w-full h-full object-cover"/>
                             <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0"></div>
                         </div>
                         

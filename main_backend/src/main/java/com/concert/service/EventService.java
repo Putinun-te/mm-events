@@ -2,8 +2,10 @@ package com.concert.service;
 
 import com.concert.config.AwsProperties;
 import com.concert.dto.CreateEventRequest;
-import com.concert.dto.EventResponse;
 import com.concert.dto.EventPhotoResponse;
+import com.concert.dto.EventOrganizerSummary;
+import com.concert.dto.EventPhotoSummary;
+import com.concert.dto.EventResponse;
 import com.concert.model.Event;
 import com.concert.model.User;
 import com.concert.repository.EventRepository;
@@ -14,6 +16,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -29,8 +33,13 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class EventService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EventService.class);
 
     private final EventRepository eventRepository;
     private final S3Client s3Client;
@@ -109,8 +118,27 @@ public class EventService {
         response.setTicketPrice(event.getTicketPrice());
         response.setPhotoId(event.getPhotoId());
         response.setPhotoUrl(event.getPhotoUrl());
-        response.setOrganizerName(event.getOrganizer() != null ? event.getOrganizer().getName() : null);
-        response.setOwnedByCurrentUser(currentUser != null && event.getOrganizer() != null && event.getOrganizer().getId().equals(currentUser.getId()));
+
+        if (event.getPhotoId() != null || event.getPhotoUrl() != null) {
+            response.setPhoto(new EventPhotoSummary(event.getPhotoId(), event.getPhotoUrl()));
+        }
+
+        if (event.getOrganizer() != null) {
+            User organizer = event.getOrganizer();
+            EventOrganizerSummary summary = new EventOrganizerSummary(
+                    organizer.getId(),
+                    organizer.getUsername(),
+                    organizer.getName()
+            );
+            response.setOrganizer(summary);
+            response.setOrganizerId(organizer.getId());
+            response.setOrganizerUsername(organizer.getUsername());
+            response.setOrganizerName(organizer.getName());
+        }
+
+        boolean owned = currentUser != null && event.getOrganizer() != null && event.getOrganizer().getId().equals(currentUser.getId());
+        response.setOwnedByCurrentUser(owned);
+        response.setOwnedByRequester(owned);
         return response;
     }
 
@@ -127,7 +155,7 @@ public class EventService {
         try {
             String bucket = awsProperties.getS3().getEventPicturesBucket();
             String region = awsProperties.getRegion();
-            
+
             // Generate unique photo ID
             String photoId = "events/" + eventId + "/" + UUID.randomUUID().toString();
             String fileExtension = getFileExtension(file.getOriginalFilename());
@@ -144,7 +172,7 @@ public class EventService {
                     .metadata(java.util.Map.of("eventId", eventId.toString()))
                     .build();
 
-            s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
 
             // Generate URL based on configuration
             String photoUrl;
@@ -162,6 +190,9 @@ public class EventService {
             eventRepository.save(event);
 
             return new EventPhotoResponse(photoUrl, photoId, "Photo uploaded successfully");
+        } catch (AwsServiceException | SdkClientException awsEx) {
+            logger.error("S3 upload failed for event {}: {}", eventId, awsEx.getMessage());
+            throw new IllegalStateException("Unable to store event photo in S3. Check AWS credentials and bucket permissions.", awsEx);
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload photo: " + e.getMessage(), e);
         }
@@ -173,6 +204,10 @@ public class EventService {
 
         if (event.getPhotoId() == null || event.getPhotoUrl() == null) {
             return new EventPhotoResponse(null, null, "No photo available for this event");
+        }
+
+        if (event.getPhotoId().startsWith("inline:") || event.getPhotoUrl().startsWith("data:")) {
+            return new EventPhotoResponse(event.getPhotoUrl(), event.getPhotoId(), "Photo retrieved successfully");
         }
 
         String bucket = awsProperties.getS3().getEventPicturesBucket();
@@ -226,4 +261,5 @@ public class EventService {
         }
         return filename.substring(filename.lastIndexOf("."));
     }
+
 }

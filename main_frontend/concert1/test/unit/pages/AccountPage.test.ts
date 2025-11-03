@@ -20,7 +20,8 @@ vi.mock('~/composables/useToast', () => ({
 }))
 
 // Mock $fetch globally
-global.$fetch = vi.fn() as any
+const globalAny = globalThis as any
+globalAny.$fetch = vi.fn()
 
 const mockProfile = {
   name: 'Test User',
@@ -47,7 +48,7 @@ describe('AccountPage.vue', () => {
     localStorage.setItem('profile', JSON.stringify(mockProfile))
     
     // Mock $fetch API
-    ;(global.$fetch as any).mockResolvedValue(mockProfile)
+  ;(globalAny.$fetch as any).mockResolvedValue(mockProfile)
   })
 
   it('should render account page', () => {
@@ -414,7 +415,7 @@ describe('AccountPage.vue', () => {
   })
 
   it('should handle me response with all fields', async () => {
-    ;(global.$fetch as any).mockResolvedValueOnce({
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({
       name: 'John Doe Smith',
       email: 'john@test.com',
       phone: '1234567890',
@@ -438,7 +439,7 @@ describe('AccountPage.vue', () => {
   })
 
   it('should handle me response with empty fields', async () => {
-    ;(global.$fetch as any).mockResolvedValueOnce({
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({
       name: '',
       email: '',
       phone: null,
@@ -459,7 +460,7 @@ describe('AccountPage.vue', () => {
   })
 
   it('should handle fullName with single word', async () => {
-    ;(global.$fetch as any).mockResolvedValueOnce({
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({
       name: 'Madonna',
       email: 'madonna@test.com'
     })
@@ -478,7 +479,7 @@ describe('AccountPage.vue', () => {
   })
 
   it('should handle Array.isArray check for eventsRes', async () => {
-    ;(global.$fetch as any)
+  ;(globalAny.$fetch as any)
       .mockResolvedValueOnce({ name: 'Test User', email: 'test@test.com' })
       .mockResolvedValueOnce({ events: [] }) // Non-array response for events
       .mockResolvedValueOnce([])
@@ -497,7 +498,7 @@ describe('AccountPage.vue', () => {
   })
 
   it('should handle Array.isArray check for bookingsRes', async () => {
-    ;(global.$fetch as any)
+  ;(globalAny.$fetch as any)
       .mockResolvedValueOnce({ name: 'Test User', email: 'test@test.com' })
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce({ bookings: [] }) // Non-array response
@@ -522,7 +523,7 @@ describe('AccountPage.vue', () => {
     const pastDate = new Date()
     pastDate.setDate(pastDate.getDate() - 10)
 
-    ;(global.$fetch as any)
+  ;(globalAny.$fetch as any)
       .mockResolvedValueOnce({ name: 'Test User', email: 'test@test.com' })
       .mockResolvedValueOnce([{ id: 1 }, { id: 2 }])
       .mockResolvedValueOnce([
@@ -544,7 +545,7 @@ describe('AccountPage.vue', () => {
   })
 
   it('should handle bookings without eventStartDate', async () => {
-    ;(global.$fetch as any)
+  ;(globalAny.$fetch as any)
       .mockResolvedValueOnce({ name: 'Test User', email: 'test@test.com' })
       .mockResolvedValueOnce([])
       .mockResolvedValueOnce([
@@ -661,7 +662,7 @@ describe('AccountPage.vue', () => {
     const vm = wrapper.vm as any
     
     // Mock just before calling handlesubmit
-    ;(global.$fetch as any).mockRejectedValueOnce({
+  ;(globalAny.$fetch as any).mockRejectedValueOnce({
       statusMessage: 'Bad Request',
       data: null
     })
@@ -688,7 +689,7 @@ describe('AccountPage.vue', () => {
     const vm = wrapper.vm as any
     
     // Mock just before calling handlesubmit
-    ;(global.$fetch as any).mockRejectedValueOnce({
+  ;(globalAny.$fetch as any).mockRejectedValueOnce({
       statusMessage: undefined,
       data: { message: 'Validation failed' }
     })
@@ -704,7 +705,11 @@ describe('AccountPage.vue', () => {
 
   it('should use default error message when no specific message', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockRejectedValueOnce(new Error('Network error'))
+    const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
+    fetchMock.mockResolvedValueOnce(mockProfile) // loadUserData
+    fetchMock.mockResolvedValueOnce([]) // events stats
+    fetchMock.mockResolvedValueOnce([]) // bookings stats
+    fetchMock.mockRejectedValueOnce(new Error('Network error')) // handlesubmit
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -742,7 +747,7 @@ describe('AccountPage.vue', () => {
 
   it('should handle null response fields in loadUserData', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({
       name: null,
       email: null,
       phone: null,
@@ -826,7 +831,7 @@ describe('AccountPage.vue', () => {
     
     await new Promise(resolve => setTimeout(resolve, 100))
     
-    ;(global.$fetch as any).mockRejectedValueOnce({
+  ;(globalAny.$fetch as any).mockRejectedValueOnce({
       statusMessage: 'Unauthorized access'
     })
     
@@ -841,7 +846,7 @@ describe('AccountPage.vue', () => {
   // Branch coverage tests for loadUserStats
   it('should return early when no token in loadUserStats', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -865,7 +870,7 @@ describe('AccountPage.vue', () => {
     localStorage.setItem('jwt_token', 'test-token')
     
     // First call for loadUserData
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
     
     const wrapper = mount(AccountPage, {
       global: {
@@ -876,7 +881,7 @@ describe('AccountPage.vue', () => {
     await new Promise(resolve => setTimeout(resolve, 100))
     
     // Mock events API returning non-array
-    ;(global.$fetch as any).mockImplementation((url: string) => {
+  ;(globalAny.$fetch as any).mockImplementation((url: string) => {
       if (url.includes('/api/events/json/me')) {
         return Promise.resolve({ message: 'Not an array' })
       }
@@ -895,7 +900,7 @@ describe('AccountPage.vue', () => {
 
   it('should handle non-array response from bookings API', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -906,7 +911,7 @@ describe('AccountPage.vue', () => {
     await new Promise(resolve => setTimeout(resolve, 100))
     
     // Mock bookings API returning non-array
-    ;(global.$fetch as any).mockImplementation((url: string) => {
+  ;(globalAny.$fetch as any).mockImplementation((url: string) => {
       if (url.includes('/api/events/json/me')) {
         return Promise.resolve([])
       }
@@ -924,7 +929,7 @@ describe('AccountPage.vue', () => {
 
   it('should handle booking without eventStartDate', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -934,7 +939,7 @@ describe('AccountPage.vue', () => {
     
     await new Promise(resolve => setTimeout(resolve, 100))
     
-    ;(global.$fetch as any).mockImplementation((url: string) => {
+  ;(globalAny.$fetch as any).mockImplementation((url: string) => {
       if (url.includes('/api/events/json/me')) {
         return Promise.resolve([])
       }
@@ -956,7 +961,7 @@ describe('AccountPage.vue', () => {
   // Branch coverage tests for handlesubmit
   it('should handle empty firstName validation', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -976,7 +981,7 @@ describe('AccountPage.vue', () => {
 
   it('should handle missing token in handlesubmit', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -1000,7 +1005,14 @@ describe('AccountPage.vue', () => {
 
   it('should send null for empty optional fields', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+    const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
+    fetchMock.mockResolvedValueOnce(mockProfile) // loadUserData
+    fetchMock.mockResolvedValueOnce([])
+    fetchMock.mockResolvedValueOnce([])
+    fetchMock.mockResolvedValueOnce({
+      name: 'Test User',
+      email: 'test@example.com'
+    })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -1010,26 +1022,34 @@ describe('AccountPage.vue', () => {
     
     await new Promise(resolve => setTimeout(resolve, 150))
     const vm = wrapper.vm as any
-    
-    // Verify that payload construction uses nullish coalescing for empty fields
-    const payload = {
-      firstName: vm.userData.firstName || null,
-      lastName: vm.userData.lastName || null,
-      phone: vm.userData.phone || null,
-      address: vm.userData.address || null,
-      city: vm.userData.city || null,
-      country: vm.userData.country || null,
-      pincode: vm.userData.pincode ? String(vm.userData.pincode) : null,
-    }
-    
-    // When firstName is empty, should be null
-    expect(payload.firstName).toBe(null)
-    expect(payload.lastName).toBe(null)
+
+    vm.userData.firstName = 'John'
+    vm.userData.lastName = ''
+    vm.userData.phone = ''
+    vm.userData.address = ''
+    vm.userData.city = ''
+    vm.userData.country = ''
+    vm.userData.pincode = 0
+
+    await vm.handlesubmit()
+
+    const lastCall = fetchMock.mock.calls.at(-1)
+    expect(lastCall).toBeDefined()
+    const [, options] = lastCall as [string, any]
+    const payload = options.body
+
+    expect(payload.firstName).toBe('John')
+    expect(payload.lastName).toBeNull()
+    expect(payload.phone).toBeNull()
+    expect(payload.address).toBeNull()
+    expect(payload.city).toBeNull()
+    expect(payload.country).toBeNull()
+    expect(payload.pincode).toBeNull()
   })
 
   it('should handle null response fields after save', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -1042,7 +1062,7 @@ describe('AccountPage.vue', () => {
     
     vm.userData.firstName = 'John'
     
-    ;(global.$fetch as any).mockResolvedValueOnce({
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({
       name: null,
       email: null,
       phone: null,
@@ -1057,7 +1077,7 @@ describe('AccountPage.vue', () => {
 
   it('should handle save error with error message extraction', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -1070,7 +1090,7 @@ describe('AccountPage.vue', () => {
     
     vm.userData.firstName = 'John'
     
-    ;(global.$fetch as any).mockRejectedValueOnce({
+  ;(globalAny.$fetch as any).mockRejectedValueOnce({
       statusMessage: 'Server error occurred'
     })
     
@@ -1084,7 +1104,7 @@ describe('AccountPage.vue', () => {
 
   it('should use default message when save error has no details', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-    ;(global.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -1097,7 +1117,7 @@ describe('AccountPage.vue', () => {
     
     vm.userData.firstName = 'John'
     
-    ;(global.$fetch as any).mockRejectedValueOnce({})
+  ;(globalAny.$fetch as any).mockRejectedValueOnce({})
     
     await vm.handlesubmit()
     

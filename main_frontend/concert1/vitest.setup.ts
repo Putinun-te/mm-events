@@ -27,14 +27,24 @@ vi.mock('#app', () => ({
     return { value: state }
   }),
   useFetch: vi.fn(),
-  useAsyncData: vi.fn()
+  useAsyncData: vi.fn(),
+  useRuntimeConfig: () => ({
+    public: {
+      backendBaseUrl: ''
+    }
+  })
 }))
 
 // Mock NuxtLink component
 vi.mock('nuxt/app', () => ({
   NuxtLink: {
     template: '<a><slot /></a>'
-  }
+  },
+  useRuntimeConfig: () => ({
+    public: {
+      backendBaseUrl: ''
+    }
+  })
 }))
 
 // Mock window.localStorage with actual storage functionality

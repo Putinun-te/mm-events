@@ -89,7 +89,21 @@ public class SecurityConfig {
                 )
                 : configuredCorsOrigins;
 
-        configuration.setAllowedOriginPatterns(origins);
+        List<String> explicitOrigins = origins.stream()
+                .filter(origin -> !origin.contains("*"))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        List<String> wildcardOrigins = origins.stream()
+                .filter(origin -> origin.contains("*"))
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        if (!explicitOrigins.isEmpty()) {
+            configuration.setAllowedOrigins(explicitOrigins);
+        }
+
+        if (!wildcardOrigins.isEmpty()) {
+            configuration.setAllowedOriginPatterns(wildcardOrigins);
+        }
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));

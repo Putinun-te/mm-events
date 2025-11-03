@@ -4,7 +4,8 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
 import { useApi } from '../../../composables/useApi'
-import placeholderImage from '~/assets/img/apple.jpg'
+
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="24" fill="%23e2e8f0"/><text x="50%25" y="52%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" fill="%234a5568">Event</text></svg>'
 
 const route = useRoute()
 const router = useRouter()
@@ -49,6 +50,18 @@ const eventLocation = computed(() => {
   return 'Location TBA'
 })
 
+const organizerDisplayName = computed(() => {
+  return event.value?.organizer?.displayName || event.value?.organizerName || ''
+})
+
+const organizerId = computed(() => {
+  return event.value?.organizer?.id || event.value?.organizerId || null
+})
+
+const organizerUsername = computed(() => {
+  return event.value?.organizer?.username || event.value?.organizerUsername || ''
+})
+
 // Participants info (display only)
 const participantsCount = computed(() => event.value?.participantsCount || 0)
 const participants = computed(() => event.value?.participants || [])
@@ -64,7 +77,7 @@ const eventPhotoUrl = computed(() => {
   if (typeof value === 'string' && value.length) {
     return value
   }
-  return placeholderImage
+  return PLACEHOLDER_IMAGE
 })
 
 // Check if event is full
@@ -289,10 +302,18 @@ async function addToCart() {
                                     <span class="font-semibold">📍 Location:</span>
                                     <span>{{ eventLocation }}</span>
                                 </div>
-                                <div v-if="event.organizerName" class="flex items-center gap-3 text-gray-700">
+                <div v-if="organizerDisplayName" class="flex items-center gap-3 text-gray-700">
                                     <span class="font-semibold">👤 Organizer:</span>
-                                    <span>{{ event.organizerName }}</span>
+                  <span>{{ organizerDisplayName }}</span>
                                 </div>
+                <div v-if="organizerUsername" class="flex items-center gap-3 text-gray-700">
+                  <span class="font-semibold">@ Username:</span>
+                  <span>{{ organizerUsername }}</span>
+                </div>
+                <div v-if="organizerId" class="flex items-center gap-3 text-gray-700">
+                  <span class="font-semibold">🆔 User ID:</span>
+                  <span>{{ organizerId }}</span>
+                </div>
                                 <div v-if="event.phone" class="flex items-center gap-3 text-gray-700">
                                     <span class="font-semibold">� Contact:</span>
                                     <span>{{ event.phone }}</span>

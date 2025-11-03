@@ -1,4 +1,5 @@
 import type { FetchOptions } from 'ofetch'
+import { useRuntimeConfig } from 'nuxt/app'
 
 const trimTrailingSlash = (value: string): string => value.replace(/\/+$/, '')
 const trimLeadingSlash = (value: string): string => value.replace(/^\/+/, '')
@@ -22,9 +23,31 @@ const joinPaths = (basePath: string, relativePath: string): string => {
   return `${cleanedBase.startsWith('/') ? cleanedBase : `/${cleanedBase}`}/${cleanedRelative}`
 }
 
+const resolveRuntimeConfig = () => {
+  try {
+    if (typeof useRuntimeConfig === 'function') {
+      const config = useRuntimeConfig()
+      if (config && config.public) {
+        return config
+      }
+    }
+  } catch {
+    // no-op: fall back to environment based defaults below
+  }
+
+  return {
+    public: {
+      backendBaseUrl:
+        process.env.API_GATEWAY_URL ||
+        process.env.BACKEND_BASE_URL ||
+        'http://localhost:8080'
+    }
+  }
+}
+
 export const useApi = () => {
-  const config = useRuntimeConfig()
-  const rawBaseUrl = config.public.backendBaseUrl || 'http://localhost:8080'
+  const config = resolveRuntimeConfig()
+  const rawBaseUrl = config.public.backendBaseUrl ?? 'http://localhost:8080'
 
   let origin = rawBaseUrl
   let basePath = ''

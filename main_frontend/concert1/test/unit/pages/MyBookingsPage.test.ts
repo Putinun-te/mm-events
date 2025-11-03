@@ -4,7 +4,7 @@ import { createRouter, createMemoryHistory } from 'vue-router'
 import MyBookingsPage from '~/app/pages/MyBookingsPage.vue'
 
 // Mock $fetch globally
-global.$fetch = vi.fn() as any
+(globalThis as any).$fetch = vi.fn()
 
 // Mock fetch globally
 global.fetch = vi.fn()
@@ -53,7 +53,7 @@ describe('MyBookingsPage.vue', () => {
     localStorage.setItem('jwt_token', 'test-token')
     
     // Mock successful bookings API
-    ;(global.fetch as any).mockResolvedValue({
+  ;((globalThis as any).$fetch as any).mockResolvedValue({
       ok: true,
       json: async () => mockBookings
     })
@@ -287,7 +287,7 @@ describe('MyBookingsPage.vue', () => {
   })
 
   it('should call confirmCancelBooking function', async () => {
-    ;(global.$fetch as any).mockResolvedValue({ success: true })
+  ;((globalThis as any).$fetch as any).mockResolvedValue({ success: true })
     
     const wrapper = mount(MyBookingsPage, {
       global: {
@@ -371,7 +371,7 @@ describe('MyBookingsPage.vue', () => {
   })
 
   it('should handle cancel booking failure', async () => {
-    ;(global.$fetch as any).mockRejectedValueOnce({
+  ;((globalThis as any).$fetch as any).mockRejectedValueOnce({
       data: { message: 'Cannot cancel booking' }
     })
 
@@ -603,17 +603,19 @@ describe('MyBookingsPage.vue', () => {
 
   describe('Participant Count Reduction', () => {
     it('should call leave event endpoint when cancelling booking', async () => {
-      ;(global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => [
-          {
-            id: 1,
-            eventId: 123,
-            quantity: 57,
-            status: 'CONFIRMED'
-          }
-        ]
-      })
+      ;((globalThis as any).$fetch as any).mockResolvedValueOnce([
+        {
+          id: 1,
+          eventId: 123,
+          quantity: 57,
+          totalPrice: 1250,
+          status: 'CONFIRMED',
+          bookingDate: '2024-05-01T10:00:00Z',
+          eventStartDate: '2024-06-01T10:00:00Z',
+          eventTitle: 'Sample Event',
+          eventLocation: 'Bangkok'
+        }
+      ])
 
       const wrapper = mount(MyBookingsPage, {
         global: {
@@ -623,23 +625,28 @@ describe('MyBookingsPage.vue', () => {
 
       await new Promise(resolve => setTimeout(resolve, 100))
 
-      // Verify fetch was called for bookings
-      expect(global.fetch).toHaveBeenCalled()
+      // Verify $fetch was called for bookings via useApi
+      const nuxtFetchMock = (globalThis as any).$fetch as ReturnType<typeof vi.fn>
+      expect(nuxtFetchMock).toHaveBeenCalledWith('/api/bookings/me', {
+        headers: { Authorization: 'Bearer test-token' }
+      })
     })
 
     it('should pass correct event ID to leave endpoint', async () => {
       const mockEventId = 456
-      ;(global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => [
-          {
-            id: 1,
-            eventId: mockEventId,
-            quantity: 1,
-            status: 'CONFIRMED'
-          }
-        ]
-      })
+      ;((globalThis as any).$fetch as any).mockResolvedValueOnce([
+        {
+          id: 1,
+          eventId: mockEventId,
+          quantity: 1,
+          totalPrice: 500,
+          status: 'CONFIRMED',
+          bookingDate: '2024-05-01T10:00:00Z',
+          eventStartDate: '2024-06-01T10:00:00Z',
+          eventTitle: 'Sample Event',
+          eventLocation: 'Bangkok'
+        }
+      ])
 
       const wrapper = mount(MyBookingsPage, {
         global: {

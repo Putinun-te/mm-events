@@ -1,5 +1,6 @@
 package com.concert.controller;
 
+import com.concert.dto.UserProfileResponse;
 import com.concert.model.User;
 import com.concert.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -37,6 +38,9 @@ class UserControllerTest {
     @MockBean
     private com.concert.service.JwtService jwtService;
 
+    @MockBean
+    private com.concert.service.UserProfileService userProfileService;
+
     private User testUser1;
     private User testUser2;
 
@@ -57,6 +61,24 @@ class UserControllerTest {
         testUser2.setName("Test User 2");
         testUser2.setPassword("password456");
         testUser2.setCreatedAt(LocalDateTime.now());
+
+        when(userProfileService.buildResponse(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            UserProfileResponse response = new UserProfileResponse();
+            response.setId(user.getId());
+            response.setUsername(user.getUsername());
+            response.setEmail(user.getEmail());
+            response.setName(user.getName());
+            response.setPhone(user.getPhone());
+            response.setAddress(user.getAddress());
+            response.setCity(user.getCity());
+            response.setCountry(user.getCountry());
+            response.setPincode(user.getPincode());
+            response.setProfilePhoto(user.getProfilePhoto());
+            response.setCompany(user.getCompany());
+            response.setWebsite(user.getWebsite());
+            return response;
+        });
     }
 
     @Test

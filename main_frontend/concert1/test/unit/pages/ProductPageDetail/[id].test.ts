@@ -51,10 +51,11 @@ vi.mock('vue-router', async () => {
 })
 
 // Mock $fetch
-global.$fetch = vi.fn()
+const globalAny = globalThis as any
+globalAny.$fetch = vi.fn()
 
 // Mock useRoute as a global function (Nuxt auto-import)
-global.useRoute = vi.fn(() => ({
+globalAny.useRoute = vi.fn(() => ({
   params: { id: '123' },
   query: {},
   path: '/product/123'
@@ -68,7 +69,7 @@ describe('ProductDetailPage [id].vue', () => {
     sessionStorage.clear()
     
     // Default mock event data
-    ;(global.$fetch as any).mockResolvedValue({
+  ;(globalAny.$fetch as any).mockResolvedValue({
       id: 123,
       title: 'Test Event',
       name: 'Test Event',
@@ -121,8 +122,10 @@ describe('ProductDetailPage [id].vue', () => {
     
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 100))
-    
-    expect(global.$fetch).toHaveBeenCalledWith('/api/events/json/123')
+  const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
+    const calledUrls = fetchMock.mock.calls.map(call => call[0])
+    expect(calledUrls).toContain('/api/events/123')
+    expect(calledUrls).toContain('/api/events/json/123')
   })
 
   it('should display event title', async () => {
@@ -189,7 +192,7 @@ describe('ProductDetailPage [id].vue', () => {
   })
 
   it('should check if event is full', async () => {
-    ;(global.$fetch as any).mockResolvedValue({
+  ;(globalAny.$fetch as any).mockResolvedValue({
       id: 123,
       title: 'Full Event',
       ticketPrice: 100,

@@ -19,8 +19,13 @@ public class EventResponse {
     private Double ticketPrice;
     private String photoId;
     private String photoUrl;
+    private EventPhotoSummary photo;
+    private EventOrganizerSummary organizer;
+    private Long organizerId;
+    private String organizerUsername;
     private String organizerName;
     private boolean ownedByCurrentUser;
+    private boolean ownedByRequester;
 
     public Long getId() {
         return id;
@@ -142,6 +147,38 @@ public class EventResponse {
         this.photoUrl = photoUrl;
     }
 
+    public EventPhotoSummary getPhoto() {
+        return photo;
+    }
+
+    public void setPhoto(EventPhotoSummary photo) {
+        this.photo = photo;
+    }
+
+    public EventOrganizerSummary getOrganizer() {
+        return organizer;
+    }
+
+    public void setOrganizer(EventOrganizerSummary organizer) {
+        this.organizer = organizer;
+    }
+
+    public Long getOrganizerId() {
+        return organizerId;
+    }
+
+    public void setOrganizerId(Long organizerId) {
+        this.organizerId = organizerId;
+    }
+
+    public String getOrganizerUsername() {
+        return organizerUsername;
+    }
+
+    public void setOrganizerUsername(String organizerUsername) {
+        this.organizerUsername = organizerUsername;
+    }
+
     public String getOrganizerName() {
         return organizerName;
     }
@@ -156,5 +193,13 @@ public class EventResponse {
 
     public void setOwnedByCurrentUser(boolean ownedByCurrentUser) {
         this.ownedByCurrentUser = ownedByCurrentUser;
+    }
+
+    public boolean isOwnedByRequester() {
+        return ownedByRequester;
+    }
+
+    public void setOwnedByRequester(boolean ownedByRequester) {
+        this.ownedByRequester = ownedByRequester;
     }
 }

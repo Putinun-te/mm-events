@@ -2,7 +2,7 @@
 // v2.1.0 - Explicit import for static build
 import { ref, onMounted } from "vue";
 import { useAuth } from "~/composables/useAuth";
-import { useApi } from "../composables/useApi";
+import { useApi } from "../../composables/useApi";
 
 const { saveAuth, loadFromStorage, shouldCompleteProfile } = useAuth()
 

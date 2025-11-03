@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // v2.1.0 - Explicit import for static build
 import { ref } from "vue";
-import { useApi } from "../composables/useApi";
+import { useApi } from "../../composables/useApi";
 
 const username = ref('')
 const email = ref('')

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
-import placeholderImage from '~/assets/img/apple.jpg'
+
+const PLACEHOLDER_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128"><rect width="128" height="128" rx="16" fill="%23e2e8f0"/><text x="50%25" y="52%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="24" fill="%234a5568">Event</text></svg>'
 
 type LegacyEvent = {
   id: string | number
@@ -76,7 +77,7 @@ const photoUrl = computed(() => {
   if (typeof value === 'string' && value.length) {
     return value
   }
-  return placeholderImage
+  return PLACEHOLDER_IMAGE
 })
 </script>
 

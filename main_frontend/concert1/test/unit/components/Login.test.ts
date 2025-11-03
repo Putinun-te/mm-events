@@ -631,6 +631,7 @@ describe('Login Component', () => {
     
     resolvePromise({ token: 'test', username: 'test', email: 'test@test.com' })
     await promise
+    await Promise.resolve()
     await wrapper.vm.$nextTick()
     
     expect(wrapper.vm.isLoading).toBe(false)

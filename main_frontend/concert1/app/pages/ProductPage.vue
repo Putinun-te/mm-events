@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import ProductTag from '~/components/ProductTag.vue'
+import { useApi } from '../../composables/useApi'
 
 type EventItem = any
 
@@ -11,6 +12,8 @@ const today = new Date ()
 
 const page = ref(0)
 const size = ref(12)
+
+const { apiFetch } = useApi()
 
 // Filters
 const searchQuery = ref('')
@@ -66,12 +69,31 @@ async function loadEvents() {
   loading.value = true
   message.value = ''
   try {
-    // Load events from JSON file
-    const data = await $fetch<EventItem[]>('/api/events/json')
-    events.value = data || []
+    const response = await apiFetch<{ content?: EventItem[] }>(`/api/events?page=${page.value}&size=${size.value}`)
+    const content = (response as any)?.content
+
+    if (Array.isArray(content)) {
+      events.value = content
+    } else if (Array.isArray(response as any)) {
+      events.value = response as any
+    } else {
+      events.value = []
+      console.warn('Unexpected events payload shape', response)
+    }
   } catch (e: any) {
-    message.value = e?.statusMessage || 'Failed to load events.'
-    console.error('Error loading events:', e)
+    console.warn('Primary backend event fetch failed, attempting fallback.', e)
+    try {
+      const fallback = await $fetch<EventItem[]>('/api/events/json')
+      events.value = fallback || []
+      if (events.value.length) {
+        message.value = 'Showing cached events.'
+      } else {
+        message.value = 'No events available yet.'
+      }
+    } catch (fallbackErr: any) {
+      message.value = e?.statusMessage || 'Failed to load events.'
+      console.error('Error loading events fallback:', fallbackErr)
+    }
   } finally {
     loading.value = false
   }

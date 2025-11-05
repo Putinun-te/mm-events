@@ -70,6 +70,7 @@ print_success "SQS policies removed"
 print_info "Waiting 30 seconds for resources to clean up..."
 sleep 30
 
+
 cd /Users/putinan/development/DevOps/develop/aws
 
 print_info "Running terraform destroy again..."

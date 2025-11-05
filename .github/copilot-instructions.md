@@ -58,10 +58,17 @@ Purpose: Enable AI agents to be productive quickly in this monorepo by following
 
 ## Conventions and Gotchas
 - Keep backend tests runnable with Docker active; failures often due to Docker not running.
-- If you see “Unsupported class file major version 68” or Hibernate/Mockito proxy instrumentation errors, ensure:
+- If you see "Unsupported class file major version 68" or Hibernate/Mockito proxy instrumentation errors, ensure:
   - JDK 21 is used for tests; and JaCoCo include filter remains `com/concert/**`.
 - Frontend tests rely on Testing Library with jest-dom; use NuxtLink stubs when rendering components with router links.
 - Unused legacy files (e.g., `RegisterCheck.vue`) may still exist but are not wired in pages; check `app/pages/index.vue` for current usage.
+
+## **CRITICAL: Documentation Policy**
+- **DO NOT create markdown documentation files** unless explicitly requested by the user.
+- When making changes (code fixes, deployments, configuration updates), just make the changes directly.
+- No need for summary files, status reports, or "COMPLETE" documents after each task.
+- Focus on: fixing issues, writing code, running commands, testing functionality.
+- User wants action, not documentation.
 
 ## Useful Paths to Read First
 - Backend security flow: `com/concert/security/JwtAuthenticationFilter.java`, `com/concert/service/JwtService.java`.

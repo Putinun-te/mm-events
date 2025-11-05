@@ -1,0 +1,36 @@
+# Production Configuration - Copy to terraform.tfvars and fill in your values
+
+project_name    = "concert"
+environment     = "prod"
+region          = "us-east-1"
+
+# S3 Buckets (must be globally unique)
+s3_bucket_name  = "concert-prod-app-CHANGE-ME"
+
+# Lambda Container (push your image to ECR first)
+lambda_image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/concert-api:latest"
+
+# Cognito (optional callback/logout URLs for your frontend)
+cognito_callback_urls = ["https://yourdomain.com/callback"]
+cognito_logout_urls   = ["https://yourdomain.com/logout"]
+
+# Enable optional services
+enable_elasticache        = true
+enable_cloudwatch_alarms  = true
+enable_cloudwatch_dashboard = true
+
+# CloudWatch alarm notifications (optional SNS topic ARN)
+# cloudwatch_alarm_actions = ["arn:aws:sns:us-east-1:123456789012:alerts"]
+
+# Database settings (defaults are free-tier friendly)
+# db_instance_class      = "db.t3.micro"
+# db_allocated_storage   = 20
+# db_multi_az            = false
+
+# Lambda settings
+# lambda_memory_size     = 1024
+# lambda_timeout         = 30
+
+# Redis cache limits
+# redis_max_data_storage_gb = 20
+# redis_max_ecpu_per_second = 100

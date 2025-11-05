@@ -1,0 +1,27 @@
+# ECS Fargate Configuration
+# Copy this to terraform.tfvars and fill in your values
+
+project_name    = "concert"
+environment     = "prod"
+region          = "us-east-1"
+
+# Docker image from ECR (same as Lambda)
+container_image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/concert-api:lambda-v2"
+
+# Existing resources from serverless deployment
+s3_bucket_name        = "concert-prod-web-123456789012"
+efs_access_point_id   = "fsap-REDACTED"
+cognito_client_id     = "5fpck32uhi8m87b5tkirvaf0iu"
+cognito_user_pool_id  = "us-east-1_nTZpyinXc"
+
+# Optional: ACM certificate for HTTPS (leave empty for HTTP testing)
+# acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/YOUR-CERT-ID"
+
+# Task Configuration
+task_cpu    = 1024  # 1 vCPU - good for Spring Boot
+task_memory = 2048  # 2 GB - minimum for Spring Boot + Hibernate
+
+# Auto-scaling Configuration
+desired_count = 2  # Run 2 tasks for high availability
+min_capacity  = 1  # Scale down to 1 during low traffic
+max_capacity  = 4  # Scale up to 4 during high traffic

@@ -19,7 +19,9 @@
     "test:all": "npm run test:coverage && npm run test:e2e:coverage"
   },
   "dependencies": {
+    "@aws-amplify/ui-vue": "^4.3.6",
     "@tailwindcss/vite": "^4.1.12",
+    "aws-amplify": "^6.15.7",
     "axios": "^1.12.1",
     "nuxt": "^4.0.3",
     "tailwindcss": "^4.1.12",

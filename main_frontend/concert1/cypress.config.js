@@ -7,6 +7,14 @@ export default defineConfig({
     supportFile: 'cypress/support/e2e.ts',
     video: false,
     screenshotOnRunFailure: true,
-    defaultCommandTimeout: 8000
+    defaultCommandTimeout: 8000,
+    setupNodeEvents(on) {
+      on('task', {
+        log(message) {
+          console.log(message)
+          return null
+        }
+      })
+    }
   }
 })

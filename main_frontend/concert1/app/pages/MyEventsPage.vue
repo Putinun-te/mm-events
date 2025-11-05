@@ -64,7 +64,7 @@ async function fetchEvents() {
       // Middleware will handle redirect
       return
     }
-    const res: any = await apiFetch('/api/events/json/me', {
+    const res: any = await apiFetch('/api/events/me', {
       headers: { Authorization: `Bearer ${token}` }
     })
     events.value = Array.isArray(res) ? res : []

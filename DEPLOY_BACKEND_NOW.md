@@ -19,6 +19,8 @@ https://ap-southeast-1.console.aws.amazon.com/ec2/home?region=ap-southeast-1#Con
 - Browser terminal will open
 
 ### Step 3: Paste and Run This Command
+✅ **EC2 IAM role now has ECR permissions! Ready to deploy.**
+
 Copy the ENTIRE script below and paste into the terminal:
 
 ```bash
@@ -26,7 +28,7 @@ Copy the ENTIRE script below and paste into the terminal:
 docker stop $(docker ps -q) 2>/dev/null || true
 docker rm $(docker ps -aq) 2>/dev/null || true
 
-# Login to ECR  
+# Login to ECR (now has permissions!)
 aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin 123456789012.dkr.ecr.us-east-1.amazonaws.com
 
 # Pull latest image

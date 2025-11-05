@@ -85,6 +85,10 @@ public class SecurityConfig {
                         "http://localhost:3000",
                         "http://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com",
                         "https://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com",
+                        "http://concert-prod-web-123456789012.s3-website-us-east-1.amazonaws.com",
+                        "https://concert-prod-web-123456789012.s3-website-us-east-1.amazonaws.com",
+                        "https://d3jivuimmea02r.cloudfront.net",
+                        "https://dzh397ixo71bk.cloudfront.net",
                         "https://*.execute-api.us-east-1.amazonaws.com"
                 )
                 : configuredCorsOrigins;

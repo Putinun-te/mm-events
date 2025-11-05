@@ -4,11 +4,11 @@
 
 set -e  # Exit on error
 
-echo "� Checking Java installation..."
+echo "🔍 Checking Java installation..."
 if ! command -v java &> /dev/null; then
-    echo "❌ Java not found! Installing OpenJDK 21..."
-    sudo apt update
-    sudo apt install -y openjdk-21-jdk
+    echo "❌ Java not found! Installing Amazon Corretto 21..."
+    # Amazon Linux uses yum, not apt
+    sudo yum install -y java-21-amazon-corretto-devel
 fi
 java -version
 

@@ -1,0 +1,32 @@
+========================================
+EC2 TROUBLESHOOTING - Check Backend Logs
+========================================
+
+Run this command in EC2 Instance Connect to see what went wrong:
+
+tail -100 /home/ubuntu/backend.log
+
+---
+
+If you see Java errors, try this simpler deployment:
+
+1. Check if Java is installed:
+   java -version
+
+2. If not installed, install Java 21:
+   sudo apt update
+   sudo apt install -y openjdk-21-jdk
+
+3. Then run the deployment script again:
+   bash deploy.sh
+
+---
+
+Alternative: Check if backend is running:
+
+ps aux | grep java
+
+If you see a java process, kill it:
+pkill -f java
+
+Then try deploying again.

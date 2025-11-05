@@ -2,18 +2,43 @@
 # EC2 Backend Deployment Script with CORS Fix
 # Save this as deploy.sh on EC2 and run: bash deploy.sh
 
-echo "🔄 Pulling latest code..."
+set -e  # Exit on error
+
+echo "� Checking Java installation..."
+if ! command -v java &> /dev/null; then
+    echo "❌ Java not found! Installing OpenJDK 21..."
+    sudo apt update
+    sudo apt install -y openjdk-21-jdk
+fi
+java -version
+
+echo "�🔄 Pulling latest code..."
 cd /home/ubuntu
-git clone https://github.com/MorningMores/develop.git concert-cors 2>/dev/null || (cd concert-cors && git pull origin release/v1.0.0)
+if [ ! -d "concert-cors" ]; then
+    git clone https://github.com/MorningMores/develop.git concert-cors
+    cd concert-cors
+    git checkout release/v1.0.0
+else
+    cd concert-cors
+    git fetch origin
+    git checkout release/v1.0.0
+    git pull origin release/v1.0.0
+fi
 
 echo "📦 Building JAR..."
-cd concert-cors/main_backend
+cd main_backend
 chmod +x mvnw
 ./mvnw clean package -DskipTests
 
+if [ ! -f "target/concert-backend-1.0.0.jar" ]; then
+    echo "❌ Build failed! JAR not found."
+    exit 1
+fi
+
 echo "🛑 Stopping old backend..."
-docker stop $(docker ps -q) 2>/dev/null
-pkill -f concert-backend 2>/dev/null
+docker stop $(docker ps -q) 2>/dev/null || true
+pkill -9 -f "concert-backend" || true
+sleep 2
 
 echo "🚀 Starting new backend with CORS fix..."
 # Using environment variables to avoid special character issues
@@ -33,12 +58,21 @@ nohup java -jar target/concert-backend-1.0.0.jar \
   --aws.cognito.region="$COGNITO_REGION" \
   > /home/ubuntu/backend.log 2>&1 &
 
-echo "⏳ Waiting 20 seconds for startup..."
-sleep 20
+BACKEND_PID=$!
+echo "Backend started with PID: $BACKEND_PID"
+
+echo "⏳ Waiting 25 seconds for startup..."
+sleep 25
 
 echo "🧪 Testing backend..."
-curl http://localhost:8080/api/auth/test
+if curl -f http://localhost:8080/api/auth/test 2>/dev/null; then
+    echo ""
+    echo "✅ Deployment successful!"
+else
+    echo ""
+    echo "❌ Backend not responding. Checking logs:"
+    tail -50 /home/ubuntu/backend.log
+    exit 1
+fi
 
-echo ""
-echo "✅ Deployment complete!"
-echo "📝 Check logs: tail -f /home/ubuntu/backend.log"
+echo "📝 Check logs anytime: tail -f /home/ubuntu/backend.log"

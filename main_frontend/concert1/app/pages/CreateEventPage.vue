@@ -73,7 +73,7 @@ function validate(): string | null {
   return null
 }
 
-async function handlePhotoSelect(event: Event) {
+function handlePhotoSelect(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
@@ -86,17 +86,6 @@ async function handlePhotoSelect(event: Event) {
     photoPreview.value = e.target?.result as string
   }
   reader.readAsDataURL(file)
-  
-  // Upload to S3 via backend API
-  try {
-    const formData = new FormData()
-    formData.append('file', file)
-    
-    // This will be used after event is created
-    // Store file for later upload
-  } catch (err) {
-    console.error('Photo preparation failed:', err)
-  }
 }
 
 async function handleSubmit() {

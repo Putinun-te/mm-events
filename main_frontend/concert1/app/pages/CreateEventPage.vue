@@ -28,8 +28,6 @@ const { success, error, warning } = useToast()
 const { apiFetch } = useApi()
 
 const submitting = ref(false)
-const photoUploading = ref(false)
-const photoInput = ref<HTMLInputElement | null>(null)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 
@@ -75,6 +73,32 @@ function validate(): string | null {
   return null
 }
 
+async function handlePhotoSelect(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  
+  photoFile.value = file
+  
+  // Show preview
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    photoPreview.value = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
+  
+  // Upload to S3 via backend API
+  try {
+    const formData = new FormData()
+    formData.append('file', file)
+    
+    // This will be used after event is created
+    // Store file for later upload
+  } catch (err) {
+    console.error('Photo preparation failed:', err)
+  }
+}
+
 async function handleSubmit() {
   const err = validate()
   if (err) {
@@ -102,7 +126,8 @@ async function handleSubmit() {
       country: form.country || null,
       phone: form.phone || null,
       category: form.category || null,
-      location: form.location || null
+      location: form.location || null,
+      photoUrl: null  // Will be set after S3 upload
     }
     
     // Create event in backend
@@ -112,53 +137,33 @@ async function handleSubmit() {
       headers: { Authorization: `Bearer ${token}` }
     })
 
-    let photoResult: any = null
-    if (photoFile.value) {
-      const formData = new FormData()
-      formData.append('file', photoFile.value)
-      photoUploading.value = true
+    // Upload photo to S3 if selected
+    if (photoFile.value && backendEvent?.id) {
       try {
-        photoResult = await apiFetch(`/api/events/${backendEvent?.id}/photo`, {
+        const formData = new FormData()
+        formData.append('file', photoFile.value)
+        
+        // Upload to S3 and get CloudFront URL
+        const uploadResponse = await fetch('https://d3qkurc1gwuwno.cloudfront.net/api/upload/event-photo', {
           method: 'POST',
-          body: formData,
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
         })
-      } catch (uploadErr: any) {
-        const uploadMessage = uploadErr?.statusMessage || uploadErr?.data?.message || 'Event created but photo upload failed.'
-        error(uploadMessage, 'Photo Upload Failed')
-      } finally {
-        photoUploading.value = false
+        
+        if (uploadResponse.ok) {
+          const { url } = await uploadResponse.json()
+          
+          // Update event with CloudFront URL
+          await apiFetch(`/api/events/${backendEvent.id}`, {
+            method: 'PUT',
+            body: { ...payload, photoUrl: url },
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        }
+      } catch (uploadErr) {
+        console.error('Photo upload failed:', uploadErr)
+        warning('Event created but photo upload failed', 'Partial Success')
       }
-    }
-
-    const jsonPayload = {
-      backendId: backendEvent?.id,
-      id: backendEvent?.id,
-      title: backendEvent?.title ?? form.title,
-      description: backendEvent?.description ?? form.description,
-      personLimit: backendEvent?.personLimit ?? form.personLimit,
-      startDate: backendEvent?.startDate ?? payload.startDate,
-      endDate: backendEvent?.endDate ?? payload.endDate,
-      ticketPrice: backendEvent?.ticketPrice ?? payload.ticketPrice,
-      address: backendEvent?.address ?? payload.address,
-      city: backendEvent?.city ?? payload.city,
-      country: backendEvent?.country ?? payload.country,
-      phone: backendEvent?.phone ?? payload.phone,
-      category: backendEvent?.category ?? payload.category,
-      location: backendEvent?.location ?? payload.location,
-      photoUrl: photoResult?.photoUrl ?? backendEvent?.photoUrl ?? null,
-      photoId: photoResult?.photoId ?? backendEvent?.photoId ?? null
-    }
-
-    try {
-      await $fetch('/api/events/json', {
-        method: 'POST',
-        body: jsonPayload,
-        headers: { Authorization: `Bearer ${token}` }
-      })
-    } catch (syncError: any) {
-      console.warn('Event created but JSON sync failed', syncError)
-      warning('Event created but catalogue sync failed. Please refresh in a moment.', 'Sync Warning')
     }
 
     success('Event created successfully!', 'Event Created')
@@ -171,30 +176,7 @@ async function handleSubmit() {
   }
 }
 
-function triggerPhotoSelect() {
-  photoInput.value?.click()
-}
 
-function handlePhotoChange(event: Event) {
-  const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) {
-    photoFile.value = null
-    photoPreview.value = null
-    return
-  }
-
-  photoFile.value = file
-  photoPreview.value = URL.createObjectURL(file)
-}
-
-function clearPhoto() {
-  photoFile.value = null
-  photoPreview.value = null
-  if (photoInput.value) {
-    photoInput.value.value = ''
-  }
-}
 
 </script>
 
@@ -206,26 +188,15 @@ function clearPhoto() {
           <h1 class="text-3xl font-bold text-gray-900">Create Event</h1>
 
           <div class="mt-10">
-            <h2 class="text-lg font-semibold leading-7 text-gray-800">Event Picture</h2>
-            <div class="mt-4 flex items-center justify-center mb-4">
-              <div class="relative w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-gray-400">
-                <template v-if="photoPreview">
-                  <img :src="photoPreview" alt="Event preview" class="w-full h-full object-cover" />
-                  <button type="button" class="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full px-2 py-1 text-xs font-semibold text-gray-700" @click="clearPhoto">
-                    ✕
-                  </button>
-                </template>
-                <template v-else>
-                  <span class="text-sm text-gray-500">No image selected</span>
-                </template>
+            <h2 class="text-lg font-semibold leading-7 text-gray-800">Event Picture (Optional)</h2>
+            <div class="mt-4 flex flex-col items-center gap-4">
+              <div v-if="photoPreview" class="relative w-48 h-48 rounded-lg overflow-hidden border-2 border-gray-300">
+                <img :src="photoPreview" alt="Preview" class="w-full h-full object-cover" />
+                <button type="button" @click="photoFile = null; photoPreview = null" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                  ✕
+                </button>
               </div>
-            </div>
-            <div class="flex flex-col items-center gap-2">
-              <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handlePhotoChange" />
-              <button type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition" @click="triggerPhotoSelect" :disabled="photoUploading || submitting">
-                {{ photoFile ? 'Change Picture' : 'Upload Picture' }}
-              </button>
-              <p v-if="photoUploading" class="text-xs text-gray-500">Uploading photo...</p>
+              <input type="file" accept="image/*" @change="handlePhotoSelect" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
             </div>
           </div>
 

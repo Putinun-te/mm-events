@@ -38,6 +38,13 @@ public class BookingController {
         return ResponseEntity.ok(bookings);
     }
 
+    @GetMapping("/my-bookings")
+    public ResponseEntity<List<BookingResponse>> getMyBookingsAlias(Authentication authentication) {
+        String username = authentication.getName();
+        List<BookingResponse> bookings = bookingService.getUserBookings(username);
+        return ResponseEntity.ok(bookings);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<BookingResponse> getBooking(
             @PathVariable Long id,

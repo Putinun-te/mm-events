@@ -117,7 +117,7 @@ async function loadUserStats() {
     if (!token) return
 
     const [eventsRes, bookingsRes] = await Promise.all([
-  apiFetch('/api/events/json/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => []),
+  apiFetch('/api/events/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => []),
   apiFetch('/api/bookings/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => [])
     ])
 

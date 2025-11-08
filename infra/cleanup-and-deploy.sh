@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m'
 
-REGION="us-east-1"
+REGION="ap-southeast-1"
 
 echo -e "${BLUE}╔════════════════════════════════════════════════════════════╗${NC}"
 echo -e "${BLUE}║  AWS Cleanup & Optimal Deployment                          ║${NC}"
@@ -59,34 +59,16 @@ OLD_INSTANCES=$(aws ec2 describe-instances \
 if [ ! -z "$OLD_INSTANCES" ]; then
     echo "  Found instances in old VPC:"
     echo "$OLD_INSTANCES"
-    echo ""
-    read -p "  Terminate these instances? (y/N): " -n 1 -r
-    echo
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        INSTANCE_IDS=$(echo "$OLD_INSTANCES" | awk '{print $1}')
-        aws ec2 terminate-instances --instance-ids $INSTANCE_IDS --region $REGION
-        echo "  ✅ Instances terminated"
-    else
-        echo "  ⚠️  Keeping old instances (they can't access RDS/Redis)"
-    fi
+    echo "  ⚠️  Skipping termination (terminate manually if needed)"
 else
     echo "  ✅ No instances in old VPC"
 fi
 
 # Step 4: Remove Lambda function and API Gateway (optional)
 echo -e "${YELLOW}🧹 Step 4/7: Lambda and API Gateway cleanup...${NC}"
-echo "  Lambda function 'concert-prod-api' has cold start issues (60-120s)"
-echo "  API Gateway 'cm6rrljxwi' is connected to this Lambda"
-read -p "  Remove Lambda + API Gateway? They're managed by Terraform. (y/N): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    echo "  ⚠️  These are managed by Terraform. Use:"
-    echo "     cd infra/terraform/production"
-    echo "     terraform destroy -target=module.serverless.module.lambda_api"
-    echo "     terraform destroy -target=module.serverless.module.api_gateway"
-else
-    echo "  ⚠️  Keeping Lambda + API Gateway (will cost ~$5-10/month doing nothing)"
-fi
+echo "  ⚠️  Skipping Lambda + API Gateway cleanup (managed by Terraform)"
+echo "  To remove manually: cd infra/terraform/production && terraform destroy -target=..."
+echo "  ✅ Continuing with EC2 deployment"
 
 # Step 5: Launch new EC2 in serverless VPC
 echo ""
@@ -169,6 +151,12 @@ aws ec2 authorize-security-group-ingress \
   --port 8080 \
   --cidr 0.0.0.0/0 \
   --region $REGION 2>/dev/null && echo "  ✅ Port 8080 opened" || echo "  ⚠️  Port already open"
+
+# Tag security group for clarity
+aws ec2 create-tags \
+  --resources $LAMBDA_SG \
+  --tags Key=Name,Value=concert-api-sg Key=Purpose,Value="API access to RDS/Redis/EFS" \
+  --region $REGION 2>/dev/null || true
 
 # Step 7: Deploy Spring Boot application
 echo ""

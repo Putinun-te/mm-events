@@ -74,7 +74,7 @@ function join () {
 
 const photoUrl = computed(() => {
   const value = (props.event as any).photoUrl
-  if (typeof value === 'string' && value.length) {
+  if (value && typeof value === 'string' && value.length > 0 && !value.includes('null')) {
     return value
   }
   return PLACEHOLDER_IMAGE

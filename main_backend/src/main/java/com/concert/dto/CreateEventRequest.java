@@ -37,6 +37,8 @@ public class CreateEventRequest {
 
     private Double ticketPrice;
 
+    private String photoUrl;
+
     public String getTitle() {
         return title;
     }
@@ -131,5 +133,13 @@ public class CreateEventRequest {
 
     public void setTicketPrice(Double ticketPrice) {
         this.ticketPrice = ticketPrice;
+    }
+
+    public String getPhotoUrl() {
+        return photoUrl;
+    }
+
+    public void setPhotoUrl(String photoUrl) {
+        this.photoUrl = photoUrl;
     }
 }

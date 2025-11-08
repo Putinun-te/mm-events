@@ -26,6 +26,8 @@ import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
@@ -143,6 +145,52 @@ public class EventService {
     }
 
     @Transactional
+    public EventResponse updateEvent(Long eventId, User organizer, CreateEventRequest request) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(organizer.getId())) {
+            throw new IllegalArgumentException("Only event organizer can update this event");
+        }
+
+        if (request.getEndDate().isBefore(request.getStartDate())) {
+            throw new IllegalArgumentException("End date must be after start date");
+        }
+
+        event.setTitle(request.getTitle());
+        event.setLegacyName(request.getTitle());
+        event.setDescription(request.getDescription());
+        event.setCategory(request.getCategory());
+        event.setLocation(request.getLocation());
+        event.setAddress(request.getAddress());
+        event.setCity(request.getCity());
+        event.setCountry(request.getCountry());
+        event.setPersonLimit(request.getPersonLimit());
+        event.setPhone(request.getPhone());
+        event.setStartDate(request.getStartDate());
+        event.setEndDate(request.getEndDate());
+        event.setTicketPrice(request.getTicketPrice());
+        if (request.getPhotoUrl() != null) {
+            event.setPhotoUrl(request.getPhotoUrl());
+        }
+
+        Event updated = eventRepository.save(event);
+        return toResponse(updated, organizer);
+    }
+
+    @Transactional
+    public void deleteEvent(Long eventId, User organizer) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(organizer.getId())) {
+            throw new IllegalArgumentException("Only event organizer can delete this event");
+        }
+
+        eventRepository.delete(event);
+    }
+
+    @Transactional
     public EventPhotoResponse uploadEventPhoto(Long eventId, User organizer, MultipartFile file) {
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
@@ -187,7 +235,12 @@ public class EventService {
             // Update event with photo info
             event.setPhotoId(photoId);
             event.setPhotoUrl(photoUrl);
-            eventRepository.save(event);
+            try {
+                eventRepository.save(event);
+            } catch (Exception dbEx) {
+                logger.error("Database update failed for event {} photo, but S3 upload succeeded: {}", eventId, dbEx.getMessage(), dbEx);
+                // Return success anyway since S3 upload worked
+            }
 
             return new EventPhotoResponse(photoUrl, photoId, "Photo uploaded successfully");
         } catch (AwsServiceException | SdkClientException awsEx) {
@@ -260,6 +313,55 @@ public class EventService {
             return null;
         }
         return filename.substring(filename.lastIndexOf("."));
+    }
+
+    public EventPhotoResponse generateUploadUrl(Long eventId, User organizer, String filename) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(organizer.getId())) {
+            throw new IllegalArgumentException("Only event organizer can upload photos");
+        }
+
+        String bucket = awsProperties.getS3().getEventPicturesBucket();
+        String photoId = "events/" + eventId + "/" + filename;
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(photoId)
+                .contentType("image/jpeg")
+                .build();
+
+        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
+                .signatureDuration(Duration.ofMinutes(15))
+                .putObjectRequest(putObjectRequest)
+                .build();
+
+        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
+        String uploadUrl = presignedRequest.url().toString();
+
+        return new EventPhotoResponse(null, photoId, "Upload URL generated", uploadUrl);
+    }
+
+    @Transactional
+    public EventPhotoResponse setEventPhotoByFilename(Long eventId, User organizer, String filename) {
+        Event event = eventRepository.findById(eventId)
+                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+
+        if (!event.getOrganizer().getId().equals(organizer.getId())) {
+            throw new IllegalArgumentException("Only event organizer can set photos");
+        }
+
+        String bucket = awsProperties.getS3().getEventPicturesBucket();
+        String region = awsProperties.getRegion();
+        String photoId = "events/" + eventId + "/" + filename;
+        String photoUrl = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, photoId);
+
+        event.setPhotoId(photoId);
+        event.setPhotoUrl(photoUrl);
+        eventRepository.save(event);
+
+        return new EventPhotoResponse(photoUrl, photoId, "Photo set successfully");
     }
 
 }

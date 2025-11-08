@@ -4,6 +4,7 @@ public class EventPhotoResponse {
     private String photoUrl;
     private String photoId;
     private String message;
+    private String uploadUrl;
 
     public EventPhotoResponse() {
     }
@@ -12,6 +13,13 @@ public class EventPhotoResponse {
         this.photoUrl = photoUrl;
         this.photoId = photoId;
         this.message = message;
+    }
+
+    public EventPhotoResponse(String photoUrl, String photoId, String message, String uploadUrl) {
+        this.photoUrl = photoUrl;
+        this.photoId = photoId;
+        this.message = message;
+        this.uploadUrl = uploadUrl;
     }
 
     // Getters and Setters
@@ -37,5 +45,13 @@ public class EventPhotoResponse {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getUploadUrl() {
+        return uploadUrl;
+    }
+
+    public void setUploadUrl(String uploadUrl) {
+        this.uploadUrl = uploadUrl;
     }
 }

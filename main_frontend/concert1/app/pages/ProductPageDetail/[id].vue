@@ -81,7 +81,7 @@ const spotsRemaining = computed(() => {
 
 const eventPhotoUrl = computed(() => {
   const value = event.value?.photoUrl
-  if (typeof value === 'string' && value.length) {
+  if (value && typeof value === 'string' && value.length > 0 && !value.includes('null')) {
     return value
   }
   return PLACEHOLDER_IMAGE

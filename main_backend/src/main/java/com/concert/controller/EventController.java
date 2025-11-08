@@ -63,13 +63,42 @@ public class EventController {
         return ResponseEntity.ok(event);
     }
 
-    @PostMapping("/{id}/photo")
-    public ResponseEntity<EventPhotoResponse> uploadEventPhoto(
+    @PutMapping("/{id}")
+    public ResponseEntity<EventResponse> updateEvent(
             Authentication authentication,
             @PathVariable Long id,
-            @RequestParam("file") MultipartFile file) {
+            @Valid @RequestBody CreateEventRequest request) {
         User organizer = getCurrentUser(authentication);
-        EventPhotoResponse response = eventService.uploadEventPhoto(id, organizer, file);
+        EventResponse response = eventService.updateEvent(id, organizer, request);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteEvent(
+            Authentication authentication,
+            @PathVariable Long id) {
+        User organizer = getCurrentUser(authentication);
+        eventService.deleteEvent(id, organizer);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/photo/upload-url")
+    public ResponseEntity<EventPhotoResponse> getUploadUrl(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestParam("filename") String filename) {
+        User organizer = getCurrentUser(authentication);
+        EventPhotoResponse response = eventService.generateUploadUrl(id, organizer, filename);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/{id}/photo")
+    public ResponseEntity<EventPhotoResponse> confirmPhotoUpload(
+            Authentication authentication,
+            @PathVariable Long id,
+            @RequestParam("filename") String filename) {
+        User organizer = getCurrentUser(authentication);
+        EventPhotoResponse response = eventService.setEventPhotoByFilename(id, organizer, filename);
         return ResponseEntity.ok(response);
     }
 

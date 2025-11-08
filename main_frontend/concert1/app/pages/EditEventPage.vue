@@ -32,6 +32,10 @@ const submitting = ref(false)
 const loading = ref(true)
 const showDeleteModal = ref(false)
 const eventId = route.query.id
+// Photo upload removed - use UploadPhotoPage
+const photoInput = ref<HTMLInputElement | null>(null)
+
+const photoPreview = ref<string | null>(null)
 
 // Event categories matching the catalog
 const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
@@ -81,7 +85,7 @@ async function loadEventData() {
       return
     }
     
-    const event: any = await apiFetch(`/api/events/json/${eventId}`, {
+    const event: any = await apiFetch(`/api/events/${eventId}`, {
       headers: { Authorization: `Bearer ${token}` }
     })
     
@@ -171,11 +175,29 @@ async function handleSubmit() {
     }
     
     // Update event
-    await apiFetch(`/api/events/json/${eventId}`, {
+    const updatedEvent: any = await apiFetch(`/api/events/${eventId}`, {
       method: 'PUT',
       body: payload,
       headers: { Authorization: `Bearer ${token}` }
     })
+    
+    // Upload photo if selected
+    if (photoFile.value) {
+      const formData = new FormData()
+      formData.append('file', photoFile.value)
+      photoUploading.value = true
+      try {
+        await apiFetch(`/api/events/${eventId}/photo`, {
+          method: 'POST',
+          body: formData,
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      } catch (uploadErr: any) {
+        console.error('Photo upload failed:', uploadErr)
+      } finally {
+        photoUploading.value = false
+      }
+    }
     
     success('Event updated successfully!', 'Event Updated')
     router.push('/MyEventsPage')
@@ -195,6 +217,28 @@ function closeDeleteModal() {
   showDeleteModal.value = false
 }
 
+function triggerPhotoSelect() {
+  photoInput.value?.click()
+}
+
+function handlePhotoChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) {
+    photoFile.value = null
+    photoPreview.value = null
+    return
+  }
+  photoFile.value = file
+  photoPreview.value = URL.createObjectURL(file)
+}
+
+function clearPhoto() {
+  photoFile.value = null
+  photoPreview.value = null
+  if (photoInput.value) photoInput.value.value = ''
+}
+
 async function confirmDelete() {
   const token = user.value?.token || localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
   if (!token) {
@@ -204,7 +248,7 @@ async function confirmDelete() {
   }
 
   try {
-    await apiFetch(`/api/events/json/${eventId}`, {
+    await apiFetch(`/api/events/${eventId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -250,6 +294,28 @@ async function confirmDelete() {
           </div>
 
           <form @submit.prevent="handleSubmit">
+            <div class="mt-6">
+              <h2 class="text-lg font-semibold leading-7 text-gray-800">Event Picture</h2>
+              <div class="mt-4 flex items-center justify-center mb-4">
+                <div class="relative w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-gray-400">
+                  <template v-if="photoPreview">
+                    <img :src="photoPreview" alt="Event preview" class="w-full h-full object-cover" />
+                    <button type="button" class="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full px-2 py-1 text-xs font-semibold text-gray-700" @click="clearPhoto">✕</button>
+                  </template>
+                  <template v-else>
+                    <span class="text-sm text-gray-500">No image</span>
+                  </template>
+                </div>
+              </div>
+              <div class="flex flex-col items-center gap-2">
+                <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handlePhotoChange" />
+                <button type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition" @click="triggerPhotoSelect" :disabled="photoUploading || submitting">
+                  {{ photoFile ? 'Change Picture' : 'Upload Picture' }}
+                </button>
+                <p v-if="photoUploading" class="text-xs text-gray-500">Uploading...</p>
+              </div>
+            </div>
+
             <div class="mt-10">
               <h2 class="text-xl font-semibold leading-7 text-gray-800">Event Details</h2>
             <p class="mt-1 text-sm text-gray-500">Our team will carefully consider them and get back to you within 24 hours.</p>

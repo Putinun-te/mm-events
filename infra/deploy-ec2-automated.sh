@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-EC2_INSTANCE_ID="i-031914475e91af608"
+EC2_INSTANCE_ID="i-0f601809e371ccf12"
 REGION="us-east-1"
 SSH_KEY="/Users/putinan/development/DevOps/develop/aws/concert-key.pem"
 ECR_IMAGE="123456789012.dkr.ecr.us-east-1.amazonaws.com/concert-api:lambda-v2"

@@ -15,22 +15,26 @@ export function useAuth() {
 
   function loadFromStorage() {
     try {
-      // Check if user chose "Remember Me" on their last login
+      // Always check localStorage first (Remember Me)
+      let token = localStorage.getItem('jwt_token')
+      let email = localStorage.getItem('user_email') || undefined
+      let username = localStorage.getItem('username') || undefined
       const remembered = localStorage.getItem('remember_me') === 'true'
       
-      if (remembered) {
-        // Load from localStorage (persistent)
-        const token = localStorage.getItem('jwt_token')
-        const email = localStorage.getItem('user_email') || undefined
-        const username = localStorage.getItem('username') || undefined
-        if (token) user.value = { token, email, username }
+      if (token) {
+        // User has Remember Me enabled
+        user.value = { token, email, username }
         remember.value = true
-      } else {
-        // Load from sessionStorage (cleared when browser closes)
-        const token = sessionStorage.getItem('jwt_token')
-        const email = sessionStorage.getItem('user_email') || undefined
-        const username = sessionStorage.getItem('username') || undefined
-        if (token) user.value = { token, email, username }
+        return
+      }
+      
+      // Check sessionStorage (current session only)
+      token = sessionStorage.getItem('jwt_token')
+      email = sessionStorage.getItem('user_email') || undefined
+      username = sessionStorage.getItem('username') || undefined
+      
+      if (token) {
+        user.value = { token, email, username }
         remember.value = false
       }
     } catch {}

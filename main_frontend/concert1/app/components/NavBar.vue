@@ -6,11 +6,12 @@ import { useToast } from '~/composables/useToast'
 
 const router = useRouter()
 const route = useRoute()
-const { loadFromStorage, isLoggedIn, clearAuth } = useAuth()
+const { loadFromStorage, isLoggedIn, clearAuth, user } = useAuth()
 const { success } = useToast()
 const showLogoutModal = ref(false)
 
 const isMenuOpen = ref(false)
+const showDropdown = ref(false)
 
 const pages = ref([
     { text: 'Account', value: '/AccountPage'}
@@ -85,10 +86,25 @@ function cancelLogout() {
               <NuxtLink to="/CreateEventPage" class="px-3 py-2 rounded hover:text-blue-400 transition">Create Event</NuxtLink>
             </li>
 
-            <li v-if="isLoggedIn">
-              <button @click="handleLogout" class="ml-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white text-sm">
-                🚪 Logout
+            <li v-if="isLoggedIn" class="relative">
+              <button @click="showDropdown = !showDropdown" class="flex items-center gap-2 px-3 py-2 rounded hover:bg-white/10 transition">
+                <img v-if="user?.profilePhoto" :src="user.profilePhoto" class="w-8 h-8 rounded-full object-cover" />
+                <div v-else class="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-sm font-bold">
+                  {{ user?.name?.charAt(0)?.toUpperCase() || 'U' }}
+                </div>
+                <span class="text-sm">{{ user?.name }}</span>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
               </button>
+              
+              <div v-if="showDropdown" @click="showDropdown = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg py-1 text-gray-800">
+                <NuxtLink to="/MyBookingsPage" class="block px-4 py-2 hover:bg-gray-100">My Bookings</NuxtLink>
+                <NuxtLink to="/MyEventsPage" class="block px-4 py-2 hover:bg-gray-100">My Events</NuxtLink>
+                <NuxtLink to="/AccountPage" class="block px-4 py-2 hover:bg-gray-100">Account Settings</NuxtLink>
+                <hr class="my-1">
+                <button @click="handleLogout" class="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600">Logout</button>
+              </div>
             </li>
           </ul>
         </div>
@@ -128,22 +144,19 @@ function cancelLogout() {
             </li>
 
             <li v-if="isLoggedIn">
-              <NuxtLink
-                to="/CreateEventPage"
-                class="block px-3 py-2 rounded text-white hover:bg-white/5"
-                @click="isMenuOpen = false"
-              >
-                Create Event
-              </NuxtLink>
+              <NuxtLink to="/CreateEventPage" class="block px-3 py-2 rounded text-white hover:bg-white/5" @click="isMenuOpen = false">Create Event</NuxtLink>
             </li>
-
             <li v-if="isLoggedIn">
-              <button
-                @click="() => { handleLogout(); isMenuOpen = false }"
-                class="w-full text-left px-3 py-2 rounded bg-red-600 hover:bg-red-700 text-white"
-              >
-                🚪 Logout
-              </button>
+              <NuxtLink to="/MyBookingsPage" class="block px-3 py-2 rounded text-white hover:bg-white/5" @click="isMenuOpen = false">My Bookings</NuxtLink>
+            </li>
+            <li v-if="isLoggedIn">
+              <NuxtLink to="/MyEventsPage" class="block px-3 py-2 rounded text-white hover:bg-white/5" @click="isMenuOpen = false">My Events</NuxtLink>
+            </li>
+            <li v-if="isLoggedIn">
+              <NuxtLink to="/AccountPage" class="block px-3 py-2 rounded text-white hover:bg-white/5" @click="isMenuOpen = false">Account Settings</NuxtLink>
+            </li>
+            <li v-if="isLoggedIn">
+              <button @click="() => { handleLogout(); isMenuOpen = false }" class="w-full text-left px-3 py-2 rounded bg-red-600 hover:bg-red-700 text-white">Logout</button>
             </li>
           </ul>
         </div>

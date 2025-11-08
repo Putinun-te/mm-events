@@ -30,6 +30,8 @@ const { apiFetch } = useApi()
 const submitting = ref(false)
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
+const photoUrl = ref('')
+const uploadMode = ref<'file' | 'url'>('file')
 
 // Event categories matching the catalog
 const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
@@ -79,13 +81,20 @@ function handlePhotoSelect(event: Event) {
   if (!file) return
   
   photoFile.value = file
+  photoUrl.value = ''
   
-  // Show preview
   const reader = new FileReader()
   reader.onload = (e) => {
     photoPreview.value = e.target?.result as string
   }
   reader.readAsDataURL(file)
+}
+
+function handleUrlInput() {
+  if (photoUrl.value) {
+    photoPreview.value = photoUrl.value
+    photoFile.value = null
+  }
 }
 
 async function handleSubmit() {
@@ -126,13 +135,14 @@ async function handleSubmit() {
       headers: { Authorization: `Bearer ${token}` }
     })
 
-    // Upload photo to S3 if selected
+    // Handle photo upload or URL
+    let finalPhotoUrl = photoUrl.value
+    
     if (photoFile.value && backendEvent?.id) {
       try {
         const formData = new FormData()
         formData.append('file', photoFile.value)
         
-        // Upload to S3 and get CloudFront URL
         const uploadResponse = await fetch('https://d3qkurc1gwuwno.cloudfront.net/api/upload/event-photo', {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${token}` },
@@ -141,18 +151,20 @@ async function handleSubmit() {
         
         if (uploadResponse.ok) {
           const { url } = await uploadResponse.json()
-          
-          // Update event with CloudFront URL
-          await apiFetch(`/api/events/${backendEvent.id}`, {
-            method: 'PUT',
-            body: { ...payload, photoUrl: url },
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          finalPhotoUrl = url
         }
       } catch (uploadErr) {
         console.error('Photo upload failed:', uploadErr)
         warning('Event created but photo upload failed', 'Partial Success')
       }
+    }
+    
+    if (finalPhotoUrl && backendEvent?.id) {
+      await apiFetch(`/api/events/${backendEvent.id}`, {
+        method: 'PUT',
+        body: { ...payload, photoUrl: finalPhotoUrl },
+        headers: { Authorization: `Bearer ${token}` }
+      })
     }
 
     success('Event created successfully!', 'Event Created')
@@ -178,14 +190,31 @@ async function handleSubmit() {
 
           <div class="mt-10">
             <h2 class="text-lg font-semibold leading-7 text-gray-800">Event Picture (Optional)</h2>
-            <div class="mt-4 flex flex-col items-center gap-4">
-              <div v-if="photoPreview" class="relative w-48 h-48 rounded-lg overflow-hidden border-2 border-gray-300">
+            <div class="mt-4 flex flex-col gap-4">
+              <div v-if="photoPreview" class="relative w-full h-64 rounded-lg overflow-hidden border-2 border-gray-300">
                 <img :src="photoPreview" alt="Preview" class="w-full h-full object-cover" />
-                <button type="button" @click="photoFile = null; photoPreview = null" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                <button type="button" @click="photoFile = null; photoPreview = null; photoUrl = ''" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600">
                   ✕
                 </button>
               </div>
-              <input type="file" accept="image/*" @change="handlePhotoSelect" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
+              
+              <div class="flex gap-2 mb-2">
+                <button type="button" @click="uploadMode = 'file'" :class="['px-4 py-2 rounded-md text-sm font-medium', uploadMode === 'file' ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-700']">
+                  Upload File
+                </button>
+                <button type="button" @click="uploadMode = 'url'" :class="['px-4 py-2 rounded-md text-sm font-medium', uploadMode === 'url' ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-700']">
+                  Use URL
+                </button>
+              </div>
+              
+              <input v-if="uploadMode === 'file'" type="file" accept="image/*" @change="handlePhotoSelect" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
+              
+              <div v-if="uploadMode === 'url'" class="flex gap-2">
+                <input v-model="photoUrl" type="url" placeholder="https://example.com/image.jpg" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                <button type="button" @click="handleUrlInput" class="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700">
+                  Preview
+                </button>
+              </div>
             </div>
           </div>
 

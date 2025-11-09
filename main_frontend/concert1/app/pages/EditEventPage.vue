@@ -34,8 +34,9 @@ const showDeleteModal = ref(false)
 const eventId = route.query.id
 // Photo upload removed - use UploadPhotoPage
 const photoInput = ref<HTMLInputElement | null>(null)
-
+const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
+const photoUploading = ref(false)
 
 // Event categories matching the catalog
 const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']

@@ -188,11 +188,19 @@ async function handleSubmit() {
       formData.append('file', photoFile.value)
       photoUploading.value = true
       try {
-        await apiFetch(`/api/events/${eventId}/photo`, {
+        const uploadResponse = await fetch('https://d3qkurc1gwuwno.cloudfront.net/api/upload/event-photo', {
           method: 'POST',
-          body: formData,
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          body: formData
         })
+        if (uploadResponse.ok) {
+          const { url } = await uploadResponse.json()
+          await apiFetch(`/api/events/${eventId}`, {
+            method: 'PUT',
+            body: { ...payload, photoUrl: url },
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        }
       } catch (uploadErr: any) {
         console.error('Photo upload failed:', uploadErr)
       } finally {

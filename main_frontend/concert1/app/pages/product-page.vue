@@ -1,68 +1,218 @@
-<script setup>
-import { ref, onMounted } from 'vue'
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue'
 import { useApi } from '~/composables/useApi'
-import { useImage } from '~/composables/useImage'
+
+type EventItem = any
+
+const events = ref<EventItem[]>([])
+const loading = ref(false)
+const message = ref('')
+
+const page = ref(0)
+const size = ref(12)
 
 const { apiFetch } = useApi()
-const { getEventPhotoUrl } = useImage()
-const events = ref([])
-const loading = ref(true)
 
-onMounted(async () => {
+const searchQuery = ref('')
+const selectedCategory = ref('')
+const selectedDate = ref('')
+
+const categories = ['All', 'Rock', 'Pop', 'Jazz', 'EDM']
+
+const hasEvents = computed(() => events.value.length > 0)
+
+const filteredEvents = computed(() => {
+  let result = events.value
+
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    result = result.filter(e => 
+      (e.title || e.name || '').toLowerCase().includes(q) ||
+      (e.description || '').toLowerCase().includes(q) ||
+      (e.location || e.city || '').toLowerCase().includes(q)
+    )
+  }
+
+  if (selectedCategory.value && selectedCategory.value !== 'All') {
+    result = result.filter(e => (e.category || '').toLowerCase() === selectedCategory.value.toLowerCase())
+  }
+
+  if (selectedDate.value) {
+    result = result.filter(e => {
+      const eventDate = e.startDate ? new Date(e.startDate).toISOString().split('T')[0] : 
+                        e.datestart ? new Date(e.datestart * 1000).toISOString().split('T')[0] : null
+      return eventDate === selectedDate.value
+    })
+  }
+
+  return result
+})
+
+async function loadEvents() {
+  loading.value = true
+  message.value = ''
   try {
-    const response = await apiFetch('/api/events')
-    events.value = response.content || []
-  } catch (error) {
-    console.error('Failed to load events:', error)
+    const response = await apiFetch(`/api/events?page=${page.value}&size=${size.value}`)
+    const content = (response as any)?.content
+
+    if (Array.isArray(content)) {
+      events.value = content
+    } else if (Array.isArray(response as any)) {
+      events.value = response as any
+    } else {
+      events.value = []
+    }
+  } catch (e: any) {
+    message.value = e?.statusMessage || 'Failed to load events.'
+    console.error('Error loading events:', e)
   } finally {
     loading.value = false
   }
-})
+}
+
+function clearFilters() {
+  searchQuery.value = ''
+  selectedCategory.value = ''
+  selectedDate.value = ''
+}
+
+onMounted(loadEvents)
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 py-12">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h1 class="text-5xl font-bold text-gray-900 mb-4">All Events</h1>
-        <p class="text-xl text-gray-600">Discover amazing concerts and events</p>
-      </div>
+  <div class="bg-white rounded shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
+      
+      <section class="mb-12">
+        <div class="text-center mb-8">
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            Discover Events
+          </h2>
+          <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">
+            Find your next experience
+          </p>
+        </div>
 
-      <div v-if="loading" class="text-center py-12">
-        <p class="text-gray-500">Loading events...</p>
-      </div>
+        <div class="max-w-3xl mx-auto mb-6">
+          <div class="relative">
+            <svg 
+              class="absolute left-5 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <input 
+              v-model="searchQuery" 
+              type="text" 
+              placeholder="Search events by name, location, or description..." 
+              class="w-full pl-14 pr-24 py-4 text-lg border-2 border-gray-300 rounded-full focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all"
+            />
+            <button 
+              v-if="searchQuery"
+              @click="searchQuery = ''"
+              class="absolute right-16 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-gray-100 transition-all"
+              aria-label="Clear search"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <button class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-violet-600 text-white p-3 rounded-full hover:bg-violet-700 transition-colors">
+              Search
+            </button>
+          </div>
+        </div>
 
-      <div v-else-if="events.length === 0" class="text-center py-12">
-        <p class="text-gray-500">No events available at the moment.</p>
-        <NuxtLink to="/CreateEventPage" class="mt-4 inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-          Create First Event
-        </NuxtLink>
-      </div>
+        <div class="flex flex-wrap justify-center gap-3 mb-6">
+          <button 
+            v-for="cat in categories" 
+            :key="cat"
+            @click="selectedCategory = cat === 'All' ? '' : cat"
+            :class="[
+              'px-6 py-2 rounded-full font-semibold transition-all',
+              (cat === 'All' && !selectedCategory) || selectedCategory === cat
+                ? 'bg-violet-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            ]"
+          >
+            {{ cat }}
+          </button>
+        </div>
 
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <NuxtLink
-          v-for="event in events"
-          :key="event.id"
-          :to="`/ProductPageDetail/${event.id}`"
-          class="group bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
-        >
-          <div class="aspect-video overflow-hidden bg-gray-200">
-            <img
-              :src="getEventPhotoUrl(event.photoUrl)"
-              :alt="event.title"
-              class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+        <div class="flex flex-wrap justify-center gap-4 items-center">
+          <div class="flex items-center gap-2">
+            <label class="text-gray-700 font-semibold">Date:</label>
+            <input 
+              v-model="selectedDate" 
+              type="date" 
+              class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-violet-500"
             />
           </div>
-          <div class="p-6">
-            <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-2">{{ event.title }}</h3>
-            <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ event.description }}</p>
-            <div class="flex items-center justify-between">
-              <span class="text-2xl font-bold text-green-600">${{ event.ticketPrice || 0 }}</span>
-              <span class="text-sm text-gray-500">{{ event.location }}</span>
-            </div>
+          <button 
+            v-if="searchQuery || selectedCategory || selectedDate"
+            @click="clearFilters"
+            class="px-4 py-2 bg-red-100 text-red-600 rounded-lg font-semibold hover:bg-red-200 transition-colors"
+          >
+            Clear Filters
+          </button>
+        </div>
+      </section>
+
+      <hr class="border-gray-200 my-8" />
+
+      <section class="my-16">
+        <div class="text-center mb-8">
+          <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
+            Upcoming Events
+          </h2>
+          <p class="mt-4 max-w-2xl mx-auto text-lg text-gray-500">
+            <span v-if="loading">Loading events...</span>
+            <span v-else-if="searchQuery || selectedCategory || selectedDate">
+              {{ filteredEvents.length}} result{{ filteredEvents.length !== 1 ? 's' : '' }} found
+              <span v-if="searchQuery" class="font-semibold text-violet-600">
+                for "{{ searchQuery }}"
+              </span>
+            </span>
+            <span v-else>
+              {{ filteredEvents.length }} event{{ filteredEvents.length !== 1 ? 's' : '' }} available
+            </span>
+          </p>
+        </div>
+        
+        <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <EventCardSkeleton v-for="n in 8" :key="n" />
+        </div>
+
+        <EmptyState
+          v-else-if="!filteredEvents.length && (searchQuery || selectedCategory || selectedDate)"
+          type="no-search-results"
+          title="No events found"
+          :description="`No events match your search criteria. Try adjusting your filters or browse all events.`"
+          actionText="Browse All Events"
+          :actionLink="'/product-page'"
+          :secondaryAction="true"
+          secondaryText="Clear Filters"
+          @secondary-action="clearFilters"
+        />
+
+        <EmptyState
+          v-else-if="!filteredEvents.length"
+          type="no-events"
+          title="No events yet"
+          description="There are no events available at the moment. Check back soon or create your own event!"
+          actionText="Create Event"
+          :actionLink="'/CreateEventPage'"
+        />
+
+        <div v-else class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
+          <div v-for="event in filteredEvents" :key="event.id">
+            <ProductCard :event="event" />
           </div>
-        </NuxtLink>
-      </div>
+        </div>
+      </section>
+      
     </div>
   </div>
 </template>

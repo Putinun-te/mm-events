@@ -14,11 +14,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = {
-    "http://localhost:3000",
-    "http://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com",
-    "https://concert-dev-frontend-142fee22.s3-website-us-east-1.amazonaws.com"
-})
 public class UserController {
     
     private final UserRepository userRepository;

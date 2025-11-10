@@ -14,18 +14,6 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(
-    origins = {
-        "http://localhost:3000",
-        "https://d3jivuimmea02r.cloudfront.net",
-        "https://dzh397ixo71bk.cloudfront.net",
-        "http://concert-prod-web-123456789012.s3-website-us-east-1.amazonaws.com",
-        "https://concert-prod-web-123456789012.s3-website-us-east-1.amazonaws.com"
-    },
-    allowedHeaders = "*",
-    methods = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE, RequestMethod.OPTIONS},
-    maxAge = 3600
-)
 public class AuthController {
     
     @Autowired

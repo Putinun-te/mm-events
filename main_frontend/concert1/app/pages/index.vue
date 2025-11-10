@@ -21,7 +21,7 @@ const slides = [
     title: 'Welcome to MM concerts',
     description: 'Experience unforgettable live music events and exclusive performances',
     buttonText: 'Browse Events',
-    link: '/EventsPage',
+    link: '/ProductPage',
     image: event3Img,
     gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
   },
@@ -169,7 +169,7 @@ onUnmounted(() => {
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <NuxtLink 
-          to="/EventsPage"
+          to="/ProductPage"
           class="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-500 to-blue-700 p-8 text-white shadow-xl hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
         >
           <div class="relative z-10">

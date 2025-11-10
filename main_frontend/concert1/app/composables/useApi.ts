@@ -1,6 +1,6 @@
 export const useApi = () => {
   const config = useRuntimeConfig()
-  const baseURL = config.public.backendUrl
+  const baseURL = config.public.backendBaseUrl
 
   const apiFetch = async (endpoint: string, options: any = {}) => {
     const token = localStorage.getItem('token')

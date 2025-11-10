@@ -1,0 +1,14 @@
+{
+  "Rules": [
+    {
+      "ID": "DeleteOldImagesAfter7Days",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "deleted/"
+      },
+      "Expiration": {
+        "Days": 7
+      }
+    }
+  ]
+}

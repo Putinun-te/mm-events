@@ -10,6 +10,7 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
+import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 
 import java.time.Instant;
@@ -127,17 +128,30 @@ public class UploadController {
                 throw new IllegalArgumentException("Invalid image URL");
             }
             
+            String deletedKey = "deleted/" + key;
+            
+            CopyObjectRequest copyRequest = CopyObjectRequest.builder()
+                    .sourceBucket(bucketName)
+                    .sourceKey(key)
+                    .destinationBucket(bucketName)
+                    .destinationKey(deletedKey)
+                    .build();
+            
+            s3Client.copyObject(copyRequest);
+            log.info("Moved to deleted folder: {} -> {}", key, deletedKey);
+            
             DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
                     .bucket(bucketName)
                     .key(key)
                     .build();
             
             s3Client.deleteObject(deleteRequest);
-            log.info("Successfully deleted from S3: {}", key);
+            log.info("Removed original: {}", key);
             
             Map<String, String> response = new HashMap<>();
-            response.put("message", "Image deleted successfully");
-            response.put("key", key);
+            response.put("message", "Image moved to deleted folder (will be removed after 7 days)");
+            response.put("originalKey", key);
+            response.put("deletedKey", deletedKey);
             
             return ResponseEntity.ok(response);
         } catch (Exception e) {

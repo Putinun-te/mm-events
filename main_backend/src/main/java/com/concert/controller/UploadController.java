@@ -9,6 +9,7 @@ import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 
 import java.time.Instant;
@@ -116,6 +117,46 @@ public class UploadController {
             error.put("type", e.getClass().getSimpleName());
             return ResponseEntity.status(500).body(error);
         }
+    }
+    
+    @DeleteMapping("/delete")
+    public ResponseEntity<Map<String, String>> deleteImage(@RequestParam("url") String imageUrl) {
+        try {
+            String key = extractKeyFromUrl(imageUrl);
+            if (key == null) {
+                throw new IllegalArgumentException("Invalid image URL");
+            }
+            
+            DeleteObjectRequest deleteRequest = DeleteObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(key)
+                    .build();
+            
+            s3Client.deleteObject(deleteRequest);
+            log.info("Successfully deleted from S3: {}", key);
+            
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Image deleted successfully");
+            response.put("key", key);
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Delete failed", e);
+            Map<String, String> error = new HashMap<>();
+            error.put("error", e.getMessage());
+            return ResponseEntity.status(500).body(error);
+        }
+    }
+    
+    private String extractKeyFromUrl(String url) {
+        if (url == null || !url.contains(bucketName)) {
+            return null;
+        }
+        int keyStart = url.indexOf(".com/") + 5;
+        if (keyStart > 4 && keyStart < url.length()) {
+            return url.substring(keyStart);
+        }
+        return null;
     }
     
     private String getExtension(String filename) {

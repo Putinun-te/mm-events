@@ -25,7 +25,7 @@ interface CreateEventForm {
 const router = useRouter()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 const { success, error, warning } = useToast()
-const { apiFetch } = useApi()
+const { apiFetch, backendUrl } = useApi()
 
 const submitting = ref(false)
 const photoFile = ref<File | null>(null)
@@ -143,9 +143,8 @@ async function handleSubmit() {
         const formData = new FormData()
         formData.append('file', photoFile.value)
         
-        const uploadResponse = await fetch('https://d3qkurc1gwuwno.cloudfront.net/api/upload/event-photo', {
+        const uploadResponse = await fetch(`${backendUrl}/api/upload/event-photo`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
           body: formData
         })
         

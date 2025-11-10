@@ -26,7 +26,7 @@ const router = useRouter()
 const route = useRoute()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 const { success, error } = useToast()
-const { apiFetch } = useApi()
+const { apiFetch, backendUrl } = useApi()
 
 const submitting = ref(false)
 const loading = ref(true)
@@ -188,9 +188,8 @@ async function handleSubmit() {
       formData.append('file', photoFile.value)
       photoUploading.value = true
       try {
-        const uploadResponse = await fetch('https://d3qkurc1gwuwno.cloudfront.net/api/upload/event-photo', {
+        const uploadResponse = await fetch(`${backendUrl}/api/upload/event-photo`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` },
           body: formData
         })
         if (uploadResponse.ok) {

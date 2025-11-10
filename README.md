@@ -538,6 +538,8 @@ Additional documentation can be found in the project:
 - 📖 **[Cleanup Summary](CLEANUP_SUMMARY.md)** - Repository maintenance
 - 📖 **[Unauthorized Handling](UNAUTHORIZED_HANDLING.md)** - Error handling guide
 - 📖 **[Event Deletion Fix](EVENT_DELETION_WITH_BOOKINGS_FIX.md)** - Auto-cancel bookings
+- 📖 **[S3 Upload Fix](S3_UPLOAD_FIX_SUMMARY.md)** - S3 upload configuration fix
+- 📖 **[S3 Upload Troubleshooting](S3_UPLOAD_TROUBLESHOOTING.md)** - S3 troubleshooting guide
 - 📖 **[Kubernetes Guide](k8s/README.md)** - K8s deployment instructions
 
 ---
@@ -603,6 +605,7 @@ docker compose up -d
 
 ### Recent Updates 🆕
 
+- ✨ **Nov 9, 2025:** Fixed S3 upload 500 error (region/bucket configuration)
 - ✨ **Oct 16, 2025:** Fixed all tests (798 passing, 96% backend coverage)
 - ✨ **Oct 16, 2025:** Added comprehensive testing infrastructure
 - ✨ **Oct 15, 2025:** Implemented event deletion with auto-booking cancellation

@@ -14,7 +14,7 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      backendBaseUrl: 'https://d3qkurc1gwuwno.cloudfront.net'
+      backendBaseUrl: process.env.NUXT_PUBLIC_BACKEND_BASE_URL || 'https://dcw8wprh1ngnh.cloudfront.net'
     }
   },
   css: ['~/assets/css/main.css'],

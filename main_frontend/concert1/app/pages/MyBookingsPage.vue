@@ -179,7 +179,7 @@ function goToEvent(booking: Booking) {
       title="No bookings yet"
       description="You haven't booked any events yet. Start exploring and book your first event!"
       actionText="Browse Events"
-      :actionLink="'/concert/ProductPage'"
+      :actionLink="'/concert/product-page'"
     />
 
     <!-- Bookings Grid -->

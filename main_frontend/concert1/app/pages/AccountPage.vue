@@ -304,7 +304,7 @@ function cancelLogout() {
             </div>
             <div class="text-4xl">📅</div>
           </div>
-          <button @click="router.push('/ProductPage')" class="text-purple-600 text-sm font-semibold mt-3 hover:underline">Browse Events →</button>
+          <button @click="router.push('/product-page')" class="text-purple-600 text-sm font-semibold mt-3 hover:underline">Browse Events →</button>
         </div>
       </div>
 

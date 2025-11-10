@@ -167,7 +167,7 @@ async function handleSubmit() {
     }
 
     success('Event created successfully!', 'Event Created')
-    router.push('/ProductPage')
+    router.push('/product-page')
   } catch (e: any) {
     const message = e?.statusMessage || e?.data?.message || 'Failed to create event.'
     error(message, 'Creation Failed')

@@ -18,7 +18,7 @@ const pages = ref([
 ])
 
 const authPages = ref([
-    { text: 'All Events', value: '/EventsPage'},
+    { text: 'All Events', value: '/ProductPage'},
     { text: 'Create Event', value: '/CreateEventPage'},
     { text: 'Login/Register', value: '/LoginPage'},
 ])

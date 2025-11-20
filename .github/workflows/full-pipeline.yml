@@ -68,6 +68,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./main_backend/target/site/jacoco/jacoco.xml
           flags: backend-unit
           name: backend-unit-coverage
@@ -87,9 +88,30 @@ jobs:
     timeout-minutes: 25
 
     services:
-      docker:
-        image: docker:24-dind
-        options: --privileged
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: concert_db
+          MYSQL_USER: concert_user
+          MYSQL_PASSWORD: concert_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u concert_user -pconcert_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+          --health-start-period=30s
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
       - name: Checkout repository
@@ -115,13 +137,24 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
 
-      - name: Pre-pull MySQL image
-        run: docker pull mysql:8.0
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -u concert_user -pconcert_password --silent; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Waiting for MySQL... attempt $i/30"
+            sleep 2
+          done
 
       - name: Run backend integration tests
         working-directory: main_backend
         env:
-          TESTCONTAINERS_RYUK_DISABLED: false
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: concert_user
+          SPRING_DATASOURCE_PASSWORD: concert_password
         run: mvn -B -DforkCount=1 -DreuseForks=false clean test
 
       - name: Generate JaCoCo report
@@ -140,6 +173,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./main_backend/target/site/jacoco/jacoco.xml
           flags: integration
           name: integration-coverage
@@ -155,33 +189,89 @@ jobs:
     needs: integration-tests
     timeout-minutes: 35
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: password
+          MYSQL_DATABASE: concert_db
+          MYSQL_USER: concert_user
+          MYSQL_PASSWORD: concert_password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u concert_user -pconcert_password"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+          --health-start-period=30s
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v4
         with:
           node-version: '24'
 
+      - name: Wait for MySQL to be ready
+        run: |
+          for i in {1..30}; do
+            if mysqladmin ping -h 127.0.0.1 -u concert_user -pconcert_password --silent; then
+              echo "MySQL is ready!"
+              break
+            fi
+            echo "Waiting for MySQL... attempt $i/30"
+            sleep 2
+          done
+
+      - name: Build backend
+        working-directory: main_backend
+        run: mvn -B clean package -DskipTests
+
+      - name: Start backend server
+        working-directory: main_backend
+        run: |
+          java -jar target/concert-backend-*.jar &
+          echo $! > /tmp/backend.pid
+          echo "Waiting for backend to be ready..."
+          for i in {1..60}; do
+            if curl -sf http://localhost:8080/actuator/health | grep -q 'UP'; then
+              echo "Backend is ready!"
+              break
+            fi
+            echo "Attempt $i/60..."
+            sleep 2
+          done
+          curl -f http://localhost:8080/actuator/health
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: concert_user
+          SPRING_DATASOURCE_PASSWORD: concert_password
+          SPRING_PROFILES_ACTIVE: docker
+
       - name: Install frontend dependencies
         working-directory: main_frontend/concert1
         run: |
           npm ci
           npx tsc --version
-
-      - name: Start backend and database
-        run: |
-          docker compose up -d mysql backend
-          echo "Waiting for backend..."
-          for i in {1..90}; do
-            if curl -sf http://localhost:8080/actuator/health | grep -q 'UP'; then
-              echo "Backend ready"
-              break
-            fi
-            sleep 2
-          done
-          curl -f http://localhost:8080/actuator/health
 
       - name: Start frontend dev server
         working-directory: main_frontend/concert1
@@ -232,6 +322,7 @@ jobs:
         if: always()
         uses: codecov/codecov-action@v4
         with:
+          token: ${{ secrets.CODECOV_TOKEN }}
           files: ./main_frontend/concert1/coverage/lcov.info
           flags: e2e
           name: e2e-coverage
@@ -239,7 +330,10 @@ jobs:
 
       - name: Show backend logs on failure
         if: failure()
-        run: docker compose logs backend
+        run: |
+          if [ -f /tmp/backend.pid ]; then
+            ps -p $(cat /tmp/backend.pid) && kill $(cat /tmp/backend.pid) || true
+          fi
 
       - name: Cleanup services
         if: always()
@@ -247,4 +341,6 @@ jobs:
           if [ -f /tmp/nuxt.pid ]; then
             kill $(cat /tmp/nuxt.pid) || true
           fi
-          docker compose down -v
+          if [ -f /tmp/backend.pid ]; then
+            kill $(cat /tmp/backend.pid) || true
+          fi

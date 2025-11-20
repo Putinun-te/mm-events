@@ -1,25 +1,21 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import ProductTag from '~/components/ProductTag.vue'
-import { useApi } from '../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 type EventItem = any
 
 const events = ref<EventItem[]>([])
 const loading = ref(false)
 const message = ref('')
-const today = new Date ()
 
 const page = ref(0)
 const size = ref(12)
 
 const { apiFetch } = useApi()
 
-// Filters
 const searchQuery = ref('')
 const selectedCategory = ref('')
 const selectedDate = ref('')
-
 
 const categories = ['All', 'Rock', 'Pop', 'Jazz', 'EDM']
 
@@ -42,25 +38,12 @@ const filteredEvents = computed(() => {
   }
 
   if (selectedDate.value) {
-    console.log('test')
     result = result.filter(e => {
       const eventDate = e.startDate ? new Date(e.startDate).toISOString().split('T')[0] : 
                         e.datestart ? new Date(e.datestart * 1000).toISOString().split('T')[0] : null
       return eventDate === selectedDate.value
     })
-  } 
-  // else {
-  //   console.log('hello')
-  //   // mm/dd//yyyy
-  //   console.log(today.getFullYear())
-  //   console.log(selectedDate.value)
-  //   console.log((Date.now()))
-  //   const ty = today.getFullYear()
-  //   const tm = String(today.getMonth() + 1).padStart(2, "0")
-  //   const td = String(today.getDay() + 12).padStart(2, "0")
-  //   selectedDate.value = "2025-10-16"
-  //   selectedDate.value = `${ty}-${tm}-${td}`
-  // }
+  }
 
   return result
 })
@@ -69,7 +52,7 @@ async function loadEvents() {
   loading.value = true
   message.value = ''
   try {
-    const response = await apiFetch<{ content?: EventItem[] }>(`/api/events?page=${page.value}&size=${size.value}`)
+    const response = await apiFetch(`/api/events?page=${page.value}&size=${size.value}`)
     const content = (response as any)?.content
 
     if (Array.isArray(content)) {
@@ -78,22 +61,10 @@ async function loadEvents() {
       events.value = response as any
     } else {
       events.value = []
-      console.warn('Unexpected events payload shape', response)
     }
   } catch (e: any) {
-    console.warn('Primary backend event fetch failed, attempting fallback.', e)
-    try {
-      const fallback = await $fetch<EventItem[]>('/api/events/json')
-      events.value = fallback || []
-      if (events.value.length) {
-        message.value = 'Showing cached events.'
-      } else {
-        message.value = 'No events available yet.'
-      }
-    } catch (fallbackErr: any) {
-      message.value = e?.statusMessage || 'Failed to load events.'
-      console.error('Error loading events fallback:', fallbackErr)
-    }
+    message.value = e?.statusMessage || 'Failed to load events.'
+    console.error('Error loading events:', e)
   } finally {
     loading.value = false
   }
@@ -112,7 +83,6 @@ onMounted(loadEvents)
   <div class="bg-white rounded shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
       
-      <!-- Search and Filters Section (Eventpop-like) -->
       <section class="mb-12">
         <div class="text-center mb-8">
           <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
@@ -123,7 +93,6 @@ onMounted(loadEvents)
           </p>
         </div>
 
-        <!-- Search Bar -->
         <div class="max-w-3xl mx-auto mb-6">
           <div class="relative">
             <svg 
@@ -156,7 +125,6 @@ onMounted(loadEvents)
           </div>
         </div>
 
-        <!-- Category Filters -->
         <div class="flex flex-wrap justify-center gap-3 mb-6">
           <button 
             v-for="cat in categories" 
@@ -173,7 +141,6 @@ onMounted(loadEvents)
           </button>
         </div>
 
-        <!-- Date Filter and Clear -->
         <div class="flex flex-wrap justify-center gap-4 items-center">
           <div class="flex items-center gap-2">
             <label class="text-gray-700 font-semibold">Date:</label>
@@ -195,7 +162,6 @@ onMounted(loadEvents)
 
       <hr class="border-gray-200 my-8" />
 
-      <!-- Events Grid -->
       <section class="my-16">
         <div class="text-center mb-8">
           <h2 class="text-3xl sm:text-4xl font-bold text-gray-900 tracking-tight">
@@ -215,19 +181,17 @@ onMounted(loadEvents)
           </p>
         </div>
         
-        <!-- Loading Skeletons -->
         <div v-if="loading" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
           <EventCardSkeleton v-for="n in 8" :key="n" />
         </div>
 
-        <!-- Empty State -->
         <EmptyState
           v-else-if="!filteredEvents.length && (searchQuery || selectedCategory || selectedDate)"
           type="no-search-results"
           title="No events found"
           :description="`No events match your search criteria. Try adjusting your filters or browse all events.`"
           actionText="Browse All Events"
-          :actionLink="'/concert/ProductPage'"
+          :actionLink="'/product-page'"
           :secondaryAction="true"
           secondaryText="Clear Filters"
           @secondary-action="clearFilters"
@@ -242,7 +206,6 @@ onMounted(loadEvents)
           :actionLink="'/CreateEventPage'"
         />
 
-        <!-- Events Grid -->
         <div v-else class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-8">
           <div v-for="event in filteredEvents" :key="event.id">
             <ProductCard :event="event" />

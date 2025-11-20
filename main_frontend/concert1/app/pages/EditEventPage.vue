@@ -26,16 +26,17 @@ const router = useRouter()
 const route = useRoute()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 const { success, error } = useToast()
-const { apiFetch } = useApi()
+const { apiFetch, backendUrl } = useApi()
 
 const submitting = ref(false)
 const loading = ref(true)
 const showDeleteModal = ref(false)
 const eventId = route.query.id
 // Photo upload removed - use UploadPhotoPage
-const photoInput = ref<HTMLInputElement | null>(null)
-
+const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
+const photoUrl = ref('')
+const uploadMode = ref<'file' | 'url'>('file')
 
 // Event categories matching the catalog
 const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
@@ -181,22 +182,34 @@ async function handleSubmit() {
       headers: { Authorization: `Bearer ${token}` }
     })
     
-    // Upload photo if selected
+    // Handle photo upload or URL
+    let finalPhotoUrl = photoUrl.value
+    
     if (photoFile.value) {
-      const formData = new FormData()
-      formData.append('file', photoFile.value)
-      photoUploading.value = true
       try {
-        await apiFetch(`/api/events/${eventId}/photo`, {
+        const formData = new FormData()
+        formData.append('file', photoFile.value)
+        
+        const uploadResponse = await fetch(`${backendUrl}/api/upload/event-photo`, {
           method: 'POST',
-          body: formData,
-          headers: { Authorization: `Bearer ${token}` }
+          body: formData
         })
-      } catch (uploadErr: any) {
+        
+        if (uploadResponse.ok) {
+          const { url } = await uploadResponse.json()
+          finalPhotoUrl = url
+        }
+      } catch (uploadErr) {
         console.error('Photo upload failed:', uploadErr)
-      } finally {
-        photoUploading.value = false
       }
+    }
+    
+    if (finalPhotoUrl) {
+      await apiFetch(`/api/events/${eventId}`, {
+        method: 'PUT',
+        body: { ...payload, photoUrl: finalPhotoUrl },
+        headers: { Authorization: `Bearer ${token}` }
+      })
     }
     
     success('Event updated successfully!', 'Event Updated')
@@ -217,26 +230,26 @@ function closeDeleteModal() {
   showDeleteModal.value = false
 }
 
-function triggerPhotoSelect() {
-  photoInput.value?.click()
-}
-
-function handlePhotoChange(event: Event) {
+function handlePhotoSelect(event: Event) {
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
-  if (!file) {
-    photoFile.value = null
-    photoPreview.value = null
-    return
-  }
+  if (!file) return
+  
   photoFile.value = file
-  photoPreview.value = URL.createObjectURL(file)
+  photoUrl.value = ''
+  
+  const reader = new FileReader()
+  reader.onload = (e) => {
+    photoPreview.value = e.target?.result as string
+  }
+  reader.readAsDataURL(file)
 }
 
-function clearPhoto() {
-  photoFile.value = null
-  photoPreview.value = null
-  if (photoInput.value) photoInput.value.value = ''
+function handleUrlInput() {
+  if (photoUrl.value) {
+    photoPreview.value = photoUrl.value
+    photoFile.value = null
+  }
 }
 
 async function confirmDelete() {
@@ -295,24 +308,32 @@ async function confirmDelete() {
 
           <form @submit.prevent="handleSubmit">
             <div class="mt-6">
-              <h2 class="text-lg font-semibold leading-7 text-gray-800">Event Picture</h2>
-              <div class="mt-4 flex items-center justify-center mb-4">
-                <div class="relative w-32 h-32 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-gray-400">
-                  <template v-if="photoPreview">
-                    <img :src="photoPreview" alt="Event preview" class="w-full h-full object-cover" />
-                    <button type="button" class="absolute top-2 right-2 bg-white bg-opacity-80 rounded-full px-2 py-1 text-xs font-semibold text-gray-700" @click="clearPhoto">✕</button>
-                  </template>
-                  <template v-else>
-                    <span class="text-sm text-gray-500">No image</span>
-                  </template>
+              <h2 class="text-lg font-semibold leading-7 text-gray-800">Event Picture (Optional)</h2>
+              <div class="mt-4 flex flex-col gap-4">
+                <div v-if="photoPreview" class="relative w-full h-64 rounded-lg overflow-hidden border-2 border-gray-300">
+                  <img :src="photoPreview" alt="Preview" class="w-full h-full object-cover" />
+                  <button type="button" @click="photoFile = null; photoPreview = null; photoUrl = ''" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-red-600">
+                    ✕
+                  </button>
                 </div>
-              </div>
-              <div class="flex flex-col items-center gap-2">
-                <input ref="photoInput" type="file" accept="image/*" class="hidden" @change="handlePhotoChange" />
-                <button type="button" class="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition" @click="triggerPhotoSelect" :disabled="photoUploading || submitting">
-                  {{ photoFile ? 'Change Picture' : 'Upload Picture' }}
-                </button>
-                <p v-if="photoUploading" class="text-xs text-gray-500">Uploading...</p>
+                
+                <div class="flex gap-2 mb-2">
+                  <button type="button" @click="uploadMode = 'file'" :class="['px-4 py-2 rounded-md text-sm font-medium', uploadMode === 'file' ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-700']">
+                    Upload File
+                  </button>
+                  <button type="button" @click="uploadMode = 'url'" :class="['px-4 py-2 rounded-md text-sm font-medium', uploadMode === 'url' ? 'bg-violet-600 text-white' : 'bg-gray-200 text-gray-700']">
+                    Use URL
+                  </button>
+                </div>
+                
+                <input v-if="uploadMode === 'file'" type="file" accept="image/*" @change="handlePhotoSelect" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100" />
+                
+                <div v-if="uploadMode === 'url'" class="flex gap-2">
+                  <input v-model="photoUrl" type="url" placeholder="https://example.com/image.jpg" class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-violet-500" />
+                  <button type="button" @click="handleUrlInput" class="px-4 py-2 bg-violet-600 text-white rounded-md hover:bg-violet-700">
+                    Preview
+                  </button>
+                </div>
               </div>
             </div>
 

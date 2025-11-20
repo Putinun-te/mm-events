@@ -27,10 +27,6 @@ public class User {
     @Column(unique = true)
     private String email;
     
-    // Cognito user sub (for users authenticated via Cognito)
-    @Column(name = "cognito_sub", unique = true)
-    private String cognitoSub;
-    
     @NotBlank(message = "Password is required")
     @Size(min = 6, message = "Password must be at least 6 characters")
     private String password;
@@ -168,14 +164,6 @@ public class User {
     
     public void setCountry(String country) {
         this.country = country;
-    }
-    
-    public String getCognitoSub() {
-        return cognitoSub;
-    }
-    
-    public void setCognitoSub(String cognitoSub) {
-        this.cognitoSub = cognitoSub;
     }
     
     public String getPincode() {

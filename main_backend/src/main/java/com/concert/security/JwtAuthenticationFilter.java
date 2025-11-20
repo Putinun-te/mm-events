@@ -1,7 +1,6 @@
 package com.concert.security;
 
 import com.concert.service.JwtService;
-import com.concert.service.CognitoJwtValidator;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,9 +26,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private JwtService jwtService;
-    
-    @Autowired
-    private CognitoJwtValidator cognitoJwtValidator;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -46,12 +42,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         jwt = authHeader.substring(7);
         
-        // Try to validate as custom JWT first
         try {
             username = jwtService.extractUsername(jwt);
             if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                 if (jwtService.isTokenValid(jwt, username)) {
-                    logger.debug("Validated custom JWT for user: {}", username);
+                    logger.debug("Validated JWT for user: {}", username);
                     UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                             username,
                             null,
@@ -62,24 +57,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            // If custom JWT fails, try Cognito JWT
-            logger.debug("Custom JWT validation failed, trying Cognito JWT");
-            try {
-                username = cognitoJwtValidator.getUsernameFromToken(jwt);
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    logger.debug("Validated Cognito JWT for user: {}", username);
-                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                            username,
-                            null,
-                            new ArrayList<>()
-                    );
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
-            } catch (Exception cognitoEx) {
-                logger.debug("Cognito JWT validation also failed", cognitoEx);
-                // Both failed, continue without authentication
-            }
+            logger.debug("JWT validation failed", e);
         }
         
         filterChain.doFilter(request, response);

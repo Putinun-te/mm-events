@@ -7,8 +7,8 @@ const PLACEHOLDER_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org
 type LegacyEvent = {
   id: string | number
   name: string
-  datestart: string // epoch seconds string
-  dateend: string // epoch seconds string
+  datestart: string
+  dateend: string
   personlimit: number
   description: string
 }
@@ -17,8 +17,8 @@ type ApiEvent = {
   id: string | number
   title: string
   description?: string
-  startDate: string // ISO local date-time
-  endDate: string // ISO local date-time
+  startDate: string
+  endDate: string
   personLimit?: number
 }
 
@@ -26,7 +26,6 @@ const props = defineProps<{ event: LegacyEvent | ApiEvent }>()
 const router = useRouter()
 
 function toDate(val: any): Date {
-  // supports epoch seconds string or ISO string
   if (typeof val === 'string' && /^\d+$/.test(val)) {
     return new Date(parseInt(val, 10) * 1000)
   }
@@ -65,7 +64,6 @@ function more () {
 }
 
 function join () {
-  // Navigate to detail page for booking
   router.push({
     path: `/ProductPageDetail/${props.event.id}`,
     state: { event: props.event }
@@ -74,7 +72,7 @@ function join () {
 
 const photoUrl = computed(() => {
   const value = (props.event as any).photoUrl
-  if (value && typeof value === 'string' && value.length > 0 && !value.includes('null')) {
+  if (typeof value === 'string' && value.length) {
     return value
   }
   return PLACEHOLDER_IMAGE
@@ -101,19 +99,15 @@ const photoUrl = computed(() => {
     <div class="mt-6 border-t border-slate-200 pt-4">
       <ul class="space-y-3 text-slate-600 text-sm">
         <li class="flex items-center gap-3">
-            <path stroke-linecap="round" stroke-linejoin="round"/>
           <span class="font-semibold text-slate-700">Date:</span>{{ formatEventDateMn(startRaw as any) }}
         </li>        
         <li class="flex items-center gap-3">
-            <path stroke-linecap="round" stroke-linejoin="round"/>
           <span class="font-semibold text-slate-700">Starts:</span>{{ formatEventDateTime(startRaw as any) }}
         </li>
         <li class="flex items-center gap-3">
-            <path stroke-linecap="round" stroke-linejoin="round" />
           <span class="font-semibold text-slate-700">Ends:</span>{{ formatEventDateTime(endRaw as any) }}
         </li>
         <li class="flex items-center gap-3">
-            <path stroke-linecap="round" stroke-linejoin="round" />
           <span class="font-semibold text-slate-700">Remain:</span>{{ capacity }} seat
         </li>
       </ul>

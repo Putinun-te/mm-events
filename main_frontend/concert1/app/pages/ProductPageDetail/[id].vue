@@ -4,8 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
 import { useApi } from '../../../composables/useApi'
-
-const PLACEHOLDER_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="24" fill="%23e2e8f0"/><text x="50%25" y="52%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" fill="%234a5568">Event</text></svg>'
+import { useImage } from '~/composables/useImage'
 
 definePageMeta({
   // Disable SSR so static hosting always hydrates this view client-side.
@@ -79,13 +78,8 @@ const spotsRemaining = computed(() => {
   return remaining > 0 ? remaining : 0
 })
 
-const eventPhotoUrl = computed(() => {
-  const value = event.value?.photoUrl
-  if (value && typeof value === 'string' && value.length > 0 && !value.includes('null')) {
-    return value
-  }
-  return PLACEHOLDER_IMAGE
-})
+const { getEventPhotoUrl } = useImage()
+const eventPhotoUrl = computed(() => getEventPhotoUrl(event.value?.photoUrl))
 
 // Check if event is full
 const isEventFull = computed(() => {
@@ -125,33 +119,13 @@ onMounted(async () => {
     .catch(error => console.error("Failed to load Longdo Map script:", error))
 
   loading.value = true
-  // Try history state first, then fetch from JSON
   event.value = window.history.state?.event ?? null
   if (!event.value) {
-    let backendData: any = null
-    let jsonData: any = null
     try {
-      backendData = await apiFetch(`/api/events/${productId}`)
-    } catch (backendError) {
-      console.warn('Backend event lookup failed, falling back to JSON source', backendError)
-    }
-
-    try {
-      jsonData = await apiFetch(`/api/events/json/${productId}`)
-    } catch (jsonError) {
-      if (!backendData) {
-        console.error('Failed to load event', jsonError)
-        error('Failed to load event details', 'Error')
-      }
-    }
-
-    if (backendData || jsonData) {
-      event.value = {
-        ...(jsonData || {}),
-        ...(backendData || {}),
-        photoUrl: backendData?.photoUrl ?? jsonData?.photoUrl ?? null,
-        photoId: backendData?.photoId ?? jsonData?.photoId ?? null
-      }
+      event.value = await apiFetch(`/api/events/${productId}`)
+    } catch (e) {
+      console.error('Failed to load event', e)
+      error('Failed to load event details', 'Error')
     }
   }
   loading.value = false
@@ -220,29 +194,7 @@ async function addToCart() {
       console.warn('Failed to fetch user profile, using fallback:', profileError)
     }
     
-    // Step 3: Add user to event participants (non-blocking)
-    if (userId) {
-      try {
-        await apiFetch(`/api/events/json/${event.value.id}/add-participant`, {
-          method: 'POST',
-          body: {
-            userId,
-            userName,
-            ticketCount: quantity.value
-          }
-        })
-        
-        // Step 4: Reload event data to show updated participant count
-        try {
-          const updatedEvent = await apiFetch(`/api/events/json/${event.value.id}`)
-          event.value = updatedEvent
-        } catch (reloadError) {
-          console.warn('Failed to reload event data:', reloadError)
-        }
-      } catch (participantError) {
-        console.warn('Failed to add participant, but booking was successful:', participantError)
-      }
-    }
+    // Booking successful - participant tracking removed
     
     success(`Successfully booked ${quantity.value} ticket(s)!`, 'Booking Confirmed')
     

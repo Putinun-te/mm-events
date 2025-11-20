@@ -3,13 +3,13 @@ name: Full Pipeline
 on:
   workflow_dispatch:
   push:
-    branches: [ main ]
+    branches: [ main, 'release/**' ]
     paths:
       - 'main_backend/**'
       - 'main_frontend/concert1/**'
       - '.github/workflows/**'
   pull_request:
-    branches: [ main ]
+    branches: [ main, 'release/**' ]
     paths:
       - 'main_backend/**'
       - 'main_frontend/concert1/**'

@@ -4,6 +4,7 @@ permissions:
   contents: read
 
 on:
+  workflow_dispatch:
   push:
     branches: [ main, develop ]
     paths:
@@ -58,6 +59,7 @@ jobs:
           mvn -B -DforkCount=1 -DreuseForks=false clean test
         env:
           TESTCONTAINERS_RYUK_DISABLED: false
+        continue-on-error: false
 
       - name: 📊 Generate JaCoCo report
         working-directory: main_backend

@@ -1,0 +1,51 @@
+name: Quick Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  quick-backend:
+    name: Quick Backend Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: ☕ Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🧪 Quick backend test
+        working-directory: main_backend
+        run: |
+          mvn -B clean compile
+          mvn -B test -Dtest=UserTest,EventTest,BookingTest
+
+  quick-frontend:
+    name: Quick Frontend Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: 📦 Install dependencies
+        working-directory: main_frontend/concert1
+        run: npm ci
+
+      - name: 🧪 Quick frontend test
+        working-directory: main_frontend/concert1
+        run: npm run test -- --run --reporter=verbose

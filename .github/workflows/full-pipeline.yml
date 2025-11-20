@@ -21,6 +21,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,6 +54,10 @@ jobs:
       - name: Run Maven unit tests
         working-directory: main_backend
         run: mvn -B clean test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+          SPRING_DATA_REDIS_HOST: redis
+          SPRING_DATA_REDIS_PORT: 6379
 
       - name: Generate JaCoCo report
         if: always()

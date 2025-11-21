@@ -1,6 +1,7 @@
 package com.concert.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public class EventResponse {
 
@@ -26,6 +27,8 @@ public class EventResponse {
     private String organizerName;
     private boolean ownedByCurrentUser;
     private boolean ownedByRequester;
+    private Integer participantsCount;
+    private List<EventParticipantSummary> participants;
 
     public Long getId() {
         return id;
@@ -201,5 +204,21 @@ public class EventResponse {
 
     public void setOwnedByRequester(boolean ownedByRequester) {
         this.ownedByRequester = ownedByRequester;
+    }
+
+    public Integer getParticipantsCount() {
+        return participantsCount;
+    }
+
+    public void setParticipantsCount(Integer participantsCount) {
+        this.participantsCount = participantsCount;
+    }
+
+    public List<EventParticipantSummary> getParticipants() {
+        return participants;
+    }
+
+    public void setParticipants(List<EventParticipantSummary> participants) {
+        this.participants = participants;
     }
 }

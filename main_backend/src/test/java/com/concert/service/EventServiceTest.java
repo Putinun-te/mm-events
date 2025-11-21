@@ -5,6 +5,7 @@ import com.concert.dto.EventResponse;
 import com.concert.model.Event;
 import com.concert.model.User;
 import com.concert.repository.EventRepository;
+import com.concert.repository.BookingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,9 @@ class EventServiceTest {
 
     @Mock
     private EventRepository eventRepository;
+
+    @Mock
+    private BookingRepository bookingRepository;
 
     @InjectMocks
     private EventService eventService;
@@ -78,6 +82,7 @@ class EventServiceTest {
 
     @Test
     void testCreateEvent_Success() {
+        when(bookingRepository.findByEventIdAndStatus(anyString(), eq("CONFIRMED"))).thenReturn(Arrays.asList());
         when(eventRepository.save(any(Event.class))).thenReturn(testEvent);
 
         EventResponse response = eventService.createEvent(testUser, createRequest);
@@ -108,6 +113,7 @@ class EventServiceTest {
 
     @Test
     void testGetUpcomingEvents_WithCurrentUser() {
+        when(bookingRepository.findByEventIdAndStatus(anyString(), eq("CONFIRMED"))).thenReturn(Arrays.asList());
         Event event2 = new Event();
         event2.setId(2L);
         event2.setTitle("Event 2");
@@ -132,6 +138,7 @@ class EventServiceTest {
 
     @Test
     void testGetUpcomingEvents_WithoutCurrentUser() {
+        when(bookingRepository.findByEventIdAndStatus(anyString(), eq("CONFIRMED"))).thenReturn(Arrays.asList());
         List<Event> events = Arrays.asList(testEvent);
         Page<Event> eventPage = new PageImpl<>(events, PageRequest.of(0, 10), 1);
 
@@ -163,6 +170,7 @@ class EventServiceTest {
 
     @Test
     void testGetEventsForOrganizer_Success() {
+        when(bookingRepository.findByEventIdAndStatus(anyString(), eq("CONFIRMED"))).thenReturn(Arrays.asList());
         Event event2 = new Event();
         event2.setId(2L);
         event2.setTitle("Event 2");
@@ -195,6 +203,7 @@ class EventServiceTest {
 
     @Test
     void testGetEvent_Success() {
+        when(bookingRepository.findByEventIdAndStatus(anyString(), eq("CONFIRMED"))).thenReturn(Arrays.asList());
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
 
         EventResponse response = eventService.getEvent(1L, testUser);
@@ -222,6 +231,7 @@ class EventServiceTest {
 
     @Test
     void testGetEvent_WithNullCurrentUser() {
+        when(bookingRepository.findByEventIdAndStatus(anyString(), eq("CONFIRMED"))).thenReturn(Arrays.asList());
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
 
         EventResponse response = eventService.getEvent(1L, null);
@@ -232,6 +242,7 @@ class EventServiceTest {
 
     @Test
     void testToResponse_WithNullOrganizer() {
+        when(bookingRepository.findByEventIdAndStatus(anyString(), eq("CONFIRMED"))).thenReturn(Arrays.asList());
         testEvent.setOrganizer(null);
         when(eventRepository.findById(1L)).thenReturn(Optional.of(testEvent));
 

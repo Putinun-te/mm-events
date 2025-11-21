@@ -540,6 +540,8 @@ Additional documentation can be found in the project:
 - 📖 **[Event Deletion Fix](EVENT_DELETION_WITH_BOOKINGS_FIX.md)** - Auto-cancel bookings
 - 📖 **[S3 Upload Fix](S3_UPLOAD_FIX_SUMMARY.md)** - S3 upload configuration fix
 - 📖 **[S3 Upload Troubleshooting](S3_UPLOAD_TROUBLESHOOTING.md)** - S3 troubleshooting guide
+- 📖 **[Participant Tracking Fix](PARTICIPANT_TRACKING_FIX.md)** - Real-time participant tracking
+- 📖 **[EKS Deployment Guide](EKS_DEPLOYMENT_GUIDE.md)** - AWS EKS deployment with IAM setup
 - 📖 **[Kubernetes Guide](k8s/README.md)** - K8s deployment instructions
 
 ---
@@ -605,6 +607,7 @@ docker compose up -d
 
 ### Recent Updates 🆕
 
+- ✨ **Jan 15, 2025:** Added real-time participant tracking and EKS deployment guide
 - ✨ **Nov 9, 2025:** Fixed S3 upload 500 error (region/bucket configuration)
 - ✨ **Oct 16, 2025:** Fixed all tests (798 passing, 96% backend coverage)
 - ✨ **Oct 16, 2025:** Added comprehensive testing infrastructure

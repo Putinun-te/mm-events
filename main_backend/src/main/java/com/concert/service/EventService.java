@@ -6,9 +6,12 @@ import com.concert.dto.EventPhotoResponse;
 import com.concert.dto.EventOrganizerSummary;
 import com.concert.dto.EventPhotoSummary;
 import com.concert.dto.EventResponse;
+import com.concert.dto.EventParticipantSummary;
 import com.concert.model.Event;
 import com.concert.model.User;
+import com.concert.model.Booking;
 import com.concert.repository.EventRepository;
+import com.concert.repository.BookingRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
@@ -44,14 +47,16 @@ public class EventService {
     private static final Logger logger = LoggerFactory.getLogger(EventService.class);
 
     private final EventRepository eventRepository;
+    private final BookingRepository bookingRepository;
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
     
     @Autowired
     private AwsProperties awsProperties;
 
-    public EventService(EventRepository eventRepository, S3Client s3Client, S3Presigner s3Presigner) {
+    public EventService(EventRepository eventRepository, BookingRepository bookingRepository, S3Client s3Client, S3Presigner s3Presigner) {
         this.eventRepository = eventRepository;
+        this.bookingRepository = bookingRepository;
         this.s3Client = s3Client;
         this.s3Presigner = s3Presigner;
     }
@@ -137,6 +142,20 @@ public class EventService {
             response.setOrganizerUsername(organizer.getUsername());
             response.setOrganizerName(organizer.getName());
         }
+
+        // Add participant tracking
+        List<Booking> confirmedBookings = bookingRepository.findByEventIdAndStatus(String.valueOf(event.getId()), "CONFIRMED");
+        int totalTickets = confirmedBookings.stream().mapToInt(Booking::getQuantity).sum();
+        response.setParticipantsCount(totalTickets);
+        
+        List<EventParticipantSummary> participants = confirmedBookings.stream()
+            .map(booking -> new EventParticipantSummary(
+                booking.getUser().getName() != null ? booking.getUser().getName() : booking.getUser().getUsername(),
+                booking.getQuantity(),
+                booking.getBookingDate()
+            ))
+            .collect(Collectors.toList());
+        response.setParticipants(participants);
 
         boolean owned = currentUser != null && event.getOrganizer() != null && event.getOrganizer().getId().equals(currentUser.getId());
         response.setOwnedByCurrentUser(owned);

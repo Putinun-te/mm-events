@@ -838,19 +838,24 @@ describe('CreateEventPage.vue', () => {
     )
   })
 
-  it.skip('should show error and redirect when no token available', async () => {
-    // Note: This test is skipped because the module-level mock always provides a token
-    // The token fallback logic is tested by the sessionStorage test instead
+  it('should show error and redirect when no token available', async () => {
+    // Clear all token sources
     localStorage.clear()
     sessionStorage.clear()
+    
+    // Mock useUser to return null user
+    const mockUseUser = vi.fn(() => ref(null))
+    vi.doMock('#app', () => ({
+      useUser: mockUseUser,
+      useRouter: () => ({ push: mockPush }),
+      useError: () => mockError
+    }))
     
     const wrapper = mount(CreateEventPage, {
       global: { plugins: [router], stubs: { NuxtLink: true } }
     })
     
     const vm = wrapper.vm as any
-    // Override user to null for this test
-    vm.user = { value: null }
     vm.form.title = 'Test Event'
     vm.form.description = 'Test Description'
     vm.form.dateStart = '2024-12-31'

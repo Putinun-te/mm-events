@@ -282,11 +282,8 @@ jobs:
     name: Deploy to Staging
     needs: [build-backend, build-frontend, test-backend, test-frontend]
     runs-on: ubuntu-latest
-    if: |
-      (github.ref == 'refs/heads/k8s-development' || 
-       github.ref == 'refs/heads/develop' ||
-       startsWith(github.ref, 'refs/heads/release/')) && 
-      github.event_name == 'push'
+    # DISABLED: Skip AWS and K8s deployment tests
+    if: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -362,7 +359,8 @@ jobs:
     name: Deploy to Production
     needs: [build-backend, build-frontend, test-backend, test-frontend]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # DISABLED: Skip AWS and K8s deployment tests
+    if: false
     steps:
       - name: Checkout code
         uses: actions/checkout@v4

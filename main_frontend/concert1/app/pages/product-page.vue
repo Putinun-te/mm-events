@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useApi } from '~/composables/useApi'
+import { useAuth } from '~/composables/useAuth'
 
 type EventItem = any
 
@@ -12,6 +13,7 @@ const page = ref(0)
 const size = ref(12)
 
 const { apiFetch } = useApi()
+const { loadFromStorage } = useAuth()
 
 const searchQuery = ref('')
 const selectedCategory = ref('')
@@ -24,23 +26,37 @@ const hasEvents = computed(() => events.value.length > 0)
 const filteredEvents = computed(() => {
   let result = events.value
 
+  // Filter by search query (name/title)
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
     result = result.filter(e => 
-      (e.title || e.name || '').toLowerCase().includes(q) ||
-      (e.description || '').toLowerCase().includes(q) ||
-      (e.location || e.city || '').toLowerCase().includes(q)
+      (e.title || e.name || '').toLowerCase().includes(q)
     )
   }
 
+  // Filter by category
   if (selectedCategory.value && selectedCategory.value !== 'All') {
     result = result.filter(e => (e.category || '').toLowerCase() === selectedCategory.value.toLowerCase())
   }
 
+  // Filter by date
   if (selectedDate.value) {
     result = result.filter(e => {
-      const eventDate = e.startDate ? new Date(e.startDate).toISOString().split('T')[0] : 
-                        e.datestart ? new Date(e.datestart * 1000).toISOString().split('T')[0] : null
+      let eventDate = null
+      
+      // Handle different date formats
+      if (e.startDate) {
+        // ISO string format (e.g., "2025-01-20T10:00:00")
+        eventDate = e.startDate.split('T')[0]
+      } else if (e.datestart) {
+        // Unix timestamp (seconds)
+        const date = new Date(e.datestart * 1000)
+        eventDate = date.toISOString().split('T')[0]
+      } else if (e.date) {
+        // Direct date string
+        eventDate = new Date(e.date).toISOString().split('T')[0]
+      }
+      
       return eventDate === selectedDate.value
     })
   }
@@ -52,7 +68,7 @@ async function loadEvents() {
   loading.value = true
   message.value = ''
   try {
-    const response = await apiFetch(`/api/events?page=${page.value}&size=${size.value}`)
+    const response = await apiFetch(`/api/events/json?page=${page.value}&size=${size.value}`)
     const content = (response as any)?.content
 
     if (Array.isArray(content)) {
@@ -76,7 +92,15 @@ function clearFilters() {
   selectedDate.value = ''
 }
 
-onMounted(loadEvents)
+function handleSearch() {
+  // Filters are reactive, so this just ensures UI updates
+  // You could add analytics or other side effects here
+}
+
+onMounted(async () => {
+  loadFromStorage()
+  await loadEvents()
+})
 </script>
 
 <template>
@@ -106,8 +130,9 @@ onMounted(loadEvents)
             <input 
               v-model="searchQuery" 
               type="text" 
-              placeholder="Search events by name, location, or description..." 
+              placeholder="Search events by name..." 
               class="w-full pl-14 pr-24 py-4 text-lg border-2 border-gray-300 rounded-full focus:outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-200 transition-all"
+              @keyup.enter="handleSearch"
             />
             <button 
               v-if="searchQuery"
@@ -119,7 +144,10 @@ onMounted(loadEvents)
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <button class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-violet-600 text-white p-3 rounded-full hover:bg-violet-700 transition-colors">
+            <button 
+              @click="handleSearch"
+              class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-violet-600 text-white p-3 rounded-full hover:bg-violet-700 transition-colors"
+            >
               Search
             </button>
           </div>

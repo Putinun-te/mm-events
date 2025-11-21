@@ -10,7 +10,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-  return await $fetch(buildBackendUrl(backend, '/api/events/me'), {
+  return await $fetch(buildBackendUrl(backend, '/api/events/json/me'), {
       headers: { Authorization: token }
     })
   } catch (err: any) {

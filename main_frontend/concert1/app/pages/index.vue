@@ -62,7 +62,7 @@ onMounted(async () => {
   intervalId = setInterval(nextSlide, 5000)
   
   try {
-    const response = await apiFetch('/api/events')
+    const response = await apiFetch('/api/events/json')
     events.value = response.content || []
   } catch (error) {
     console.error('Failed to load events:', error)

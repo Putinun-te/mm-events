@@ -64,9 +64,7 @@ async function fetchEvents() {
       // Middleware will handle redirect
       return
     }
-    const res: any = await apiFetch('/api/events/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const res: any = await apiFetch('/api/events/json/me')
     events.value = Array.isArray(res) ? res : []
     if (!events.value.length) {
       message.value = 'You have not created any events yet.'

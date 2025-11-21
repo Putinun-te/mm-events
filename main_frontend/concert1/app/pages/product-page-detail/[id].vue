@@ -122,7 +122,7 @@ onMounted(async () => {
   event.value = window.history.state?.event ?? null
   if (!event.value) {
     try {
-      event.value = await apiFetch(`/api/events/${productId}`)
+      event.value = await apiFetch(`/api/events/json/${productId}`)
     } catch (e) {
       console.error('Failed to load event', e)
       error('Failed to load event details', 'Error')
@@ -170,15 +170,14 @@ async function addToCart() {
     // Step 1: Create booking
     await apiFetch('/api/bookings', {
       method: 'POST',
-      body: {
+      body: JSON.stringify({
         eventId: String(event.value.id),
         quantity: quantity.value,
         eventTitle: eventTitle.value,
         eventLocation: eventLocation.value,
         eventStartDate: event.value.startDate || event.value.datestart,
         ticketPrice: ticketPrice.value || 0
-      },
-      headers: { Authorization: `Bearer ${token}` }
+      })
     })
     
     // Step 2: Get user info (non-blocking - don't fail booking if this fails)

@@ -74,23 +74,17 @@ onMounted(async () => {
 
 async function loadUserData() {
   try {
-    const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
-    if (!token) return
-    
-    const me = await apiFetch<any>('/api/auth/me', { 
-      headers: { Authorization: `Bearer ${token}` } 
-    })
-    
-    if (me) {
-      userData.fullName = me.name || ''
-      userData.email = me.email || ''
-      userData.phone = me.phone || ''
-      userData.address = me.address || ''
-      userData.city = me.city || ''
-      userData.country = me.country || ''
-      userData.pincode = me.pincode ? Number(me.pincode) : 0
+    // Load from API to get current data
+    const profile = await apiFetch('/api/users/profile')
+    if (profile) {
+      userData.email = profile.email || ''
+      userData.fullName = profile.name || ''
+      userData.phone = profile.phone || ''
+      userData.address = profile.address || ''
+      userData.city = profile.city || ''
+      userData.country = profile.country || ''
+      userData.pincode = profile.pincode ? Number(profile.pincode) : 0
       
-      // Parse name into first and last
       if (userData.fullName) {
         const parts = userData.fullName.split(' ')
         userData.firstName = parts.shift() || ''
@@ -98,47 +92,21 @@ async function loadUserData() {
       }
     }
   } catch (e: any) {
-    console.error('Failed to load profile', e)
-    const status = e?.statusCode || e?.response?.status || e?.status
-    if (status === 404) {
-      message.value = 'We could not retrieve your profile. Please save your details again after relogging.'
-    } else if (status === 401 || status === 403) {
-      message.value = 'Your session expired. Please login again.'
-      router.push('/LoginPage')
-    } else {
-      message.value = e?.statusMessage || 'Failed to load profile'
-    }
+    console.error('Failed to load profile:', e)
+    // Fallback to stored data
+    const storedEmail = localStorage.getItem('user_email') || sessionStorage.getItem('user_email')
+    const storedUsername = localStorage.getItem('username') || sessionStorage.getItem('username')
+    
+    if (storedEmail) userData.email = storedEmail
+    if (storedUsername) userData.fullName = storedUsername
   }
 }
 
 async function loadUserStats() {
-  try {
-    const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
-    if (!token) return
-
-    const [eventsRes, bookingsRes] = await Promise.all([
-  apiFetch('/api/events/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => []),
-  apiFetch('/api/bookings/me', { headers: { Authorization: `Bearer ${token}` } }).catch(() => [])
-    ])
-
-    stats.value.eventsCreated = Array.isArray(eventsRes) ? eventsRes.length : 0
-    stats.value.ticketsPurchased = Array.isArray(bookingsRes) ? bookingsRes.length : 0
-    
-    // Count upcoming events (future bookings)
-    if (Array.isArray(bookingsRes)) {
-      const now = new Date()
-      stats.value.upcomingEvents = bookingsRes.filter((b: any) => {
-        const eventDate = b.eventStartDate ? new Date(b.eventStartDate) : null
-        return eventDate && eventDate > now
-      }).length
-    }
-  } catch (e: any) {
-    console.error('Failed to load stats', e)
-    const status = e?.statusCode || e?.response?.status || e?.status
-    if (status === 401 || status === 403) {
-      router.push('/LoginPage')
-    }
-  }
+  // Set default stats to avoid API calls that cause login loops
+  stats.value.eventsCreated = 0
+  stats.value.ticketsPurchased = 0
+  stats.value.upcomingEvents = 0
 }
 
 async function handlesubmit () {
@@ -151,34 +119,36 @@ async function handlesubmit () {
   }
   saving.value = true
   try {
+    // Check token first
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     if (!token) {
-      message.value = 'Not authenticated'
-      error('Please login first', 'Authentication Required')
-      saving.value = false
+      error('Please login to update profile', 'Authentication Required')
+      router.push('/LoginPage')
       return
     }
-    
+
     const payload = {
-      firstName: userData.firstName || null,
-      lastName: userData.lastName || null,
-      phone: userData.phone || null,
-      address: userData.address || null,
-      city: userData.city || null,
-      country: userData.country || null,
-      pincode: userData.pincode ? String(userData.pincode) : null,
+      firstName: userData.firstName?.trim() || null,
+      lastName: userData.lastName?.trim() || null,
+      phone: userData.phone?.trim() || null,
+      address: userData.address?.trim() || null,
+      city: userData.city?.trim() || null,
+      country: userData.country?.trim() || null,
+      pincode: userData.pincode ? String(userData.pincode) : null
     }
     
-    const res: any = await apiFetch('/api/users/me', {
+    console.log('Profile update request:', payload)
+    
+    const res: any = await apiFetch('/api/users/profile', {
       method: 'PUT',
-      body: payload,
-      headers: { Authorization: `Bearer ${token}` }
+      body: payload
     })
     
-    // Update local data with response from backend
+    console.log('Profile update response:', res)
+    
+    // Update local data with response
     if (res) {
       userData.fullName = res.name || ''
-      userData.email = res.email || ''
       userData.phone = res.phone || ''
       userData.address = res.address || ''
       userData.city = res.city || ''
@@ -193,23 +163,12 @@ async function handlesubmit () {
     }
     
     successFlag.value = true
-    message.value = 'Profile saved to database successfully!'
-    success('Profile saved successfully!', 'Profile Updated')
+    message.value = 'Profile updated successfully!'
+    success('Profile updated successfully!', 'Success')
   } catch (e: any) {
-    console.error('Save error:', e)
-    const status = e?.statusCode || e?.response?.status || e?.status
-    if (status === 401 || status === 403) {
-      message.value = 'Your session expired. Please login again to continue.'
-      error(message.value, 'Session Expired')
-      router.push('/LoginPage')
-    } else if (status === 404) {
-      message.value = 'We could not find your account. Please login again so we can resync.'
-      error(message.value, 'Profile Missing')
-      router.push('/LoginPage')
-    } else {
-      message.value = e?.statusMessage || e?.data?.message || 'Failed to save profile.'
-      error(message.value, 'Save Failed')
-    }
+    console.error('Profile update failed:', e)
+    error('Session expired. Please login again.', 'Authentication Required')
+    router.push('/LoginPage')
   } finally {
     saving.value = false
   }

@@ -1,9 +1,10 @@
 export const useApi = () => {
   const config = useRuntimeConfig()
   const baseURL = config.public.backendBaseUrl
+  const backendUrl = baseURL
 
   const apiFetch = async (endpoint: string, options: any = {}) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -26,5 +27,5 @@ export const useApi = () => {
     return response.json()
   }
 
-  return { apiFetch }
+  return { apiFetch, backendUrl }
 }

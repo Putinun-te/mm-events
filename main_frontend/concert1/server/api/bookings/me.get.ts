@@ -11,7 +11,7 @@ export default defineEventHandler(async (event: H3Event) => {
   }
 
   try {
-  return await $fetch(buildBackendUrl(backend, '/api/bookings/me'), {
+  return await $fetch(buildBackendUrl(backend, '/api/bookings/my-bookings'), {
       headers: { Authorization: token }
     })
   } catch (err: any) {

@@ -52,7 +52,7 @@ async function fetchBookings() {
       // Middleware will handle redirect
       return
     }
-    const res: any = await apiFetch('/api/bookings/me', {
+    const res: any = await apiFetch('/api/bookings/my-bookings', {
       headers: { Authorization: `Bearer ${token}` }
     })
     bookings.value = Array.isArray(res) ? res : []

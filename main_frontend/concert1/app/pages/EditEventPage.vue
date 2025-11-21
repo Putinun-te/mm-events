@@ -39,7 +39,7 @@ const photoUrl = ref('')
 const uploadMode = ref<'file' | 'url'>('file')
 
 // Event categories matching the catalog
-const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
+const categories = ['Rock', 'Pop', 'Jazz', 'EDM']
 
 const form = reactive<CreateEventForm>({
   title: '',
@@ -86,9 +86,7 @@ async function loadEventData() {
       return
     }
     
-    const event: any = await apiFetch(`/api/events/${eventId}`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    const event: any = await apiFetch(`/api/events/json/${eventId}`)
     
     if (!event) {
       error('Event not found', 'Error')
@@ -176,10 +174,9 @@ async function handleSubmit() {
     }
     
     // Update event
-    const updatedEvent: any = await apiFetch(`/api/events/${eventId}`, {
+    const updatedEvent: any = await apiFetch(`/api/events/json/${eventId}`, {
       method: 'PUT',
-      body: payload,
-      headers: { Authorization: `Bearer ${token}` }
+      body: JSON.stringify(payload)
     })
     
     // Handle photo upload or URL
@@ -192,7 +189,10 @@ async function handleSubmit() {
         
         const uploadResponse = await fetch(`${backendUrl}/api/upload/event-photo`, {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         })
         
         if (uploadResponse.ok) {
@@ -205,17 +205,25 @@ async function handleSubmit() {
     }
     
     if (finalPhotoUrl) {
-      await apiFetch(`/api/events/${eventId}`, {
+      await apiFetch(`/api/events/json/${eventId}`, {
         method: 'PUT',
-        body: { ...payload, photoUrl: finalPhotoUrl },
-        headers: { Authorization: `Bearer ${token}` }
+        body: JSON.stringify({ ...payload, photoUrl: finalPhotoUrl })
       })
     }
     
     success('Event updated successfully!', 'Event Updated')
     router.push('/MyEventsPage')
   } catch (e: any) {
-    const message = e?.statusMessage || e?.data?.message || 'Failed to update event.'
+    console.error('Event update error:', e)
+    let message = 'Failed to update event.'
+    if (e?.response?.status === 401) {
+      message = 'Authentication failed. Please login again.'
+      router.push('/LoginPage')
+    } else if (e?.response?.status === 400) {
+      message = e?.response?.data?.message || 'Invalid event data. Please check all fields.'
+    } else if (e?.message) {
+      message = e.message
+    }
     error(message, 'Update Failed')
   } finally {
     submitting.value = false
@@ -261,9 +269,8 @@ async function confirmDelete() {
   }
 
   try {
-    await apiFetch(`/api/events/${eventId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` }
+    await apiFetch(`/api/events/json/${eventId}`, {
+      method: 'DELETE'
     })
     
     success('Event deleted successfully', 'Event Deleted')
@@ -359,7 +366,7 @@ async function confirmDelete() {
                       v-for="cat in categories"
                       :key="cat"
                       type="button"
-                      @click="form.category = cat"
+                      @click="form.category = form.category === cat ? '' : cat"
                       :class="[
                         'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                         form.category === cat

@@ -34,7 +34,7 @@ const photoUrl = ref('')
 const uploadMode = ref<'file' | 'url'>('file')
 
 // Event categories matching the catalog
-const categories = ['Music', 'Sports', 'Tech', 'Art', 'Food', 'Business', 'Other']
+const categories = ['Rock', 'Pop', 'Jazz', 'EDM']
 
 const form = reactive<CreateEventForm>({
   title: '',
@@ -131,8 +131,7 @@ async function handleSubmit() {
     // Create event in backend
     const backendEvent: any = await apiFetch('/api/events/json', {
       method: 'POST',
-      body: payload,
-      headers: { Authorization: `Bearer ${token}` }
+      body: JSON.stringify(payload)
     })
 
     // Handle photo upload or URL
@@ -145,12 +144,20 @@ async function handleSubmit() {
         
         const uploadResponse = await fetch(`${backendUrl}/api/upload/event-photo`, {
           method: 'POST',
-          body: formData
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
         })
         
         if (uploadResponse.ok) {
           const { url } = await uploadResponse.json()
           finalPhotoUrl = url
+          console.log('Photo uploaded successfully:', url)
+        } else {
+          const errorText = await uploadResponse.text()
+          console.error('Photo upload failed:', uploadResponse.status, errorText)
+          throw new Error(`Upload failed: ${uploadResponse.status}`)
         }
       } catch (uploadErr) {
         console.error('Photo upload failed:', uploadErr)
@@ -159,17 +166,32 @@ async function handleSubmit() {
     }
     
     if (finalPhotoUrl && backendEvent?.id) {
-      await apiFetch(`/api/events/${backendEvent.id}`, {
+      await apiFetch(`/api/events/json/${backendEvent.id}`, {
         method: 'PUT',
-        body: { ...payload, photoUrl: finalPhotoUrl },
-        headers: { Authorization: `Bearer ${token}` }
+        body: JSON.stringify({ ...payload, photoUrl: finalPhotoUrl })
       })
     }
 
     success('Event created successfully!', 'Event Created')
     router.push('/product-page')
   } catch (e: any) {
-    const message = e?.statusMessage || e?.data?.message || 'Failed to create event.'
+    console.error('Event creation error:', e)
+    let message = 'Failed to create event.'
+    if (e?.response?.status === 401) {
+      message = 'Authentication failed. Please login again.'
+      router.push('/LoginPage')
+    } else if (e?.response?.status === 405) {
+      message = 'API Gateway configuration issue. POST method not allowed for events endpoint.'
+    } else if (e?.response?.status === 403) {
+      message = 'Access denied. Please login again with valid credentials.'
+      router.push('/LoginPage')
+    } else if (e?.response?.status === 400) {
+      message = e?.response?.data?.message || 'Invalid event data. Please check all fields.'
+    } else if (e?.message?.includes('405')) {
+      message = 'API Gateway needs POST method configured for /api/events endpoint'
+    } else if (e?.message) {
+      message = e.message
+    }
     error(message, 'Creation Failed')
   } finally {
     submitting.value = false
@@ -240,7 +262,7 @@ async function handleSubmit() {
                       v-for="cat in categories"
                       :key="cat"
                       type="button"
-                      @click="form.category = cat"
+                      @click="form.category = form.category === cat ? '' : cat"
                       :class="[
                         'px-4 py-2 rounded-full text-sm font-medium transition-all duration-200',
                         form.category === cat

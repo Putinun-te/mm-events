@@ -92,11 +92,22 @@ export const useApi = () => {
 
   const apiFetch = async <T = unknown>(url: string, options: FetchOptions = {}): Promise<T> => {
     const fullUrl = resolveApiUrl(url)
-    const headers = options.headers as Record<string, string> | undefined
+    const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(options.headers as Record<string, string> || {})
+    }
+    
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
     const fetchOptions: FetchOptions = {
       ...options,
-      headers: headers ? { ...headers } : undefined
+      headers
     }
+    
     return $fetch(fullUrl, fetchOptions as any) as Promise<T>
   }
 

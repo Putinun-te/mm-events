@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [vue()],
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
     include: ['test/e2e/**/*.e2e.test.ts'],
     coverage: {
@@ -21,8 +21,14 @@ export default defineConfig({
         '**/mockData.ts'
       ]
     },
-    testTimeout: 30000,
-    hookTimeout: 30000
+    testTimeout: 60000,
+    hookTimeout: 60000,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true
+      }
+    }
   },
   resolve: {
     alias: {

@@ -1,27 +1,48 @@
 # E2E Tests
 
-End-to-End tests for the Concert application using Vitest and @nuxt/test-utils.
+End-to-End tests for the Concert application using Vitest and API integration testing.
 
 ## Structure
 
-- `auth.e2e.test.ts` - Authentication flow tests (login, registration)
-- `events.e2e.test.ts` - Events listing and details tests
-- `navigation.e2e.test.ts` - Navigation and routing tests
-- `cart.e2e.test.ts` - Shopping cart functionality tests
-- `create-event.e2e.test.ts` - Event creation form tests
+- `api-integration.e2e.test.ts` - **Primary E2E tests** - API-based integration tests (recommended)
+- `auth.e2e.test.ts` - Authentication flow tests (browser-based, optional)
+- `events.e2e.test.ts` - Events listing and details tests (browser-based, optional)
+- `navigation.e2e.test.ts` - Navigation and routing tests (browser-based, optional)
+- `cart.e2e.test.ts` - Shopping cart functionality tests (browser-based, optional)
+- `create-event.e2e.test.ts` - Event creation form tests (browser-based, optional)
 
 ## Running E2E Tests
 
 ```bash
-# Run all E2E tests
+# Run primary API integration E2E tests (recommended)
 npm run test:e2e
+
+# Run all E2E tests (including browser-based)
+npm run test:e2e:all
 
 # Run E2E tests in watch mode
 npm run test:e2e:watch
 
 # Run with specific file
-npx vitest run --config vitest.e2e.config.ts test/e2e/auth.e2e.test.ts
+npx vitest run --config vitest.e2e.config.ts test/e2e/api-integration.e2e.test.ts
 ```
+
+## Test Approach
+
+### API Integration Tests (Primary)
+The `api-integration.e2e.test.ts` file tests the full stack through HTTP requests:
+- ✅ No browser automation required
+- ✅ Fast execution
+- ✅ No TextEncoder/Node compatibility issues
+- ✅ Tests actual API contracts
+- ✅ Suitable for CI/CD
+
+### Browser-based Tests (Optional)
+Other test files use `@nuxt/test-utils` for browser automation:
+- Useful for UI/UX validation
+- Slower execution
+- May have Node compatibility issues in CI
+- Better for local development testing
 
 ## Prerequisites
 

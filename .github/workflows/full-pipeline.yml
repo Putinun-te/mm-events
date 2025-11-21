@@ -240,88 +240,167 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '20.x'
           cache: 'npm'
           cache-dependency-path: main_frontend/concert1/package-lock.json
 
       - name: Wait for MySQL
         run: |
+          set -e
           max_attempts=30
           attempt=0
+          echo "🔍 Waiting for MySQL to be ready..."
           until mysqladmin ping -h 127.0.0.1 -u root -prootpass --silent; do
             attempt=$((attempt+1))
             if [ $attempt -ge $max_attempts ]; then
-              echo "MySQL failed to start"
+              echo "❌ MySQL failed to start after $max_attempts attempts"
+              mysqladmin ping -h 127.0.0.1 -u root -prootpass || true
               exit 1
             fi
-            echo "Waiting for MySQL... ($attempt/$max_attempts)"
-            sleep 2
+            echo "⏳ Waiting for MySQL... ($attempt/$max_attempts)"
+            sleep 3
           done
           echo "✅ MySQL is ready!"
 
+      - name: Initialize database
+        run: |
+          set -e
+          echo "📊 Initializing database schema..."
+          mysql -h 127.0.0.1 -u root -prootpass concert_db < main_backend/src/main/resources/schema.sql || echo "Schema already exists or no schema.sql found"
+          echo "✅ Database initialized"
+
+      - name: Build backend
+        run: |
+          set -e
+          cd main_backend
+          echo "🔨 Building backend..."
+          mvn clean package -DskipTests
+          echo "✅ Backend built successfully"
+
       - name: Start backend server
         run: |
+          set -e
           cd main_backend
-          mvn spring-boot:run -Dspring-boot.run.profiles=test &
+          echo "🚀 Starting backend server..."
+          nohup mvn spring-boot:run -Dspring-boot.run.profiles=test > backend.log 2>&1 &
           BACKEND_PID=$!
           echo "BACKEND_PID=$BACKEND_PID" >> $GITHUB_ENV
-          echo "Backend started with PID: $BACKEND_PID"
+          echo "✅ Backend started with PID: $BACKEND_PID"
+          sleep 5
         env:
           SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/concert_db
           SPRING_DATASOURCE_USERNAME: root
           SPRING_DATASOURCE_PASSWORD: rootpass
+          SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
+          SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.MySQLDialect
+          SPRING_JPA_HIBERNATE_DDL_AUTO: update
 
       - name: Wait for backend to be ready
         run: |
-          max_attempts=30
+          set -e
+          max_attempts=60
           attempt=0
-          until curl -f http://localhost:8080/api/auth/test || [ $attempt -ge $max_attempts ]; do
+          echo "🔍 Waiting for backend to be ready..."
+          until curl -f -s http://localhost:8080/actuator/health > /dev/null 2>&1; do
             attempt=$((attempt+1))
-            echo "Waiting for backend... ($attempt/$max_attempts)"
+            if [ $attempt -ge $max_attempts ]; then
+              echo "❌ Backend failed to start after $max_attempts attempts"
+              echo "📋 Backend logs:"
+              cat main_backend/backend.log || echo "No backend logs available"
+              echo "🔍 Check if backend is listening:"
+              netstat -tuln | grep 8080 || echo "Port 8080 is not listening"
+              echo "🔍 Java processes:"
+              ps aux | grep java || echo "No Java processes found"
+              exit 1
+            fi
+            if [ $((attempt % 10)) -eq 0 ]; then
+              echo "⏳ Still waiting for backend... ($attempt/$max_attempts)"
+              echo "📋 Latest backend logs:"
+              tail -20 main_backend/backend.log 2>/dev/null || echo "No logs yet"
+            fi
             sleep 3
           done
-          if [ $attempt -ge $max_attempts ]; then
-            echo "❌ Backend failed to start"
-            exit 1
-          fi
           echo "✅ Backend is ready!"
+          curl -s http://localhost:8080/actuator/health | jq '.' || curl -s http://localhost:8080/actuator/health
 
       - name: Install frontend dependencies
         run: |
+          set -e
           cd main_frontend/concert1
+          echo "📦 Installing frontend dependencies..."
           npm ci --legacy-peer-deps
+          echo "✅ Frontend dependencies installed"
 
       - name: Start frontend dev server
         run: |
+          set -e
           cd main_frontend/concert1
-          npm run dev &
+          echo "🚀 Starting frontend dev server..."
+          nohup npm run dev > frontend.log 2>&1 &
           FRONTEND_PID=$!
           echo "FRONTEND_PID=$FRONTEND_PID" >> $GITHUB_ENV
-          echo "Frontend started with PID: $FRONTEND_PID"
+          echo "✅ Frontend started with PID: $FRONTEND_PID"
+          sleep 10
         env:
           NUXT_PUBLIC_API_BASE: http://localhost:8080
+          NODE_ENV: development
 
       - name: Wait for frontend to be ready
         run: |
-          max_attempts=30
+          set -e
+          max_attempts=60
           attempt=0
-          until curl -f http://localhost:3000 || [ $attempt -ge $max_attempts ]; do
+          echo "🔍 Waiting for frontend to be ready..."
+          until curl -f -s http://localhost:3000 > /dev/null 2>&1; do
             attempt=$((attempt+1))
-            echo "Waiting for frontend... ($attempt/$max_attempts)"
+            if [ $attempt -ge $max_attempts ]; then
+              echo "❌ Frontend failed to start after $max_attempts attempts"
+              echo "📋 Frontend logs:"
+              cat main_frontend/concert1/frontend.log || echo "No frontend logs available"
+              echo "🔍 Check if frontend is listening:"
+              netstat -tuln | grep 3000 || echo "Port 3000 is not listening"
+              echo "🔍 Node processes:"
+              ps aux | grep node || echo "No Node processes found"
+              exit 1
+            fi
+            if [ $((attempt % 10)) -eq 0 ]; then
+              echo "⏳ Still waiting for frontend... ($attempt/$max_attempts)"
+              echo "📋 Latest frontend logs:"
+              tail -20 main_frontend/concert1/frontend.log 2>/dev/null || echo "No logs yet"
+            fi
             sleep 3
           done
-          if [ $attempt -ge $max_attempts ]; then
-            echo "❌ Frontend failed to start"
-            exit 1
-          fi
           echo "✅ Frontend is ready!"
+          curl -s http://localhost:3000 | head -20 || echo "Frontend responding"
+
+      - name: Verify services are running
+        run: |
+          echo "🔍 Verifying all services..."
+          echo "📊 MySQL status:"
+          mysqladmin ping -h 127.0.0.1 -u root -prootpass || echo "MySQL not responding"
+          echo "🔧 Backend health:"
+          curl -s http://localhost:8080/actuator/health || echo "Backend not responding"
+          echo "🌐 Frontend status:"
+          curl -I http://localhost:3000 || echo "Frontend not responding"
+          echo "✅ All services verified"
 
       - name: Run E2E tests
         run: |
+          set -e
           cd main_frontend/concert1
-          npm run test:e2e
+          echo "🧪 Running E2E tests..."
+          npm run test:e2e || {
+            echo "❌ E2E tests failed"
+            echo "📋 Backend logs:"
+            tail -50 ../backend.log 2>/dev/null || echo "No backend logs"
+            echo "📋 Frontend logs:"
+            tail -50 frontend.log 2>/dev/null || echo "No frontend logs"
+            exit 1
+          }
+          echo "✅ E2E tests completed"
         env:
           NUXT_PUBLIC_API_BASE: http://localhost:8080
+          NODE_ENV: test
 
       - name: Upload E2E test results
         if: always()
@@ -331,15 +410,31 @@ jobs:
           path: main_frontend/concert1/coverage/
           retention-days: 7
 
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-server-logs
+          path: |
+            main_backend/backend.log
+            main_frontend/concert1/frontend.log
+          retention-days: 3
+
       - name: Cleanup servers
         if: always()
         run: |
+          echo "🧹 Cleaning up servers..."
           if [ ! -z "$BACKEND_PID" ]; then
-            kill $BACKEND_PID || true
+            echo "Stopping backend (PID: $BACKEND_PID)"
+            kill $BACKEND_PID 2>/dev/null || true
+            pkill -f "spring-boot:run" || true
           fi
           if [ ! -z "$FRONTEND_PID" ]; then
-            kill $FRONTEND_PID || true
+            echo "Stopping frontend (PID: $FRONTEND_PID)"
+            kill $FRONTEND_PID 2>/dev/null || true
+            pkill -f "npm run dev" || true
           fi
+          echo "✅ Cleanup completed"
 
   # ============================================
   # STAGE 4: INTEGRATION TESTS (Optional)

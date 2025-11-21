@@ -126,16 +126,21 @@ describe('E2E API Integration Tests', () => {
       authToken = loginResponse.data.token
     })
 
-    it('should fetch events list', async () => {
+    it('should fetch events list (paginated)', async () => {
       const response = await axios.get(`${API_BASE}/api/events`)
       expect(response.status).toBe(200)
-      expect(Array.isArray(response.data)).toBe(true)
+      expect(response.data).toHaveProperty('content')
+      expect(Array.isArray(response.data.content)).toBe(true)
+      expect(response.data).toHaveProperty('totalElements')
+      expect(response.data).toHaveProperty('totalPages')
     })
 
-    it('should fetch events as JSON', async () => {
-      const response = await axios.get(`${API_BASE}/api/events/json`)
+    it('should fetch events with pagination parameters', async () => {
+      const response = await axios.get(`${API_BASE}/api/events?page=0&size=5`)
       expect(response.status).toBe(200)
-      expect(Array.isArray(response.data)).toBe(true)
+      expect(response.data).toHaveProperty('content')
+      expect(Array.isArray(response.data.content)).toBe(true)
+      expect(response.data.content.length).toBeLessThanOrEqual(5)
     })
 
     it('should create a new event with authentication', async () => {
@@ -144,14 +149,13 @@ describe('E2E API Integration Tests', () => {
         description: 'Created by E2E test',
         startDate: new Date(Date.now() + 86400000).toISOString(),
         endDate: new Date(Date.now() + 172800000).toISOString(),
-        price: 99.99,
-        capacity: 100,
-        location: 'Test Venue',
-        imageUrl: 'https://example.com/image.jpg'
+        ticketPrice: 99.99,
+        personLimit: 100,
+        location: 'Test Venue'
       }
 
       const response = await axios.post(
-        `${API_BASE}/api/events/json`,
+        `${API_BASE}/api/events`,
         newEvent,
         {
           headers: {
@@ -161,7 +165,7 @@ describe('E2E API Integration Tests', () => {
         }
       )
 
-      expect(response.status).toBe(201)
+      expect(response.status).toBe(200)
       expect(response.data).toHaveProperty('id')
       expect(response.data.title).toBe(newEvent.title)
     })
@@ -172,13 +176,13 @@ describe('E2E API Integration Tests', () => {
         description: 'Should fail',
         startDate: new Date(Date.now() + 86400000).toISOString(),
         endDate: new Date(Date.now() + 172800000).toISOString(),
-        price: 99.99,
-        capacity: 100,
+        ticketPrice: 99.99,
+        personLimit: 100,
         location: 'Test Venue'
       }
 
       try {
-        await axios.post(`${API_BASE}/api/events/json`, newEvent)
+        await axios.post(`${API_BASE}/api/events`, newEvent)
         // Should not reach here
         expect(true).toBe(false)
       } catch (error: any) {
@@ -216,31 +220,31 @@ describe('E2E API Integration Tests', () => {
         description: 'Full journey test event',
         startDate: new Date(Date.now() + 86400000).toISOString(),
         endDate: new Date(Date.now() + 172800000).toISOString(),
-        price: 149.99,
-        capacity: 200,
-        location: 'Journey Venue',
-        imageUrl: 'https://example.com/journey.jpg'
+        ticketPrice: 149.99,
+        personLimit: 200,
+        location: 'Journey Venue'
       }
 
       const createResponse = await axios.post(
-        `${API_BASE}/api/events/json`,
+        `${API_BASE}/api/events`,
         event,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
       )
-      expect(createResponse.status).toBe(201)
+      expect(createResponse.status).toBe(200)
       const eventId = createResponse.data.id
 
       // Step 4: Fetch events and verify our event is there
-      const eventsResponse = await axios.get(`${API_BASE}/api/events/json`)
+      const eventsResponse = await axios.get(`${API_BASE}/api/events`)
       expect(eventsResponse.status).toBe(200)
-      const foundEvent = eventsResponse.data.find((e: any) => e.id === eventId)
+      expect(eventsResponse.data).toHaveProperty('content')
+      const foundEvent = eventsResponse.data.content.find((e: any) => e.id === eventId)
       expect(foundEvent).toBeTruthy()
       expect(foundEvent.title).toBe(event.title)
 
       // Step 5: Fetch single event
-      const singleEventResponse = await axios.get(`${API_BASE}/api/events/json/${eventId}`)
+      const singleEventResponse = await axios.get(`${API_BASE}/api/events/${eventId}`)
       expect(singleEventResponse.status).toBe(200)
       expect(singleEventResponse.data.id).toBe(eventId)
       expect(singleEventResponse.data.title).toBe(event.title)

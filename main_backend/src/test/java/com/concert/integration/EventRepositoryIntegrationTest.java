@@ -46,8 +46,7 @@ public class EventRepositoryIntegrationTest {
         testUser.setUsername("testuser_" + uniqueId);
         testUser.setEmail("test_" + uniqueId + "@example.com");
         testUser.setPassword("hashedPassword123");
-        testUser.setFirstName("Test");
-        testUser.setLastName("User");
+        testUser.setName("Test User");
         testUser = userRepository.save(testUser);
     }
 

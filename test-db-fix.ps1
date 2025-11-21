@@ -16,7 +16,7 @@ Write-Host ""
 
 # Step 1: Clean build
 Write-Host "Step 1: Clean previous build artifacts..." -ForegroundColor Cyan
-cd main_backend
+Set-Location main_backend
 mvn clean
 if ($LASTEXITCODE -ne 0) {
     Write-Host "❌ Maven clean failed" -ForegroundColor Red
@@ -127,4 +127,4 @@ Write-Host "  2. Commit and push changes to trigger GitHub Actions" -ForegroundC
 Write-Host "  3. Monitor: https://github.com/MorningMores/develop/actions" -ForegroundColor White
 Write-Host ""
 
-cd ..
+Set-Location ..

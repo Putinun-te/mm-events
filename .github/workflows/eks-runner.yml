@@ -1,0 +1,42 @@
+name: EKS Self-Hosted Runner CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    runs-on: [self-hosted, eks, singapore]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - name: Test Backend
+        run: |
+          cd main_backend
+          mvn clean test
+
+  frontend-test:
+    runs-on: [self-hosted, eks, singapore]
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Test Frontend
+        run: |
+          cd main_frontend/concert1
+          npm ci
+          npm test

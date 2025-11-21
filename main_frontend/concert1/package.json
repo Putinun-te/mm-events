@@ -12,11 +12,14 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts test/e2e/api-integration.e2e.test.ts",
+    "test:e2e:all": "vitest run --config vitest.e2e.config.ts",
+    "test:e2e:watch": "vitest --config vitest.e2e.config.ts",
     "cy:open": "cypress open",
-    "test:e2e": "cypress run --browser electron",
-    "test:e2e:headless": "cypress run --browser electron --headless",
-    "test:e2e:coverage": "cypress run --browser electron --headless && nyc report --reporter=html",
-    "test:all": "npm run test:coverage && npm run test:e2e:coverage"
+    "test:cy": "cypress run --browser electron",
+    "test:cy:headless": "cypress run --browser electron --headless",
+    "test:cy:coverage": "cypress run --browser electron --headless && nyc report --reporter=html",
+    "test:all": "npm run test:coverage && npm run test:e2e"
   },
   "dependencies": {
     "@aws-amplify/ui-vue": "^4.3.6",

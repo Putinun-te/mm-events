@@ -13,11 +13,14 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebM
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
+
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -28,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureWebMvc
 @ActiveProfiles("test")
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class AuthIntegrationTest {
 
     @Autowired
@@ -47,13 +51,19 @@ class AuthIntegrationTest {
     @BeforeEach
     void setUp() {
         mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        // Clean database state before each test
         userRepository.deleteAll();
+        userRepository.flush();
     }
 
     @Test
     void testRegisterNewUser() throws Exception {
-        // Arrange
-        RegisterRequest registerRequest = new RegisterRequest("newuser", "newuser@example.com", "password123");
+        // Arrange - Use unique username/email to avoid conflicts
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "newuser_" + uniqueId;
+        String email = "newuser_" + uniqueId + "@example.com";
+        
+        RegisterRequest registerRequest = new RegisterRequest(username, email, "password123");
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -61,22 +71,27 @@ class AuthIntegrationTest {
                 .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.username").value("newuser"))
-                .andExpect(jsonPath("$.email").value("newuser@example.com"))
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.type").value("Bearer"));
 
         // Verify user was saved to database
-        assertTrue(userRepository.existsByUsername("newuser"));
-        assertTrue(userRepository.existsByEmail("newuser@example.com"));
+        assertTrue(userRepository.existsByUsername(username));
+        assertTrue(userRepository.existsByEmail(email));
     }
 
     @Test
     void testRegisterDuplicateUsername() throws Exception {
-        // Arrange - Create existing user
-        User existingUser = new User("Existing User", "existinguser", "existing@example.com", "password");
-        userRepository.save(existingUser);
+        // Arrange - Create existing user with unique identifiers
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String existingUsername = "existinguser_" + uniqueId;
+        String existingEmail = "existing_" + uniqueId + "@example.com";
+        String newEmail = "new_" + uniqueId + "@example.com";
+        
+        User existingUser = new User("Existing User", existingUsername, existingEmail, "password");
+        userRepository.saveAndFlush(existingUser);
 
-        RegisterRequest registerRequest = new RegisterRequest("existinguser", "new@example.com", "password123");
+        RegisterRequest registerRequest = new RegisterRequest(existingUsername, newEmail, "password123");
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -88,11 +103,16 @@ class AuthIntegrationTest {
 
     @Test
     void testRegisterDuplicateEmail() throws Exception {
-        // Arrange - Create existing user
-        User existingUser = new User("Existing User", "existinguser", "existing@example.com", "password");
-        userRepository.save(existingUser);
+        // Arrange - Create existing user with unique identifiers
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String existingUsername = "existinguser_" + uniqueId;
+        String existingEmail = "existing_" + uniqueId + "@example.com";
+        String newUsername = "newuser_" + uniqueId;
+        
+        User existingUser = new User("Existing User", existingUsername, existingEmail, "password");
+        userRepository.saveAndFlush(existingUser);
 
-        RegisterRequest registerRequest = new RegisterRequest("newuser", "existing@example.com", "password123");
+        RegisterRequest registerRequest = new RegisterRequest(newUsername, existingEmail, "password123");
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
@@ -104,11 +124,15 @@ class AuthIntegrationTest {
 
     @Test
     void testLoginWithValidCredentials() throws Exception {
-        // Arrange - Create user
-        User user = new User("Test User", "testuser", "test@example.com", passwordEncoder.encode("password123"));
-        userRepository.save(user);
+        // Arrange - Create user with unique identifiers
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "testuser_" + uniqueId;
+        String email = "test_" + uniqueId + "@example.com";
+        
+        User user = new User("Test User", username, email, passwordEncoder.encode("password123"));
+        userRepository.saveAndFlush(user);
 
-        LoginRequest loginRequest = new LoginRequest("testuser", "password123");
+        LoginRequest loginRequest = new LoginRequest(username, "password123");
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/login")
@@ -116,18 +140,22 @@ class AuthIntegrationTest {
                 .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.username").value("testuser"))
-                .andExpect(jsonPath("$.email").value("test@example.com"))
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.email").value(email))
                 .andExpect(jsonPath("$.type").value("Bearer"));
     }
 
     @Test
     void testLoginWithEmail() throws Exception {
-        // Arrange - Create user
-        User user = new User("Test User", "testuser", "test@example.com", passwordEncoder.encode("password123"));
-        userRepository.save(user);
+        // Arrange - Create user with unique identifiers
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "testuser_" + uniqueId;
+        String email = "test_" + uniqueId + "@example.com";
+        
+        User user = new User("Test User", username, email, passwordEncoder.encode("password123"));
+        userRepository.saveAndFlush(user);
 
-        LoginRequest loginRequest = new LoginRequest("test@example.com", "password123");
+        LoginRequest loginRequest = new LoginRequest(email, "password123");
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/login")
@@ -135,8 +163,8 @@ class AuthIntegrationTest {
                 .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.username").value("testuser"))
-                .andExpect(jsonPath("$.email").value("test@example.com"));
+                .andExpect(jsonPath("$.username").value(username))
+                .andExpect(jsonPath("$.email").value(email));
     }
 
     @Test
@@ -154,11 +182,15 @@ class AuthIntegrationTest {
 
     @Test
     void testLoginWithInvalidPassword() throws Exception {
-        // Arrange - Create user
-        User user = new User("Test User", "testuser", "test@example.com", passwordEncoder.encode("correctpassword"));
-        userRepository.save(user);
+        // Arrange - Create user with unique identifiers
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "testuser_" + uniqueId;
+        String email = "test_" + uniqueId + "@example.com";
+        
+        User user = new User("Test User", username, email, passwordEncoder.encode("correctpassword"));
+        userRepository.saveAndFlush(user);
 
-        LoginRequest loginRequest = new LoginRequest("testuser", "wrongpassword");
+        LoginRequest loginRequest = new LoginRequest(username, "wrongpassword");
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/login")

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -21,6 +22,8 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("docker")
 @Testcontainers
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class AuthDockerIntegrationTest {
 
     @Container
@@ -57,14 +61,21 @@ public class AuthDockerIntegrationTest {
 
     @BeforeEach
     void clearDatabase() {
+        // Clean database state before each test
         userRepository.deleteAll();
+        userRepository.flush();
     }
 
     @Test
     public void testUserRegistrationSuccess() throws Exception {
+        // Use unique username/email to avoid conflicts
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "testuser_" + uniqueId;
+        String email = "test_" + uniqueId + "@example.com";
+        
         RegisterRequest request = new RegisterRequest();
-        request.setUsername("testuser");
-        request.setEmail("test@example.com");
+        request.setUsername(username);
+        request.setEmail(email);
         request.setPassword("password123");
 
         MvcResult result = mockMvc.perform(post("/api/auth/register")
@@ -73,7 +84,7 @@ public class AuthDockerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.username").value(username))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();

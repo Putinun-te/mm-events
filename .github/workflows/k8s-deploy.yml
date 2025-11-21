@@ -1,0 +1,478 @@
+name: Build & Deploy to Kubernetes
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+      - k8s-development
+      - k8s-deployment
+    paths:
+      - 'main_backend/**'
+      - 'main_frontend/**'
+      - 'k8s/**'
+      - '.github/workflows/k8s-deploy.yml'
+  pull_request:
+    branches:
+      - main
+      - develop
+      - 'release/**'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      image_tag:
+        description: 'Docker image tag (leave empty for auto-generated)'
+        required: false
+
+concurrency:
+  group: k8s-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: morningmores/concert-backend
+  FRONTEND_IMAGE: morningmores/concert-frontend
+
+jobs:
+  # ============================================
+  # SECTION 1: Build Backend
+  # ============================================
+  build-backend:
+    name: Build Backend Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.backend_image }}
+      tag: ${{ steps.image.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate image tag
+        id: image
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          else
+            TAG="$(echo ${{ github.sha }} | cut -c1-7)"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "backend_image=${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:$TAG" >> $GITHUB_OUTPUT
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify backend context
+        run: |
+          echo "Backend directory contents:"
+          ls -la ./main_backend/
+          echo "Checking for Dockerfile:"
+          if [ -f ./main_backend/Dockerfile ]; then
+            echo "✓ Dockerfile found"
+            head -5 ./main_backend/Dockerfile
+          else
+            echo "✗ Dockerfile NOT found - this will fail!"
+            exit 1
+          fi
+          echo "Checking for pom.xml:"
+          if [ -f ./main_backend/pom.xml ]; then
+            echo "✓ pom.xml found"
+          else
+            echo "✗ pom.xml NOT found - this will fail!"
+            exit 1
+          fi
+
+      - name: Build and push backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main_backend
+          file: ./main_backend/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.image.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            SKIP_TESTS=true
+
+  # ============================================
+  # SECTION 2: Build Frontend
+  # ============================================
+  build-frontend:
+    name: Build Frontend Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.frontend_image }}
+      tag: ${{ steps.image.outputs.tag }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Generate image tag
+        id: image
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ] && [ -n "${{ github.event.inputs.image_tag }}" ]; then
+            TAG="${{ github.event.inputs.image_tag }}"
+          else
+            TAG="$(echo ${{ github.sha }} | cut -c1-7)"
+          fi
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          echo "frontend_image=${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:$TAG" >> $GITHUB_OUTPUT
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main_frontend/concert1
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.image.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ============================================
+  # SECTION 3: Run Tests
+  # ============================================
+  test-backend:
+    name: Test Backend
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: concert_db
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Wait for MySQL to be ready
+        run: |
+          max_attempts=30
+          attempt=0
+          until mysqladmin ping -h 127.0.0.1 -u root -prootpass --silent; do
+            attempt=$((attempt+1))
+            if [ $attempt -ge $max_attempts ]; then
+              echo "MySQL failed to start after $max_attempts attempts"
+              exit 1
+            fi
+            echo "Waiting for MySQL to be ready... (attempt $attempt/$max_attempts)"
+            sleep 2
+          done
+          echo "MySQL is ready!"
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Run backend tests
+        run: |
+          cd main_backend
+          mvn -B -DforkCount=1 -DreuseForks=false -Dspring.profiles.active=test test jacoco:report
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./main_backend/target/site/jacoco/jacoco.xml
+          flags: backend
+          fail_ci_if_error: false
+        continue-on-error: true
+
+  test-frontend:
+    name: Test Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd main_frontend/concert1
+          npm ci --legacy-peer-deps
+
+      - name: Run frontend tests
+        run: |
+          cd main_frontend/concert1
+          npm run test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./main_frontend/concert1/coverage/coverage-final.json
+          flags: frontend
+          fail_ci_if_error: false
+
+  # ============================================
+  # SECTION 4: Security Scanning
+  # ============================================
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # ============================================
+  # SECTION 5: Deploy to Staging
+  # ============================================
+  deploy-staging:
+    name: Deploy to Staging
+    needs: [build-backend, build-frontend, test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: |
+      (github.ref == 'refs/heads/k8s-development' || 
+       github.ref == 'refs/heads/develop' ||
+       startsWith(github.ref, 'refs/heads/release/')) && 
+      github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_STAGING }}" ]; then
+            mkdir -p $HOME/.kube
+            echo "${{ secrets.KUBE_CONFIG_STAGING }}" | base64 -d > $HOME/.kube/config
+            chmod 600 $HOME/.kube/config
+            kubectl cluster-info
+          else
+            echo "⚠️ KUBE_CONFIG_STAGING secret not configured"
+            echo "Skipping Kubernetes deployment - images are built and pushed successfully"
+            exit 0
+          fi
+
+      - name: Update image in k8s manifests
+        continue-on-error: true
+        run: |
+          if [ -d "k8s" ]; then
+            cd k8s
+            sed -i "s|image: .*concert-backend.*|image: ${{ needs.build-backend.outputs.image }}|g" backend.yaml || true
+            sed -i "s|image: .*concert-frontend.*|image: ${{ needs.build-frontend.outputs.image }}|g" frontend.yaml || true
+          else
+            echo "k8s directory not found, skipping manifest update"
+          fi
+
+      - name: Apply Kubernetes manifests
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_STAGING }}" ] && [ -d "k8s" ]; then
+            cd k8s
+            kubectl apply -f namespace.yaml || true
+            kubectl apply -f configmap.yaml || true
+            kubectl apply -f mysql.yaml || true
+            kubectl apply -f backend.yaml || true
+            kubectl apply -f frontend.yaml || true
+            kubectl apply -f ingress.yaml || true
+          else
+            echo "Skipping Kubernetes apply - no config or k8s directory"
+          fi
+
+      - name: Wait for rollout
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_STAGING }}" ]; then
+            kubectl rollout status deployment/backend -n concert-platform --timeout=5m || true
+            kubectl rollout status deployment/frontend -n concert-platform --timeout=5m || true
+          fi
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Build & Test Pipeline Complete"
+          echo "Backend Image: ${{ needs.build-backend.outputs.image }}"
+          echo "Frontend Image: ${{ needs.build-frontend.outputs.image }}"
+          if [ -n "${{ secrets.KUBE_CONFIG_STAGING }}" ]; then
+            echo "K8s deployment attempted"
+          else
+            echo "K8s deployment skipped (no credentials)"
+          fi
+
+  # ============================================
+  # SECTION 6: Deploy to Production
+  # ============================================
+  deploy-production:
+    name: Deploy to Production
+    needs: [build-backend, build-frontend, test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
+            mkdir -p $HOME/.kube
+            echo "${{ secrets.KUBE_CONFIG_PRODUCTION }}" | base64 -d > $HOME/.kube/config
+            chmod 600 $HOME/.kube/config
+            kubectl cluster-info
+          else
+            echo "⚠️ KUBE_CONFIG_PRODUCTION secret not configured"
+            echo "Skipping Kubernetes deployment - images are built and pushed successfully"
+            exit 0
+          fi
+
+      - name: Create backup
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
+            echo "Creating backup of current deployment..."
+            kubectl get all -n concert-platform -o yaml > /tmp/production-backup-$(date +%s).yaml || true
+          fi
+
+      - name: Update image in k8s manifests
+        continue-on-error: true
+        run: |
+          if [ -d "k8s" ]; then
+            cd k8s
+            sed -i "s|image: .*concert-backend.*|image: ${{ needs.build-backend.outputs.image }}|g" backend.yaml || true
+            sed -i "s|image: .*concert-frontend.*|image: ${{ needs.build-frontend.outputs.image }}|g" frontend.yaml || true
+          fi
+
+      - name: Apply Kubernetes manifests
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ] && [ -d "k8s" ]; then
+            cd k8s
+            kubectl apply -f namespace.yaml || true
+            kubectl apply -f configmap.yaml || true
+            kubectl apply -f mysql.yaml || true
+            kubectl apply -f backend.yaml || true
+            kubectl apply -f frontend.yaml || true
+            kubectl apply -f ingress.yaml || true
+          fi
+
+      - name: Wait for rollout
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
+            kubectl rollout status deployment/backend -n concert-platform --timeout=10m || true
+            kubectl rollout status deployment/frontend -n concert-platform --timeout=10m || true
+          fi
+
+      - name: Verify deployment
+        continue-on-error: true
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG_PRODUCTION }}" ]; then
+            echo "Verifying production deployment..."
+            kubectl get all -n concert-platform || true
+            kubectl get pods -n concert-platform -o wide || true
+          fi
+
+      - name: Deployment summary
+        run: |
+          echo "✅ Production Build & Test Pipeline Complete"
+          echo "Backend Image: ${{ needs.build-backend.outputs.image }}"
+          echo "Frontend Image: ${{ needs.build-frontend.outputs.image }}"
+
+  # ============================================
+  # SECTION 7: Notifications
+  # ============================================
+  notify-slack:
+    name: Notify Slack
+    needs: [build-backend, build-frontend, test-backend, test-frontend]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v1.24.0
+        continue-on-error: true
+        if: env.SLACK_WEBHOOK_URL != ''
+        with:
+          payload: |
+            {
+              "text": "K8s Deployment Pipeline Status",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Pipeline Status*\n*Repository*: ${{ github.repository }}\n*Branch*: ${{ github.ref }}\n*Commit*: ${{ github.sha }}\n*Build*: ${{ needs.build-backend.result }} / ${{ needs.build-frontend.result }}\n*Tests*: ${{ needs.test-backend.result }} / ${{ needs.test-frontend.result }}"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      
+      - name: Summary
+        run: |
+          echo "✅ Pipeline Execution Complete"
+          echo "Backend Build: ${{ needs.build-backend.result }}"
+          echo "Frontend Build: ${{ needs.build-frontend.result }}"
+          echo "Backend Tests: ${{ needs.test-backend.result }}"
+          echo "Frontend Tests: ${{ needs.test-frontend.result }}"

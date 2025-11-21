@@ -576,19 +576,52 @@ jobs:
                -H "Accept: application/vnd.github.v3+json" \
                https://api.github.com/user/packages?package_type=container || true
 
+      - name: Extract branch name
+        id: branch
+        run: |
+          # Extract clean branch name and sanitize for Docker tag
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          # Replace / with - for branch names like feature/name
+          CLEAN_BRANCH=$(echo "$BRANCH_NAME" | sed 's/\//-/g')
+          echo "name=$CLEAN_BRANCH" >> $GITHUB_OUTPUT
+          echo "Branch name: $CLEAN_BRANCH"
+          
+          # Create short SHA
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-8)
+          echo "sha=$SHORT_SHA" >> $GITHUB_OUTPUT
+          echo "Short SHA: $SHORT_SHA"
+
       - name: Extract metadata for backend
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ steps.lowercase.outputs.owner }}/concert-backend
           tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
+            type=raw,value=${{ steps.branch.outputs.name }}
+            type=raw,value=${{ steps.branch.outputs.name }}-${{ steps.branch.outputs.sha }}
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.description=Concert Backend Application
             org.opencontainers.image.licenses=MIT
+
+      - name: Validate backend tags
+        run: |
+          echo "🔍 Validating backend Docker tags..."
+          TAGS="${{ steps.meta-backend.outputs.tags }}"
+          if [ -z "$TAGS" ]; then
+            echo "❌ ERROR: Backend tags are empty!"
+            exit 1
+          fi
+          echo "✅ Backend tags validated:"
+          echo "$TAGS" | while IFS= read -r tag; do
+            # Check if tag starts with dash or contains double dash
+            if [[ "$tag" == *"--"* ]] || [[ "$tag" == *"-:"* ]]; then
+              echo "❌ ERROR: Invalid tag format: $tag"
+              exit 1
+            fi
+            echo "  ✓ $tag"
+          done
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
@@ -630,13 +663,31 @@ jobs:
         with:
           images: ghcr.io/${{ steps.lowercase.outputs.owner }}/concert-frontend
           tags: |
-            type=ref,event=branch
-            type=sha,prefix={{branch}}-
+            type=raw,value=${{ steps.branch.outputs.name }}
+            type=raw,value=${{ steps.branch.outputs.name }}-${{ steps.branch.outputs.sha }}
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
             org.opencontainers.image.description=Concert Frontend Application
             org.opencontainers.image.licenses=MIT
+
+      - name: Validate frontend tags
+        run: |
+          echo "🔍 Validating frontend Docker tags..."
+          TAGS="${{ steps.meta-frontend.outputs.tags }}"
+          if [ -z "$TAGS" ]; then
+            echo "❌ ERROR: Frontend tags are empty!"
+            exit 1
+          fi
+          echo "✅ Frontend tags validated:"
+          echo "$TAGS" | while IFS= read -r tag; do
+            # Check if tag starts with dash or contains double dash
+            if [[ "$tag" == *"--"* ]] || [[ "$tag" == *"-:"* ]]; then
+              echo "❌ ERROR: Invalid tag format: $tag"
+              exit 1
+            fi
+            echo "  ✓ $tag"
+          done
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
@@ -675,18 +726,43 @@ jobs:
       - name: Summary of Docker builds
         if: always()
         run: |
-          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
-          echo "Backend push: ${{ steps.docker-push-backend.outcome }}" >> $GITHUB_STEP_SUMMARY
-          echo "Frontend push: ${{ steps.docker-push-frontend.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🐳 Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ steps.branch.outputs.name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit SHA:** ${{ steps.branch.outputs.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Backend Image Tags" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta-backend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Build Status: ${{ steps.docker-push-backend.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Frontend Image Tags" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.meta-frontend.outputs.tags }}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Build Status: ${{ steps.docker-push-frontend.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
           if [ "${{ steps.docker-push-backend.outcome }}" == "failure" ] || [ "${{ steps.docker-push-frontend.outcome }}" == "failure" ]; then
-            echo "" >> $GITHUB_STEP_SUMMARY
             echo "⚠️ **GHCR Push Failed** - Images built successfully but could not push to ghcr.io" >> $GITHUB_STEP_SUMMARY
-            echo "This is likely due to repository settings. Check:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Troubleshooting:**" >> $GITHUB_STEP_SUMMARY
             echo "- Settings → Actions → General → Workflow permissions" >> $GITHUB_STEP_SUMMARY
             echo "- Enable 'Read and write permissions'" >> $GITHUB_STEP_SUMMARY
             echo "- Or create a PAT with write:packages scope" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "Docker images saved as artifacts for manual push if needed." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ **All Docker images successfully built and pushed to GHCR**" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Pull commands:**" >> $GITHUB_STEP_SUMMARY
+            echo '```bash' >> $GITHUB_STEP_SUMMARY
+            echo "# Backend" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ghcr.io/${{ steps.lowercase.outputs.owner }}/concert-backend:${{ steps.branch.outputs.name }}" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "# Frontend" >> $GITHUB_STEP_SUMMARY
+            echo "docker pull ghcr.io/${{ steps.lowercase.outputs.owner }}/concert-frontend:${{ steps.branch.outputs.name }}" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
           fi
 
   # ============================================

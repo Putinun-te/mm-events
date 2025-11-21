@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: concert-backend
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: concert-backend
+  template:
+    metadata:
+      labels:
+        app: concert-backend
+    spec:
+      containers:
+      - name: backend
+        image: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/concert-backend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          value: "jdbc:mysql://concert-prod-db.csfsyoiy61fp.ap-southeast-1.rds.amazonaws.com:3306/concert"
+        - name: SPRING_DATASOURCE_USERNAME
+          value: "admin"
+        - name: SPRING_DATASOURCE_PASSWORD
+          value: "REDACTED_PASSWORD_B"
+        - name: AWS_REGION
+          value: "ap-southeast-1"
+        - name: AWS_S3_BUCKET_EVENT_PICTURES
+          value: "concert-event-pictures-singapore-123456789012"
+        - name: AWS_S3_BUCKET_USER_AVATARS
+          value: "concert-user-avatars-singapore-123456789012"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: concert-backend
+  namespace: default
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: concert-backend

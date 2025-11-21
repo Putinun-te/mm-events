@@ -88,8 +88,9 @@ public class EventService {
     }
 
     public Page<EventResponse> getUpcomingEvents(Pageable pageable, User currentUser) {
+        // Show events that haven't ended yet (filter by endDate)
         LocalDateTime now = LocalDateTime.now();
-        Page<Event> page = eventRepository.findByStartDateAfterOrderByStartDateAsc(now, pageable);
+        Page<Event> page = eventRepository.findByEndDateAfterOrderByStartDateAsc(now, pageable);
         List<EventResponse> responses = page.getContent().stream()
                 .map(event -> toResponse(event, currentUser))
                 .collect(Collectors.toList());

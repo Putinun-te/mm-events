@@ -145,12 +145,12 @@ async function loadEventData() {
   const id = route.params.id
   
   try {
-    // Try /api/events/123 first
-    product.value = await $fetch(`/api/events/${id}`)
+    // Try /api/events/json/123 first (primary endpoint)
+    product.value = await $fetch(`/api/events/json/${id}`)
   } catch (error) {
-    // Fallback to /api/events/json/123
+    // Fallback to /api/events/123
     try {
-      product.value = await $fetch(`/api/events/json/${id}`)
+      product.value = await $fetch(`/api/events/${id}`)
     } catch (err) {
       console.error('Failed to load event:', err)
       product.value = null

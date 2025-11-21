@@ -17,6 +17,11 @@ on:
       - 'release/**'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+  id-token: write
+
 concurrency:
   group: pipeline-${{ github.ref }}
   cancel-in-progress: true

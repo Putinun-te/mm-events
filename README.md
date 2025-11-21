@@ -1,4 +1,4 @@
-# 🎵 MM Concerts - Concert Booking Platform
+# 🎵 MM Events - Concert Booking Platform
 
 ## ⚡ TL;DR (Run in One Command)
 

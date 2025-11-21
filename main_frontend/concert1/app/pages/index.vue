@@ -18,7 +18,7 @@ const currentSlide = ref(0)
 const slides = [
   {
     id: 1,
-    title: 'Welcome to MM concerts',
+    title: 'Welcome to MM Events',
     description: 'Experience unforgettable live music events and exclusive performances',
     buttonText: 'Browse Events',
     link: '/product-page',

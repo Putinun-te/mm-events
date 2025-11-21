@@ -69,7 +69,7 @@ function cancelLogout() {
       <div class="flex items-center justify-between h-16">
         <div class="flex items-center">
           <NuxtLink to="/" class="flex items-center">
-            <span class="text-2xl font-semibold whitespace-nowrap">MM concerts</span>
+            <span class="text-2xl font-semibold whitespace-nowrap">MM Events</span>
           </NuxtLink>
         </div>
 

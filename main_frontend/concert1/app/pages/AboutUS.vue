@@ -1,9 +1,9 @@
 <template>
   <div class="bg-white rounded shadow-sm py-12 sm:py-16">
     <div class="max-w-5xl mx-auto px-6">
-      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">About MM concerts</h1>
+      <h1 class="text-3xl sm:text-4xl font-bold text-gray-900">About MM Events</h1>
       <p class="mt-4 text-gray-600 leading-relaxed">
-        MM concerts is a demo platform for discovering and creating events. This page is a simple placeholder you can extend with your team, mission and contact details.
+        MM Events is a demo platform for discovering and creating events. This page is a simple placeholder you can extend with your team, mission and contact details.
       </p>
 
       <div class="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">

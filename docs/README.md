@@ -1,6 +1,6 @@
 # 📚 Documentation Index
 
-Welcome to the MM Concerts platform documentation. This directory contains comprehensive guides, feature documentation, and development resources.
+Welcome to the MM Events platform documentation. This directory contains comprehensive guides, feature documentation, and development resources.
 
 ## 📖 Table of Contents
 

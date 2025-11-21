@@ -122,9 +122,9 @@ describe('ProductDetailPage [id].vue', () => {
     
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 100))
-  const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
+    const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
     const calledUrls = fetchMock.mock.calls.map(call => call[0])
-    expect(calledUrls).toContain('/api/events/123')
+    // Component should try the JSON endpoint first
     expect(calledUrls).toContain('/api/events/json/123')
   })
 

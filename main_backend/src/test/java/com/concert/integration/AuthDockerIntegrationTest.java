@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -21,6 +22,8 @@ import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,6 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("docker")
 @Testcontainers
 @Transactional
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 public class AuthDockerIntegrationTest {
 
     @Container
@@ -57,14 +61,21 @@ public class AuthDockerIntegrationTest {
 
     @BeforeEach
     void clearDatabase() {
+        // Clean database state before each test
         userRepository.deleteAll();
+        userRepository.flush();
     }
 
     @Test
     public void testUserRegistrationSuccess() throws Exception {
+        // Use unique username/email to avoid conflicts
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "testuser_" + uniqueId;
+        String email = "test_" + uniqueId + "@example.com";
+        
         RegisterRequest request = new RegisterRequest();
-        request.setUsername("testuser");
-        request.setEmail("test@example.com");
+        request.setUsername(username);
+        request.setEmail(email);
         request.setPassword("password123");
 
         MvcResult result = mockMvc.perform(post("/api/auth/register")
@@ -73,15 +84,15 @@ public class AuthDockerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.username").value("testuser"))
+                .andExpect(jsonPath("$.username").value(username))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
         AuthResponse response = objectMapper.readValue(responseBody, AuthResponse.class);
         
         assertNotNull(response.getToken());
-        assertEquals("testuser", response.getUsername());
-        assertTrue(userRepository.existsByUsername("testuser"));
+        assertEquals(username, response.getUsername());
+        assertTrue(userRepository.existsByUsername(username));
     }
 
     @Test
@@ -99,10 +110,15 @@ public class AuthDockerIntegrationTest {
 
     @Test
     public void testUserLoginSuccess() throws Exception {
+        // Use unique username/email to avoid conflicts
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "loginuser_" + uniqueId;
+        String email = "login_" + uniqueId + "@example.com";
+        
         // First register a user
         RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setUsername("loginuser");
-        registerRequest.setEmail("login@example.com");
+        registerRequest.setUsername(username);
+        registerRequest.setEmail(email);
         registerRequest.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/register")
@@ -112,7 +128,7 @@ public class AuthDockerIntegrationTest {
 
         // Then login
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsernameOrEmail("loginuser");
+        loginRequest.setUsernameOrEmail(username);
         loginRequest.setPassword("password123");
 
         MvcResult result = mockMvc.perform(post("/api/auth/login")
@@ -121,22 +137,27 @@ public class AuthDockerIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.username").value("loginuser"))
+                .andExpect(jsonPath("$.username").value(username))
                 .andReturn();
 
         String responseBody = result.getResponse().getContentAsString();
         AuthResponse response = objectMapper.readValue(responseBody, AuthResponse.class);
         
         assertNotNull(response.getToken());
-        assertEquals("loginuser", response.getUsername());
+        assertEquals(username, response.getUsername());
     }
 
     @Test
     public void testUserLoginWithEmail() throws Exception {
+        // Use unique username/email to avoid conflicts
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "emailuser_" + uniqueId;
+        String email = "emailuser_" + uniqueId + "@example.com";
+        
         // First register a user
         RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setUsername("emailuser");
-        registerRequest.setEmail("emailuser@example.com");
+        registerRequest.setUsername(username);
+        registerRequest.setEmail(email);
         registerRequest.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/register")
@@ -146,7 +167,7 @@ public class AuthDockerIntegrationTest {
 
         // Then login with email
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsernameOrEmail("emailuser@example.com");
+        loginRequest.setUsernameOrEmail(email);
         loginRequest.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/login")
@@ -154,15 +175,20 @@ public class AuthDockerIntegrationTest {
                         .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").exists())
-                .andExpect(jsonPath("$.username").value("emailuser"));
+                .andExpect(jsonPath("$.username").value(username));
     }
 
     @Test
     public void testUserLoginFailureWrongPassword() throws Exception {
+        // Use unique username/email to avoid conflicts
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "wrongpassuser_" + uniqueId;
+        String email = "wrongpass_" + uniqueId + "@example.com";
+        
         // First register a user
         RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setUsername("wrongpassuser");
-        registerRequest.setEmail("wrongpass@example.com");
+        registerRequest.setUsername(username);
+        registerRequest.setEmail(email);
         registerRequest.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/register")
@@ -172,7 +198,7 @@ public class AuthDockerIntegrationTest {
 
         // Try to login with wrong password
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsernameOrEmail("wrongpassuser");
+        loginRequest.setUsernameOrEmail(username);
         loginRequest.setPassword("wrongpassword");
 
         mockMvc.perform(post("/api/auth/login")
@@ -195,10 +221,16 @@ public class AuthDockerIntegrationTest {
 
     @Test
     public void testDuplicateUsernameRegistration() throws Exception {
+        // Use unique base username/email to avoid conflicts with other tests
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "duplicate_" + uniqueId;
+        String email1 = "first_" + uniqueId + "@example.com";
+        String email2 = "second_" + uniqueId + "@example.com";
+        
         // Register first user
         RegisterRequest request1 = new RegisterRequest();
-        request1.setUsername("duplicate");
-        request1.setEmail("first@example.com");
+        request1.setUsername(username);
+        request1.setEmail(email1);
         request1.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/register")
@@ -206,10 +238,10 @@ public class AuthDockerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request1)))
                 .andExpect(status().isOk());
 
-        // Try to register with same username
+        // Try to register with same username (should fail)
         RegisterRequest request2 = new RegisterRequest();
-        request2.setUsername("duplicate");
-        request2.setEmail("second@example.com");
+        request2.setUsername(username);
+        request2.setEmail(email2);
         request2.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/register")
@@ -220,10 +252,16 @@ public class AuthDockerIntegrationTest {
 
     @Test
     public void testDuplicateEmailRegistration() throws Exception {
+        // Use unique base email to avoid conflicts with other tests
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username1 = "user1_" + uniqueId;
+        String username2 = "user2_" + uniqueId;
+        String email = "duplicate_" + uniqueId + "@example.com";
+        
         // Register first user
         RegisterRequest request1 = new RegisterRequest();
-        request1.setUsername("user1");
-        request1.setEmail("duplicate@example.com");
+        request1.setUsername(username1);
+        request1.setEmail(email);
         request1.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/register")
@@ -231,10 +269,10 @@ public class AuthDockerIntegrationTest {
                         .content(objectMapper.writeValueAsString(request1)))
                 .andExpect(status().isOk());
 
-        // Try to register with same email
+        // Try to register with same email (should fail)
         RegisterRequest request2 = new RegisterRequest();
-        request2.setUsername("user2");
-        request2.setEmail("duplicate@example.com");
+        request2.setUsername(username2);
+        request2.setEmail(email);
         request2.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/register")
@@ -245,8 +283,12 @@ public class AuthDockerIntegrationTest {
 
     @Test
     public void testUserNotFoundLogin() throws Exception {
+        // Use unique username that definitely doesn't exist
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "nonexistent_" + uniqueId;
+        
         LoginRequest request = new LoginRequest();
-        request.setUsernameOrEmail("nonexistent");
+        request.setUsernameOrEmail(username);
         request.setPassword("password123");
 
         mockMvc.perform(post("/api/auth/login")
@@ -257,10 +299,15 @@ public class AuthDockerIntegrationTest {
 
     @Test
     public void testCompleteAuthFlowWithDocker() throws Exception {
+        // Use unique username/email to avoid conflicts
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        String username = "dockeruser_" + uniqueId;
+        String email = "docker_" + uniqueId + "@example.com";
+        
         // Register user
         RegisterRequest registerRequest = new RegisterRequest();
-        registerRequest.setUsername("dockeruser");
-        registerRequest.setEmail("docker@example.com");
+        registerRequest.setUsername(username);
+        registerRequest.setEmail(email);
         registerRequest.setPassword("dockerpass123");
 
         MvcResult registerResult = mockMvc.perform(post("/api/auth/register")
@@ -273,11 +320,11 @@ public class AuthDockerIntegrationTest {
                 registerResult.getResponse().getContentAsString(), AuthResponse.class);
         
         assertNotNull(registerResponse.getToken());
-        assertEquals("dockeruser", registerResponse.getUsername());
+        assertEquals(username, registerResponse.getUsername());
 
         // Login user
         LoginRequest loginRequest = new LoginRequest();
-        loginRequest.setUsernameOrEmail("dockeruser");
+        loginRequest.setUsernameOrEmail(username);
         loginRequest.setPassword("dockerpass123");
 
         MvcResult loginResult = mockMvc.perform(post("/api/auth/login")
@@ -290,10 +337,10 @@ public class AuthDockerIntegrationTest {
                 loginResult.getResponse().getContentAsString(), AuthResponse.class);
         
         assertNotNull(loginResponse.getToken());
-        assertEquals("dockeruser", loginResponse.getUsername());
+        assertEquals(username, loginResponse.getUsername());
 
         // Verify user exists in database
-        assertTrue(userRepository.existsByUsername("dockeruser"));
-        assertTrue(userRepository.existsByEmail("docker@example.com"));
+        assertTrue(userRepository.existsByUsername(username));
+        assertTrue(userRepository.existsByEmail(email));
     }
 }

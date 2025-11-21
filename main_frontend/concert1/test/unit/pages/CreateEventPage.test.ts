@@ -838,19 +838,22 @@ describe('CreateEventPage.vue', () => {
     )
   })
 
-  it.skip('should show error and redirect when no token available', async () => {
-    // Note: This test is skipped because the module-level mock always provides a token
-    // The token fallback logic is tested by the sessionStorage test instead
+  it('should show error and redirect when no token available', async () => {
+    // Clear all token sources
     localStorage.clear()
     sessionStorage.clear()
+    
+    // Spy on the real router.push before mounting
+    const pushSpy = vi.spyOn(router, 'push')
     
     const wrapper = mount(CreateEventPage, {
       global: { plugins: [router], stubs: { NuxtLink: true } }
     })
     
     const vm = wrapper.vm as any
-    // Override user to null for this test
-    vm.user = { value: null }
+    // Override the user ref to simulate no user
+    vm.user.value = null
+    
     vm.form.title = 'Test Event'
     vm.form.description = 'Test Description'
     vm.form.dateStart = '2024-12-31'
@@ -861,8 +864,12 @@ describe('CreateEventPage.vue', () => {
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
     
+    // Error toast should be shown
     expect(mockError).toHaveBeenCalledWith('You must be logged in to create an event.', 'Authentication Required')
-    expect(mockPush).toHaveBeenCalledWith('/LoginPage')
+    
+    // The component uses the injected router from the mount plugins
+    // Assert the real router.push was called with '/LoginPage'
+    expect(pushSpy).toHaveBeenCalledWith('/LoginPage')
   })
 
   it('should handle API error with statusMessage', async () => {

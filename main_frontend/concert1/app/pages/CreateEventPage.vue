@@ -129,7 +129,7 @@ async function handleSubmit() {
     }
     
     // Create event in backend
-    const backendEvent: any = await apiFetch('/api/events', {
+    const backendEvent: any = await apiFetch('/api/events/json', {
       method: 'POST',
       body: payload,
       headers: { Authorization: `Bearer ${token}` }

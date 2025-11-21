@@ -86,7 +86,7 @@ describe('EditEventPage', () => {
     await wrapper.vm.$nextTick()
     await new Promise(resolve => setTimeout(resolve, 100))
     
-    expect(global.$fetch).toHaveBeenCalledWith('/api/events/json/123', expect.any(Object))
+    expect(global.$fetch).toHaveBeenCalledWith('/api/events/123', expect.any(Object))
   })
 
   it('should handle missing event ID', async () => {

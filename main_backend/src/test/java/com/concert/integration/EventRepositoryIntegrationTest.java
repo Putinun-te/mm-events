@@ -1,7 +1,10 @@
 package com.concert.integration;
 
 import com.concert.model.Event;
+import com.concert.model.User;
 import com.concert.repository.EventRepository;
+import com.concert.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +33,24 @@ public class EventRepositoryIntegrationTest {
     @Autowired
     private EventRepository eventRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    private User testUser;
+
+    @BeforeEach
+    void setUp() {
+        // Create a test user for all event tests (required for user_id foreign key)
+        String uniqueId = UUID.randomUUID().toString().substring(0, 8);
+        testUser = new User();
+        testUser.setUsername("testuser_" + uniqueId);
+        testUser.setEmail("test_" + uniqueId + "@example.com");
+        testUser.setPassword("hashedPassword123");
+        testUser.setFirstName("Test");
+        testUser.setLastName("User");
+        testUser = userRepository.save(testUser);
+    }
+
     @Test
     void testRepositoryConnection() {
         // Verify repository is autowired and database is accessible
@@ -54,6 +75,7 @@ public class EventRepositoryIntegrationTest {
         event.setAddress("123 Test St");
         event.setCity("Test City");
         event.setCountry("Test Country");
+        event.setOrganizer(testUser);  // Set the required organizer
 
         // Save the event
         Event savedEvent = eventRepository.save(event);
@@ -81,6 +103,7 @@ public class EventRepositoryIntegrationTest {
         event.setStartDate(LocalDateTime.now().plusDays(1));
         event.setEndDate(LocalDateTime.now().plusDays(1).plusHours(2));
         event.setPersonLimit(50);
+        event.setOrganizer(testUser);  // Set the required organizer
 
         // Save and search
         Event savedEvent = eventRepository.save(event);

@@ -18,4 +18,6 @@ public interface EventRepository extends JpaRepository<Event, Long> {
     Page<Event> findByEndDateAfterOrderByStartDateAsc(LocalDateTime endDate, Pageable pageable);
 
     List<Event> findByOrganizerOrderByStartDateAsc(User organizer);
+
+    List<Event> findByTitleContaining(String title);
 }

@@ -794,24 +794,62 @@ jobs:
           echo "- Version: ${{ needs.build-backend.outputs.version }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           
-          # Overall status (E2E tests are optional)
-          e2e_result="${{ needs.test-frontend-e2e.result }}"
-          e2e_passed=false
-          if [ "$e2e_result" == "success" ] || [ "$e2e_result" == "skipped" ]; then
-            e2e_passed=true
+          # Check overall status
+          # E2E tests are optional (success or skipped is OK)
+          E2E_RESULT="${{ needs.test-frontend-e2e.result }}"
+          
+          echo "🔍 Checking pipeline status..." >&2
+          echo "Backend Build: ${{ needs.build-backend.result }}" >&2
+          echo "Frontend Build: ${{ needs.build-frontend.result }}" >&2
+          echo "Backend Unit Tests: ${{ needs.test-backend-unit.result }}" >&2
+          echo "Frontend Unit Tests: ${{ needs.test-frontend-unit.result }}" >&2
+          echo "Frontend E2E Tests: $E2E_RESULT" >&2
+          echo "Code Quality: ${{ needs.code-quality.result }}" >&2
+          
+          # Determine if pipeline passed
+          PIPELINE_PASSED=true
+          
+          # Check required jobs
+          if [ "${{ needs.build-backend.result }}" != "success" ]; then
+            echo "❌ Backend build failed" >&2
+            PIPELINE_PASSED=false
           fi
           
-          if [ "${{ needs.build-backend.result }}" == "success" ] && \
-             [ "${{ needs.build-frontend.result }}" == "success" ] && \
-             [ "${{ needs.test-backend-unit.result }}" == "success" ] && \
-             [ "${{ needs.test-frontend-unit.result }}" == "success" ] && \
-             [ "$e2e_passed" == "true" ] && \
-             [ "${{ needs.code-quality.result }}" == "success" ]; then
+          if [ "${{ needs.build-frontend.result }}" != "success" ]; then
+            echo "❌ Frontend build failed" >&2
+            PIPELINE_PASSED=false
+          fi
+          
+          if [ "${{ needs.test-backend-unit.result }}" != "success" ]; then
+            echo "❌ Backend unit tests failed" >&2
+            PIPELINE_PASSED=false
+          fi
+          
+          if [ "${{ needs.test-frontend-unit.result }}" != "success" ]; then
+            echo "❌ Frontend unit tests failed" >&2
+            PIPELINE_PASSED=false
+          fi
+          
+          # E2E tests are optional - success or skipped is OK
+          if [ "$E2E_RESULT" != "success" ] && [ "$E2E_RESULT" != "skipped" ]; then
+            echo "❌ E2E tests failed (result: $E2E_RESULT)" >&2
+            PIPELINE_PASSED=false
+          fi
+          
+          if [ "${{ needs.code-quality.result }}" != "success" ]; then
+            echo "❌ Code quality check failed" >&2
+            PIPELINE_PASSED=false
+          fi
+          
+          # Output final status
+          if [ "$PIPELINE_PASSED" == "true" ]; then
             echo "## ✅ Pipeline Status: SUCCESS" >> $GITHUB_STEP_SUMMARY
             echo "All stages completed successfully!" >> $GITHUB_STEP_SUMMARY
+            echo "✅ Pipeline PASSED" >&2
             exit 0
           else
             echo "## ❌ Pipeline Status: FAILED" >> $GITHUB_STEP_SUMMARY
             echo "One or more stages failed. Check logs above." >> $GITHUB_STEP_SUMMARY
+            echo "❌ Pipeline FAILED" >&2
             exit 1
           fi

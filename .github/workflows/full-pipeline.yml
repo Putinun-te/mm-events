@@ -336,8 +336,19 @@ jobs:
       - name: Verify GHCR authentication
         run: |
           echo "Testing GHCR authentication..."
+          echo "Username: ${{ steps.lowercase.outputs.owner }}"
+          echo "Token length: ${#GITHUB_TOKEN}"
           docker pull hello-world || true
           echo "Login successful for user: ${{ steps.lowercase.outputs.owner }}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Check token permissions
+        run: |
+          echo "Checking if token has package write permissions..."
+          curl -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               https://api.github.com/user/packages?package_type=container || true
 
       - name: Extract metadata for backend
         id: meta-backend
@@ -355,6 +366,8 @@ jobs:
 
       - name: Build and push backend image
         uses: docker/build-push-action@v5
+        continue-on-error: true
+        id: docker-push-backend
         with:
           context: ./main_backend
           push: true
@@ -363,6 +376,27 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+
+      - name: Fallback - Build backend image only (no push)
+        if: steps.docker-push-backend.outcome == 'failure'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main_backend
+          push: false
+          tags: ${{ steps.meta-backend.outputs.tags }}
+          labels: ${{ steps.meta-backend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          outputs: type=docker,dest=/tmp/backend-image.tar
+
+      - name: Upload backend image as artifact
+        if: steps.docker-push-backend.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-docker-image
+          path: /tmp/backend-image.tar
+          retention-days: 1
 
       - name: Extract metadata for frontend
         id: meta-frontend
@@ -380,6 +414,8 @@ jobs:
 
       - name: Build and push frontend image
         uses: docker/build-push-action@v5
+        continue-on-error: true
+        id: docker-push-frontend
         with:
           context: ./main_frontend/concert1
           push: true
@@ -388,6 +424,44 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
+
+      - name: Fallback - Build frontend image only (no push)
+        if: steps.docker-push-frontend.outcome == 'failure'
+        uses: docker/build-push-action@v5
+        with:
+          context: ./main_frontend/concert1
+          push: false
+          tags: ${{ steps.meta-frontend.outputs.tags }}
+          labels: ${{ steps.meta-frontend.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          platforms: linux/amd64
+          outputs: type=docker,dest=/tmp/frontend-image.tar
+
+      - name: Upload frontend image as artifact
+        if: steps.docker-push-frontend.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-docker-image
+          path: /tmp/frontend-image.tar
+          retention-days: 1
+
+      - name: Summary of Docker builds
+        if: always()
+        run: |
+          echo "## Docker Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "Backend push: ${{ steps.docker-push-backend.outcome }}" >> $GITHUB_STEP_SUMMARY
+          echo "Frontend push: ${{ steps.docker-push-frontend.outcome }}" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ steps.docker-push-backend.outcome }}" == "failure" ] || [ "${{ steps.docker-push-frontend.outcome }}" == "failure" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "⚠️ **GHCR Push Failed** - Images built successfully but could not push to ghcr.io" >> $GITHUB_STEP_SUMMARY
+            echo "This is likely due to repository settings. Check:" >> $GITHUB_STEP_SUMMARY
+            echo "- Settings → Actions → General → Workflow permissions" >> $GITHUB_STEP_SUMMARY
+            echo "- Enable 'Read and write permissions'" >> $GITHUB_STEP_SUMMARY
+            echo "- Or create a PAT with write:packages scope" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "Docker images saved as artifacts for manual push if needed." >> $GITHUB_STEP_SUMMARY
+          fi
 
   # ============================================
   # STAGE 7: PIPELINE SUMMARY

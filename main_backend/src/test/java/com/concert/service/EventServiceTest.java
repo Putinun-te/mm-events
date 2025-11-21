@@ -123,7 +123,7 @@ class EventServiceTest {
         List<Event> events = Arrays.asList(testEvent, event2);
         Page<Event> eventPage = new PageImpl<>(events, PageRequest.of(0, 10), 2);
 
-        when(eventRepository.findByStartDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class)))
+        when(eventRepository.findByEndDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class)))
                 .thenReturn(eventPage);
 
         Page<EventResponse> result = eventService.getUpcomingEvents(PageRequest.of(0, 10), testUser);
@@ -133,7 +133,7 @@ class EventServiceTest {
         assertEquals(2, result.getTotalElements());
         assertTrue(result.getContent().get(0).isOwnedByCurrentUser());
 
-        verify(eventRepository, times(1)).findByStartDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class));
+        verify(eventRepository, times(1)).findByEndDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class));
     }
 
     @Test
@@ -142,7 +142,7 @@ class EventServiceTest {
         List<Event> events = Arrays.asList(testEvent);
         Page<Event> eventPage = new PageImpl<>(events, PageRequest.of(0, 10), 1);
 
-        when(eventRepository.findByStartDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class)))
+        when(eventRepository.findByEndDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class)))
                 .thenReturn(eventPage);
 
         Page<EventResponse> result = eventService.getUpcomingEvents(PageRequest.of(0, 10), null);
@@ -151,14 +151,14 @@ class EventServiceTest {
         assertEquals(1, result.getContent().size());
         assertFalse(result.getContent().get(0).isOwnedByCurrentUser());
 
-        verify(eventRepository, times(1)).findByStartDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class));
+        verify(eventRepository, times(1)).findByEndDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class));
     }
 
     @Test
     void testGetUpcomingEvents_EmptyResult() {
         Page<Event> emptyPage = new PageImpl<>(Arrays.asList(), PageRequest.of(0, 10), 0);
 
-        when(eventRepository.findByStartDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class)))
+        when(eventRepository.findByEndDateAfterOrderByStartDateAsc(any(LocalDateTime.class), any(Pageable.class)))
                 .thenReturn(emptyPage);
 
         Page<EventResponse> result = eventService.getUpcomingEvents(PageRequest.of(0, 10), testUser);

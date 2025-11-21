@@ -1,0 +1,24 @@
+{
+    "Rules": [
+        {
+            "ID": "TempPhotoCleanup",
+            "Status": "Enabled",
+            "Filter": {
+                "Prefix": "temp/"
+            },
+            "Expiration": {
+                "Days": 7
+            }
+        },
+        {
+            "ID": "OrphanedPhotoCleanup", 
+            "Status": "Enabled",
+            "Filter": {
+                "Prefix": "events/"
+            },
+            "Expiration": {
+                "Days": 30
+            }
+        }
+    ]
+}

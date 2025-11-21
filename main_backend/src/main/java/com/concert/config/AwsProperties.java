@@ -16,7 +16,7 @@ import jakarta.validation.constraints.NotBlank;
 public class AwsProperties {
 
     @NotBlank(message = "AWS region must be specified")
-    private String region = "us-east-1";
+    private String region = "ap-southeast-1";
 
     private S3Properties s3 = new S3Properties();
 
@@ -38,10 +38,10 @@ public class AwsProperties {
 
     public static class S3Properties {
         @NotBlank(message = "S3 event pictures bucket must be specified")
-        private String eventPicturesBucket = "concert-event-pictures-useast1-123456789012";
+        private String eventPicturesBucket = "concert-event-pictures-singapore-123456789012";
 
         @NotBlank(message = "S3 user avatars bucket must be specified")
-        private String userAvatarsBucket = "concert-user-avatars-useast1-123456789012";
+        private String userAvatarsBucket = "concert-user-avatars-singapore-123456789012";
         
         private boolean presignedUrlsEnabled = true;
         private int presignedUrlExpirationMinutes = 60;

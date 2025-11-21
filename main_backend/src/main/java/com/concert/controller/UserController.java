@@ -14,6 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@CrossOrigin(origins = "*")
 public class UserController {
     
     private final UserRepository userRepository;
@@ -45,6 +46,17 @@ public class UserController {
         }
     }
 
+    @GetMapping("/profile")
+    public ResponseEntity<?> getProfile(Authentication authentication) {
+        try {
+            User currentUser = getCurrentUser(authentication);
+            UserProfileResponse profile = userProfileService.buildResponse(currentUser);
+            return ResponseEntity.ok(profile);
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<User> getUserById(@PathVariable Long id) {
         try {
@@ -53,6 +65,39 @@ public class UserController {
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
             return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<?> updateProfile(Authentication authentication, @RequestBody UpdateProfileRequest req) {
+        try {
+            if (authentication == null || authentication.getName() == null) {
+                return ResponseEntity.status(401).body("Authentication required");
+            }
+            
+            String username = authentication.getName();
+            return userRepository.findByUsername(username)
+                    .map(user -> {
+                        if (req.getFirstName() != null || req.getLastName() != null) {
+                            String full = ((req.getFirstName() != null ? req.getFirstName() : "").trim() + " " + (req.getLastName() != null ? req.getLastName() : "").trim()).trim();
+                            if (!full.isEmpty()) user.setName(full);
+                        }
+                        if (req.getPhone() != null && !req.getPhone().trim().isEmpty()) user.setPhone(req.getPhone().trim());
+                        if (req.getAddress() != null && !req.getAddress().trim().isEmpty()) user.setAddress(req.getAddress().trim());
+                        if (req.getCity() != null && !req.getCity().trim().isEmpty()) user.setCity(req.getCity().trim());
+                        if (req.getCountry() != null && !req.getCountry().trim().isEmpty()) user.setCountry(req.getCountry().trim());
+                        if (req.getPincode() != null && !req.getPincode().trim().isEmpty()) user.setPincode(req.getPincode().trim());
+                        if (req.getProfilePhoto() != null) user.setProfilePhoto(req.getProfilePhoto());
+                        if (req.getCompany() != null) user.setCompany(req.getCompany());
+                        if (req.getWebsite() != null) user.setWebsite(req.getWebsite());
+                        User saved = userRepository.save(user);
+
+                        UserProfileResponse profile = userProfileService.buildResponse(saved);
+                        return ResponseEntity.ok(profile);
+                    })
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("Error updating profile: " + e.getMessage());
         }
     }
 

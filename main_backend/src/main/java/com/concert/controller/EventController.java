@@ -20,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/events")
+@CrossOrigin(origins = "*")
 public class EventController {
 
     private final EventService eventService;
@@ -38,6 +39,12 @@ public class EventController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/json")
+    public ResponseEntity<EventResponse> createEventJson(Authentication authentication,
+                                                         @Valid @RequestBody CreateEventRequest request) {
+        return createEvent(authentication, request);
+    }
+
     @GetMapping
     public ResponseEntity<Page<EventResponse>> listEvents(Authentication authentication,
                                                           @RequestParam(defaultValue = "0") int page,
@@ -48,11 +55,38 @@ public class EventController {
         return ResponseEntity.ok(events);
     }
 
+    @GetMapping("/json")
+    public ResponseEntity<Page<EventResponse>> listEventsJson(Authentication authentication,
+                                                              @RequestParam(defaultValue = "0") int page,
+                                                              @RequestParam(defaultValue = "12") int size) {
+        return listEvents(authentication, page, size);
+    }
+
     @GetMapping("/me")
     public ResponseEntity<List<EventResponse>> myEvents(Authentication authentication) {
         User organizer = getCurrentUser(authentication);
         List<EventResponse> events = eventService.getEventsForOrganizer(organizer);
         return ResponseEntity.ok(events);
+    }
+
+    @GetMapping("/json/me")
+    public ResponseEntity<List<EventResponse>> myEventsJson(Authentication authentication) {
+        return myEvents(authentication);
+    }
+
+    @GetMapping("/json/test")
+    public ResponseEntity<String> testJsonEndpoint() {
+        return ResponseEntity.ok("Events JSON API is working on AWS!");
+    }
+
+    @PostMapping("/json/test")
+    public ResponseEntity<String> testJsonPostEndpoint() {
+        return ResponseEntity.ok("Events JSON POST is working on AWS!");
+    }
+
+    @GetMapping("/json/{id}")
+    public ResponseEntity<EventResponse> getEventJson(Authentication authentication, @PathVariable Long id) {
+        return getEvent(authentication, id);
     }
 
     @GetMapping("/{id}")
@@ -72,6 +106,14 @@ public class EventController {
         return ResponseEntity.ok(response);
     }
 
+    @PutMapping("/json/{id}")
+    public ResponseEntity<EventResponse> updateEventJson(
+            Authentication authentication,
+            @PathVariable Long id,
+            @Valid @RequestBody CreateEventRequest request) {
+        return updateEvent(authentication, id, request);
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteEvent(
             Authentication authentication,
@@ -79,6 +121,13 @@ public class EventController {
         User organizer = getCurrentUser(authentication);
         eventService.deleteEvent(id, organizer);
         return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/json/{id}")
+    public ResponseEntity<Void> deleteEventJson(
+            Authentication authentication,
+            @PathVariable Long id) {
+        return deleteEvent(authentication, id);
     }
 
     @PostMapping("/{id}/photo/upload-url")

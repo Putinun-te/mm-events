@@ -7,6 +7,8 @@ public class EventParticipantSummary {
     private Integer ticketCount;
     private LocalDateTime joinedAt;
 
+    public EventParticipantSummary() {}
+
     public EventParticipantSummary(String userName, Integer ticketCount, LocalDateTime joinedAt) {
         this.userName = userName;
         this.ticketCount = ticketCount;

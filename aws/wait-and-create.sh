@@ -8,4 +8,4 @@ echo "⏳ Waiting for stack deletion to complete..."
 aws cloudformation wait stack-delete-complete --stack-name eksctl-concert-cluster-cluster --region $REGION
 
 echo "✅ Stack deleted! Creating cluster now..."
-./create-eks-cluster-singapore.sh
+./create-eks-t4g-with-runners.sh

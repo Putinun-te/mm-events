@@ -197,8 +197,8 @@ resource "aws_apigatewayv2_route" "root_proxy" {
 
   target = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 
-  authorizer_id = var.enable_jwt_authorizer ? aws_apigatewayv2_authorizer.jwt[0].id : null
-  authorization_type = var.enable_jwt_authorizer ? "JWT" : "NONE"
+  # Disable API Gateway JWT auth - let the application handle authentication
+  authorization_type = "NONE"
 }
 
 resource "aws_apigatewayv2_route" "health" {

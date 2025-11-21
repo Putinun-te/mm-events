@@ -28,6 +28,10 @@ public class BookingService {
 
     @Transactional
     public BookingResponse createBooking(String username, CreateBookingRequest request) {
+        if (request.getEventId() == null || request.getQuantity() == null || request.getQuantity() <= 0) {
+            throw new IllegalArgumentException("Event ID and valid quantity are required");
+        }
+        
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -39,8 +43,8 @@ public class BookingService {
         Booking booking = new Booking();
         booking.setUser(user);
         booking.setEventId(request.getEventId());
-        booking.setEventTitle(request.getEventTitle());
-        booking.setEventLocation(request.getEventLocation());
+        booking.setEventTitle(request.getEventTitle() != null ? request.getEventTitle() : "Event");
+        booking.setEventLocation(request.getEventLocation() != null ? request.getEventLocation() : "TBA");
         booking.setEventStartDate(request.getEventStartDate());
         booking.setQuantity(request.getQuantity());
         booking.setTotalPrice(totalPrice);

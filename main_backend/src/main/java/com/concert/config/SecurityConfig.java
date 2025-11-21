@@ -39,9 +39,14 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers(HttpMethod.OPTIONS).permitAll()  // Allow ALL OPTIONS requests
                     .requestMatchers("/api/auth/**").permitAll()  // Allow all auth endpoints
-                    .requestMatchers("/api/upload/**").permitAll()  // Allow all users to upload
+                    .requestMatchers("/api/upload/**").authenticated()  // Require auth for upload
                     .requestMatchers("/api/health/**").permitAll()  // Allow health checks
                     .requestMatchers(HttpMethod.GET, "/api/events", "/api/events/", "/api/events/**").permitAll()
+                    .requestMatchers(HttpMethod.POST, "/api/events", "/api/events/**").authenticated()
+                    .requestMatchers(HttpMethod.PUT, "/api/events/**").authenticated()
+                    .requestMatchers(HttpMethod.DELETE, "/api/events/**").authenticated()
+                    .requestMatchers("/api/bookings/**").authenticated()
+                    .requestMatchers("/api/users/**").authenticated()
                     .requestMatchers("/h2-console/**").permitAll()
                     .requestMatchers("/error").permitAll()
                     .requestMatchers("/actuator/health").permitAll()
@@ -60,16 +65,19 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Arrays.asList(
             "http://localhost:*",
+            "http://127.0.0.1:*",
             "http://concert-web-singapore-*.s3-website-ap-southeast-1.amazonaws.com",
             "https://concert-web-singapore-*.s3-website-ap-southeast-1.amazonaws.com",
             "https://*.cloudfront.net",
+            "https://dzh397ixo71bk.cloudfront.net",
             "https://*.execute-api.*.amazonaws.com",
             "http://*.elb.amazonaws.com",
-            "https://*.elb.amazonaws.com"
+            "https://*.elb.amazonaws.com",
+            "*" // Allow all origins for development
         ));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false); // Set to false when allowing all origins
         configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

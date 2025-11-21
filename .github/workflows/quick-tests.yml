@@ -22,10 +22,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Backend Unit Tests Only
   test-backend:
     name: Backend Unit Tests
-    runs-on: [self-hosted, eks, singapore]
+    runs-on: [self-hosted, linux, x64, eks, singapore]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -44,20 +43,17 @@ jobs:
         env:
           SPRING_PROFILES_ACTIVE: test
 
-      - name: Test Summary
+      - name: Upload test results
         if: always()
-        run: |
-          cd main_backend
-          echo "=== Test Results ==="
-          if [ -d "target/surefire-reports" ]; then
-            echo "Tests completed. Check reports for details."
-            find target/surefire-reports -name "*.txt" -exec cat {} \; | grep -E "Tests run:|BUILD" || true
-          fi
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: main_backend/target/surefire-reports/
+          retention-days: 3
 
-  # Frontend Unit Tests Only
   test-frontend:
     name: Frontend Unit Tests
-    runs-on: [self-hosted, eks, singapore]
+    runs-on: [self-hosted, linux, x64, eks, singapore]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -79,16 +75,18 @@ jobs:
           cd main_frontend/concert1
           npm run test
 
-      - name: Test Summary
+      - name: Upload test results
         if: always()
-        run: |
-          echo "=== Frontend Tests Complete ==="
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-test-results
+          path: main_frontend/concert1/coverage/
+          retention-days: 3
 
-  # Summary Job
   test-summary:
     name: Test Summary
     needs: [test-backend, test-frontend]
-    runs-on: [self-hosted, eks, singapore]
+    runs-on: [self-hosted, linux, x64, eks, singapore]
     if: always()
     steps:
       - name: Check test results

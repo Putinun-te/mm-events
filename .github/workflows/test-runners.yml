@@ -1,0 +1,22 @@
+name: Test EKS Runners
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/test-runners.yml']
+
+jobs:
+  test-runner:
+    name: Test EKS Runner
+    runs-on: [self-hosted, linux, x64, eks, singapore]
+    steps:
+      - name: Test runner
+        run: |
+          echo "🎉 EKS Runner is working!"
+          echo "Runner: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "Docker: $(docker --version || echo 'Docker not available')"
+          echo "Java: $(java -version 2>&1 || echo 'Java not available')"
+          echo "Node: $(node --version 2>&1 || echo 'Node not available')"
+          echo "✅ Runner test complete"

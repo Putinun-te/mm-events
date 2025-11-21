@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -11,7 +12,6 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.model.ObjectCannedACL;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -21,6 +21,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/upload")
+@CrossOrigin(origins = "*")
 public class UploadController {
 
     private static final Logger log = LoggerFactory.getLogger(UploadController.class);
@@ -29,7 +30,7 @@ public class UploadController {
     @Value("${aws.s3.event-pictures-bucket:concert-event-pictures-singapore-123456789012}")
     private String bucketName;
     
-    @Value("${aws.s3.images-url:https://concert-event-pictures-singapore-123456789012.s3.ap-southeast-1.amazonaws.com}")
+    @Value("${aws.s3.images-url:https://dzh397ixo71bk.cloudfront.net}")
     private String imagesBaseUrl;
 
     public UploadController(S3Client s3Client) {
@@ -37,13 +38,28 @@ public class UploadController {
     }
 
     @PostMapping("/avatar")
-    public ResponseEntity<Map<String, String>> uploadAvatar(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadAvatar(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file) {
         try {
-            log.info("Avatar upload - File: {}, Size: {}, Type: {}", 
-                file.getOriginalFilename(), file.getSize(), file.getContentType());
+            if (authentication == null || authentication.getName() == null) {
+                throw new IllegalArgumentException("Authentication required");
+            }
+            log.info("Avatar upload by user: {} - File: {}, Size: {}, Type: {}", 
+                authentication.getName(), file.getOriginalFilename(), file.getSize(), file.getContentType());
             
             if (file.isEmpty()) {
                 throw new IllegalArgumentException("File is empty");
+            }
+            
+            // Security validations
+            if (file.getSize() > 10 * 1024 * 1024) { // 10MB limit
+                throw new IllegalArgumentException("File too large. Maximum size is 10MB");
+            }
+            
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                throw new IllegalArgumentException("Only image files are allowed");
             }
             
             String filename = UUID.randomUUID().toString() + getExtension(file.getOriginalFilename());
@@ -78,14 +94,29 @@ public class UploadController {
     }
 
     @PostMapping("/event-photo")
-    public ResponseEntity<Map<String, String>> uploadEventPhoto(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, String>> uploadEventPhoto(
+            Authentication authentication,
+            @RequestParam("file") MultipartFile file) {
         try {
-            log.info("Upload request - File: {}, Size: {}, Type: {}", 
-                file.getOriginalFilename(), file.getSize(), file.getContentType());
+            if (authentication == null || authentication.getName() == null) {
+                throw new IllegalArgumentException("Authentication required");
+            }
+            log.info("Upload request by user: {} - File: {}, Size: {}, Type: {}", 
+                authentication.getName(), file.getOriginalFilename(), file.getSize(), file.getContentType());
             log.info("S3 Config - Bucket: {}, Base URL: {}", bucketName, imagesBaseUrl);
             
             if (file.isEmpty()) {
                 throw new IllegalArgumentException("File is empty");
+            }
+            
+            // Security validations
+            if (file.getSize() > 10 * 1024 * 1024) { // 10MB limit
+                throw new IllegalArgumentException("File too large. Maximum size is 10MB");
+            }
+            
+            String contentType = file.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                throw new IllegalArgumentException("Only image files are allowed");
             }
             
             String filename = UUID.randomUUID().toString() + getExtension(file.getOriginalFilename());

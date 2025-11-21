@@ -18,7 +18,7 @@ public class JwtService {
     private String jwtSecret;
     
     @Value("${jwt.expiration:604800000}")
-    private int jwtExpirationInMs;
+    private int jwtExpirationInMs; // 7 days = 604800000ms
     
     public String generateToken(String username) {
         Date expiryDate = new Date(System.currentTimeMillis() + jwtExpirationInMs);

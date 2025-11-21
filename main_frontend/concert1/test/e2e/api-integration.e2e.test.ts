@@ -4,6 +4,19 @@ import axios from 'axios'
 const API_BASE = process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080'
 const FRONTEND_BASE = process.env.FRONTEND_BASE || 'http://localhost:3000'
 
+// Helper function to format dates for backend (yyyy-MM-dd'T'HH:mm:ss)
+// Backend expects LocalDateTime format without milliseconds or timezone
+function formatDateForBackend(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+}
+
 describe('E2E API Integration Tests', () => {
   beforeAll(async () => {
     // Wait a bit for services to be fully ready
@@ -166,35 +179,54 @@ describe('E2E API Integration Tests', () => {
       const newEvent = {
         title: `E2E Test Event ${Date.now()}`,
         description: 'Created by E2E test',
-        startDate: new Date(Date.now() + 86400000).toISOString(),
-        endDate: new Date(Date.now() + 172800000).toISOString(),
+        startDate: formatDateForBackend(new Date(Date.now() + 86400000)),
+        endDate: formatDateForBackend(new Date(Date.now() + 172800000)),
         ticketPrice: 99.99,
         personLimit: 100,
         location: 'Test Venue'
       }
 
-      const response = await axios.post(
-        `${API_BASE}/api/events`,
-        newEvent,
-        {
-          headers: {
-            Authorization: `Bearer ${authToken}`,
-            'Content-Type': 'application/json'
-          }
-        }
-      )
+      console.log('🎫 Creating event with payload:', { 
+        title: newEvent.title,
+        startDate: newEvent.startDate,
+        endDate: newEvent.endDate
+      })
 
-      expect(response.status).toBe(200)
-      expect(response.data).toHaveProperty('id')
-      expect(response.data.title).toBe(newEvent.title)
+      try {
+        const response = await axios.post(
+          `${API_BASE}/api/events`,
+          newEvent,
+          {
+            headers: {
+              Authorization: `Bearer ${authToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        console.log('✅ Event created successfully:', { 
+          status: response.status, 
+          eventId: response.data.id 
+        })
+        expect(response.status).toBe(200)
+        expect(response.data).toHaveProperty('id')
+        expect(response.data.title).toBe(newEvent.title)
+      } catch (error: any) {
+        console.error('❌ Event creation failed:', {
+          status: error.response?.status,
+          data: error.response?.data,
+          message: error.message
+        })
+        throw error
+      }
     })
 
     it('should reject event creation without authentication', async () => {
       const newEvent = {
         title: `Unauthorized Event ${Date.now()}`,
         description: 'Should fail',
-        startDate: new Date(Date.now() + 86400000).toISOString(),
-        endDate: new Date(Date.now() + 172800000).toISOString(),
+        startDate: formatDateForBackend(new Date(Date.now() + 86400000)),
+        endDate: formatDateForBackend(new Date(Date.now() + 172800000)),
         ticketPrice: 99.99,
         personLimit: 100,
         location: 'Test Venue'
@@ -205,6 +237,9 @@ describe('E2E API Integration Tests', () => {
         // Should not reach here
         expect(true).toBe(false)
       } catch (error: any) {
+        console.log('✅ Unauthorized event creation rejected as expected:', { 
+          status: error.response?.status 
+        })
         expect(error.response?.status).toBeGreaterThanOrEqual(401)
       }
     })
@@ -241,12 +276,14 @@ describe('E2E API Integration Tests', () => {
       const event = {
         title: `Journey Event ${timestamp}`,
         description: 'Full journey test event',
-        startDate: new Date(Date.now() + 86400000).toISOString(),
-        endDate: new Date(Date.now() + 172800000).toISOString(),
+        startDate: formatDateForBackend(new Date(Date.now() + 86400000)),
+        endDate: formatDateForBackend(new Date(Date.now() + 172800000)),
         ticketPrice: 149.99,
         personLimit: 200,
         location: 'Journey Venue'
       }
+
+      console.log('📅 Event dates:', { startDate: event.startDate, endDate: event.endDate })
 
       const createResponse = await axios.post(
         `${API_BASE}/api/events`,

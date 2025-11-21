@@ -843,6 +843,9 @@ describe('CreateEventPage.vue', () => {
     localStorage.clear()
     sessionStorage.clear()
     
+    // Spy on the real router.push before mounting
+    const pushSpy = vi.spyOn(router, 'push')
+    
     const wrapper = mount(CreateEventPage, {
       global: { plugins: [router], stubs: { NuxtLink: true } }
     })
@@ -861,8 +864,12 @@ describe('CreateEventPage.vue', () => {
     await vm.handleSubmit()
     await wrapper.vm.$nextTick()
     
+    // Error toast should be shown
     expect(mockError).toHaveBeenCalledWith('You must be logged in to create an event.', 'Authentication Required')
-    expect(mockPush).toHaveBeenCalledWith('/LoginPage')
+    
+    // The component uses the injected router from the mount plugins
+    // Assert the real router.push was called with '/LoginPage'
+    expect(pushSpy).toHaveBeenCalledWith('/LoginPage')
   })
 
   it('should handle API error with statusMessage', async () => {

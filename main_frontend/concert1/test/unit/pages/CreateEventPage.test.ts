@@ -843,19 +843,14 @@ describe('CreateEventPage.vue', () => {
     localStorage.clear()
     sessionStorage.clear()
     
-    // Mock useUser to return null user
-    const mockUseUser = vi.fn(() => ref(null))
-    vi.doMock('#app', () => ({
-      useUser: mockUseUser,
-      useRouter: () => ({ push: mockPush }),
-      useError: () => mockError
-    }))
-    
     const wrapper = mount(CreateEventPage, {
       global: { plugins: [router], stubs: { NuxtLink: true } }
     })
     
     const vm = wrapper.vm as any
+    // Override the user ref to simulate no user
+    vm.user.value = null
+    
     vm.form.title = 'Test Event'
     vm.form.description = 'Test Description'
     vm.form.dateStart = '2024-12-31'

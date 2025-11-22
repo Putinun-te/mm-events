@@ -6,10 +6,6 @@ on:
       - main
       - develop
       - 'release/**'
-    paths:
-      - 'main_backend/**'
-      - 'main_frontend/**'
-      - '.github/workflows/quick-tests.yml'
   pull_request:
     branches:
       - main

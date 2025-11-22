@@ -1,0 +1,19 @@
+name: Test Trigger
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test-runner:
+    name: Test Runner Connection
+    runs-on: [self-hosted, linux]
+    steps:
+      - name: Test runner
+        run: |
+          echo "🎉 Runner is working!"
+          echo "Hostname: $(hostname)"
+          echo "Date: $(date)"
+          echo "User: $(whoami)"
+          echo "Working directory: $(pwd)"
+          echo "✅ Test complete"

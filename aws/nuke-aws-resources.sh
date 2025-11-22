@@ -3,7 +3,7 @@ set -e
 
 echo "🔥 AWS Resource Cleanup Script"
 echo "=============================="
-echo "⚠️  WARNING: This will delete AWS resources!"
+echo "⚠️  WARNING: This will delete AWS infrastructure (NOT code)!"
 read -p "Are you sure? (yes/no): " confirm
 
 if [ "$confirm" != "yes" ]; then
@@ -12,6 +12,9 @@ if [ "$confirm" != "yes" ]; then
 fi
 
 REGION="ap-southeast-1"
+
+echo "📝 Note: This script only deletes AWS infrastructure"
+echo "   Your code in Git repositories will NOT be affected"
 
 # Terminate EC2 instances
 echo "🔍 Finding EC2 instances..."
@@ -53,9 +56,9 @@ for LB in $LBS; do
   aws elbv2 delete-load-balancer --region $REGION --load-balancer-arn $LB || true
 done
 
-# Empty and delete S3 buckets
+# Empty and delete S3 buckets (skip code/artifact buckets)
 echo "🔍 Finding S3 buckets..."
-BUCKETS=$(aws s3 ls --region $REGION | awk '{print $3}')
+BUCKETS=$(aws s3 ls --region $REGION | awk '{print $3}' | grep -v 'github\|artifact\|code')
 for BUCKET in $BUCKETS; do
   echo "🗑️  Emptying and deleting S3 bucket: $BUCKET"
   aws s3 rm s3://$BUCKET --recursive || true

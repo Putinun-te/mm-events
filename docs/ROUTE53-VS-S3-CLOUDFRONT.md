@@ -13,6 +13,9 @@
 - DNS management
 - Traffic routing policies
 
+**HTTPS Support:** ❌ No - Route 53 only does DNS routing, not HTTPS
+- HTTPS is handled by CloudFront, Load Balancer, or your server
+
 **Cost:** ~$0.50/month per hosted zone + $0.40 per million queries
 
 ---

@@ -1,4 +1,4 @@
-name: EKS Self-Hosted Runner CI
+name: K8s Tests & Deployment
 
 on:
   push:
@@ -13,8 +13,8 @@ concurrency:
 
 jobs:
   backend-test:
-    name: Backend Tests (EKS)
-    runs-on: [self-hosted, linux, x64, eks, singapore]
+    name: Backend Tests (K8s)
+    runs-on: [self-hosted, linux, ARM64]
     
     steps:
       - name: Checkout code
@@ -43,8 +43,8 @@ jobs:
           retention-days: 3
 
   frontend-test:
-    name: Frontend Tests (EKS)
-    runs-on: [self-hosted, linux, x64, eks, singapore]
+    name: Frontend Tests (K8s)
+    runs-on: [self-hosted, linux, ARM64]
     
     steps:
       - name: Checkout code
@@ -75,23 +75,41 @@ jobs:
           path: main_frontend/concert1/coverage/
           retention-days: 3
 
-  test-summary:
-    name: EKS Test Summary
+  k8s-deployment-test:
+    name: K8s Deployment Test
     needs: [backend-test, frontend-test]
-    runs-on: [self-hosted, linux, x64, eks, singapore]
+    runs-on: [self-hosted, linux, ARM64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Test K8s manifests
+        run: |
+          echo "🚀 Testing K8s deployment manifests..."
+          if [ -f k8s/backend-deployment.yaml ]; then
+            echo "✅ Backend deployment manifest found"
+          else
+            echo "❌ Backend deployment manifest missing"
+          fi
+
+  test-summary:
+    name: K8s Test Summary
+    needs: [backend-test, frontend-test, k8s-deployment-test]
+    runs-on: [self-hosted, linux, ARM64]
     if: always()
     steps:
       - name: Check test results
         run: |
-          echo "📊 EKS Test Pipeline Summary"
-          echo "============================="
+          echo "📊 K8s Test Pipeline Summary"
+          echo "============================"
           echo "Backend Tests: ${{ needs.backend-test.result }}"
           echo "Frontend Tests: ${{ needs.frontend-test.result }}"
+          echo "K8s Deployment Test: ${{ needs.k8s-deployment-test.result }}"
           echo ""
-          if [ "${{ needs.backend-test.result }}" == "success" ] && [ "${{ needs.frontend-test.result }}" == "success" ]; then
-            echo "✅ All EKS tests passed!"
+          if [ "${{ needs.backend-test.result }}" == "success" ] && [ "${{ needs.frontend-test.result }}" == "success" ] && [ "${{ needs.k8s-deployment-test.result }}" == "success" ]; then
+            echo "✅ All K8s tests passed!"
             exit 0
           else
-            echo "❌ Some EKS tests failed"
+            echo "❌ Some K8s tests failed"
             exit 1
           fi

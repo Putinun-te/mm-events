@@ -14,7 +14,7 @@ concurrency:
 jobs:
   backend-test:
     name: Backend Tests (K8s)
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: self-hosted
     
     steps:
       - name: Checkout code
@@ -45,7 +45,7 @@ jobs:
 
   frontend-test:
     name: Frontend Tests (K8s)
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: self-hosted
     
     steps:
       - name: Checkout code
@@ -80,7 +80,7 @@ jobs:
   k8s-deployment-test:
     name: K8s Deployment Test
     needs: [backend-test, frontend-test]
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: self-hosted
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -117,7 +117,7 @@ spec:
   test-summary:
     name: K8s Test Summary
     needs: [backend-test, frontend-test, k8s-deployment-test]
-    runs-on: [self-hosted, linux, ARM64]
+    runs-on: self-hosted
     if: always()
     steps:
       - name: Check test results

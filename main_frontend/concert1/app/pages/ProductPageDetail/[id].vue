@@ -7,10 +7,7 @@ import { useApi } from '~/composables/useApi'
 
 const PLACEHOLDER_IMAGE = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256"><rect width="256" height="256" rx="24" fill="%23e2e8f0"/><text x="50%25" y="52%25" dominant-baseline="middle" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-size="36" fill="%234a5568">Event</text></svg>'
 
-definePageMeta({
-  ssr: false,
-  prerender: false,
-})
+// definePageMeta removed - not available in plain Vue.js context
 
 const route = useRoute()
 const router = useRouter()

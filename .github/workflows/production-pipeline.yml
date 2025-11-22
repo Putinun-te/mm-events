@@ -163,7 +163,7 @@ jobs:
   k8s-deploy:
     name: Deploy to EKS
     needs: build-backend-image
-    runs-on: self-hosted
+    runs-on: [self-hosted, kubernetes]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
@@ -196,7 +196,7 @@ jobs:
   observability:
     name: Setup Observability
     needs: k8s-deploy
-    runs-on: self-hosted
+    runs-on: [self-hosted, kubernetes]
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4

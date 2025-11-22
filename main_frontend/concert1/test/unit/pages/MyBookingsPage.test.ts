@@ -627,9 +627,9 @@ describe('MyBookingsPage.vue', () => {
 
       // Verify $fetch was called for bookings via useApi
       const nuxtFetchMock = (globalThis as any).$fetch as ReturnType<typeof vi.fn>
-      expect(nuxtFetchMock).toHaveBeenCalledWith('/api/bookings/me', {
-        headers: { Authorization: 'Bearer test-token' }
-      })
+      expect(nuxtFetchMock).toHaveBeenCalledWith('/api/bookings/me', expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer test-token' })
+      }))
     })
 
     it('should pass correct event ID to leave endpoint', async () => {

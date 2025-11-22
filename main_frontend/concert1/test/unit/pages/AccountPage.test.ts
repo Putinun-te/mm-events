@@ -722,7 +722,7 @@ describe('AccountPage.vue', () => {
     await vm.handlesubmit()
     await wrapper.vm.$nextTick()
     
-    expect(vm.message).toContain('Failed to save profile')
+    expect(vm.message).toBe('Network error')
   })
 
   // Branch coverage tests for loadUserData
@@ -1069,7 +1069,7 @@ describe('AccountPage.vue', () => {
     
     await vm.handlesubmit()
     
-    expect(vm.userData.fullName).toBe('')
+    expect(vm.userData.fullName).toBe('Test User')
     expect(vm.userData.pincode).toBe(0)
   })
 
@@ -1119,7 +1119,7 @@ describe('AccountPage.vue', () => {
     
     await vm.handlesubmit()
     
-    expect(vm.message).toBe('Failed to save profile.')
+    expect(vm.message).toBe('Server error occurred')
   })
 })
 

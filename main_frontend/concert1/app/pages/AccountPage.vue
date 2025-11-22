@@ -93,6 +93,7 @@ async function loadUserData() {
     }
   } catch (e: any) {
     console.error('Failed to load profile:', e)
+    message.value = 'Failed to load profile. Please refresh the page.'
     // Fallback to stored data
     const storedEmail = localStorage.getItem('user_email') || sessionStorage.getItem('user_email')
     const storedUsername = localStorage.getItem('username') || sessionStorage.getItem('username')
@@ -122,7 +123,8 @@ async function handlesubmit () {
     // Check token first
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     if (!token) {
-      error('Please login to update profile', 'Authentication Required')
+      message.value = 'Not authenticated'
+      error('Not authenticated', 'Authentication Required')
       router.push('/LoginPage')
       return
     }
@@ -167,8 +169,17 @@ async function handlesubmit () {
     success('Profile updated successfully!', 'Success')
   } catch (e: any) {
     console.error('Profile update failed:', e)
-    error('Session expired. Please login again.', 'Authentication Required')
-    router.push('/LoginPage')
+    let msg = 'Failed to save profile.'
+    if (e?.data?.message) {
+      msg = e.data.message
+    } else if (e?.message && e?.message !== '[object Object]') {
+      msg = e.message
+    }
+    message.value = msg
+    error(msg, 'Profile Update Error')
+    if (e?.status === 401 || e?.response?.status === 401) {
+      router.push('/LoginPage')
+    }
   } finally {
     saving.value = false
   }

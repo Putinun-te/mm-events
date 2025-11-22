@@ -20,7 +20,7 @@ concurrency:
 jobs:
   test-backend:
     name: Backend Unit Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -50,7 +50,7 @@ jobs:
 
   test-frontend:
     name: Frontend Unit Tests
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -84,7 +84,7 @@ jobs:
   e2e-tests:
     name: E2E Tests
     needs: [test-backend, test-frontend]
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -106,7 +106,7 @@ jobs:
   test-summary:
     name: Test Summary
     needs: [test-backend, test-frontend, e2e-tests]
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
     if: always()
     steps:
       - name: Check test results

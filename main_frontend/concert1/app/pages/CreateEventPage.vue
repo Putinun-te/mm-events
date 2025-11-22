@@ -177,18 +177,18 @@ async function handleSubmit() {
   } catch (e: any) {
     console.error('Event creation error:', e)
     let message = 'Failed to create event.'
-    if (e?.response?.status === 401) {
+    if (e?.statusMessage) {
+      message = e.statusMessage
+    } else if (e?.data?.message) {
+      message = e.data.message
+    } else if (e?.response?.status === 401) {
       message = 'Authentication failed. Please login again.'
       router.push('/LoginPage')
-    } else if (e?.response?.status === 405) {
-      message = 'API Gateway configuration issue. POST method not allowed for events endpoint.'
     } else if (e?.response?.status === 403) {
       message = 'Access denied. Please login again with valid credentials.'
       router.push('/LoginPage')
     } else if (e?.response?.status === 400) {
       message = e?.response?.data?.message || 'Invalid event data. Please check all fields.'
-    } else if (e?.message?.includes('405')) {
-      message = 'API Gateway needs POST method configured for /api/events endpoint'
     } else if (e?.message) {
       message = e.message
     }

@@ -140,9 +140,29 @@ jobs:
         run: |
           [ -f main_backend/backend.pid ] && kill $(cat main_backend/backend.pid) || true
 
-  k8s-deploy:
-    name: K8s Deployment
+  build-backend-image:
+    name: Build Backend Docker Image
     needs: e2e-tests
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Build Backend Image
+        run: |
+          cd main_backend
+          mvn clean package -DskipTests
+          docker build -t ghcr.io/morningmores/concert-backend:${{ github.sha }} .
+          docker tag ghcr.io/morningmores/concert-backend:${{ github.sha }} ghcr.io/morningmores/concert-backend:latest
+      
+      - name: Push to Registry
+        run: |
+          echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+          docker push ghcr.io/morningmores/concert-backend:${{ github.sha }}
+          docker push ghcr.io/morningmores/concert-backend:latest
+
+  k8s-deploy:
+    name: Deploy to EKS
+    needs: build-backend-image
     runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
     steps:
@@ -150,17 +170,28 @@ jobs:
       
       - name: Configure kubectl
         run: |
-          aws eks update-kubeconfig --region ap-southeast-1 --name concert-cluster
+          aws eks update-kubeconfig --region ap-southeast-1 --name concert-cluster-v2
       
-      - name: Deploy to K8s
+      - name: Deploy Redis
         run: |
-          kubectl apply -f k8s/
-          kubectl rollout status deployment/backend
+          kubectl apply -f k8s/redis-deployment.yaml
+      
+      - name: Deploy Backend
+        run: |
+          kubectl apply -f k8s/backend-deployment.yaml
+          kubectl set image deployment/backend backend=ghcr.io/morningmores/concert-backend:${{ github.sha }}
+          kubectl rollout status deployment/backend --timeout=5m
       
       - name: Verify Deployment
         run: |
           kubectl get pods
           kubectl get services
+          kubectl get hpa
+      
+      - name: Get Backend URL
+        run: |
+          echo "Backend URL:"
+          kubectl get service backend-service -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
 
   observability:
     name: Setup Observability
@@ -188,7 +219,7 @@ jobs:
 
   summary:
     name: Pipeline Summary
-    needs: [unit-tests, integration-tests, e2e-tests, k8s-deploy, observability]
+    needs: [unit-tests, integration-tests, e2e-tests, build-backend-image, k8s-deploy, observability]
     runs-on: self-hosted
     if: always()
     steps:
@@ -198,5 +229,6 @@ jobs:
           echo "Unit Tests: ${{ needs.unit-tests.result }}"
           echo "Integration Tests: ${{ needs.integration-tests.result }}"
           echo "E2E Tests: ${{ needs.e2e-tests.result }}"
-          echo "K8s Deploy: ${{ needs.k8s-deploy.result }}"
+          echo "Build Image: ${{ needs.build-backend-image.result }}"
+          echo "EKS Deploy: ${{ needs.k8s-deploy.result }}"
           echo "Observability: ${{ needs.observability.result }}"

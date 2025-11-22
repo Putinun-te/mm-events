@@ -1,0 +1,30 @@
+name: Nuke AWS Resources
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type "DESTROY" to confirm'
+        required: true
+
+jobs:
+  nuke:
+    name: Destroy AWS Resources
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'DESTROY'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure AWS
+        run: |
+          aws configure set aws_access_key_id ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws configure set region ap-southeast-1
+      
+      - name: Nuke AWS Resources
+        run: |
+          chmod +x aws/nuke-aws-resources.sh
+          ./aws/nuke-aws-resources.sh <<< "yes"
+      
+      - name: Summary
+        run: echo "✅ AWS resources destroyed"

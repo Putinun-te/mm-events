@@ -707,8 +707,6 @@ describe('AccountPage.vue', () => {
     localStorage.setItem('jwt_token', 'test-token')
     const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
     fetchMock.mockResolvedValueOnce(mockProfile) // loadUserData
-    fetchMock.mockResolvedValueOnce([]) // events stats
-    fetchMock.mockResolvedValueOnce([]) // bookings stats
     fetchMock.mockRejectedValueOnce(new Error('Network error')) // handlesubmit
 
     const wrapper = mount(AccountPage, {
@@ -1049,7 +1047,14 @@ describe('AccountPage.vue', () => {
 
   it('should handle null response fields after save', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+    const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
+    fetchMock.mockResolvedValueOnce({ name: 'Test' }) // loadUserData
+    fetchMock.mockResolvedValueOnce({
+      name: null,
+      email: null,
+      phone: null,
+      pincode: null
+    }) // handlesubmit
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -1061,13 +1066,6 @@ describe('AccountPage.vue', () => {
     const vm = wrapper.vm as any
     
     vm.userData.firstName = 'John'
-    
-  ;(globalAny.$fetch as any).mockResolvedValueOnce({
-      name: null,
-      email: null,
-      phone: null,
-      pincode: null
-    })
     
     await vm.handlesubmit()
     
@@ -1104,7 +1102,9 @@ describe('AccountPage.vue', () => {
 
   it('should use default message when save error has no details', async () => {
     localStorage.setItem('jwt_token', 'test-token')
-  ;(globalAny.$fetch as any).mockResolvedValueOnce({ name: 'Test' })
+    const fetchMock = globalAny.$fetch as ReturnType<typeof vi.fn>
+    fetchMock.mockResolvedValueOnce({ name: 'Test' }) // loadUserData
+    fetchMock.mockRejectedValueOnce({}) // handlesubmit
 
     const wrapper = mount(AccountPage, {
       global: {
@@ -1116,8 +1116,6 @@ describe('AccountPage.vue', () => {
     const vm = wrapper.vm as any
     
     vm.userData.firstName = 'John'
-    
-  ;(globalAny.$fetch as any).mockRejectedValueOnce({})
     
     await vm.handlesubmit()
     

@@ -1,0 +1,123 @@
+name: Self-Hosted Runner Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [release/**]
+
+jobs:
+  check-runner:
+    name: Check Self-Hosted Runner
+    runs-on: self-hosted
+    steps:
+      - name: Runner info
+        run: |
+          echo "🔍 Runner Information"
+          echo "Hostname: $(hostname)"
+          echo "OS: $(uname -a)"
+          echo "User: $(whoami)"
+          echo "Working dir: $(pwd)"
+          
+      - name: Check Docker
+        run: docker --version || echo "❌ Docker not available"
+      
+      - name: Check AWS CLI
+        run: aws --version || echo "❌ AWS CLI not available"
+      
+      - name: Check Java
+        run: java -version || echo "❌ Java not available"
+      
+      - name: Check Node
+        run: node --version || echo "❌ Node not available"
+
+  unit-test-backend:
+    name: Backend Unit Tests (Self-Hosted)
+    runs-on: self-hosted
+    needs: check-runner
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Run tests
+        run: |
+          cd main_backend
+          mvn clean test -Dspring.profiles.active=test
+        env:
+          SPRING_PROFILES_ACTIVE: test
+
+  unit-test-frontend:
+    name: Frontend Unit Tests (Self-Hosted)
+    runs-on: self-hosted
+    needs: check-runner
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install & test
+        run: |
+          cd main_frontend/concert1
+          npm ci --legacy-peer-deps
+          npm run test
+
+  e2e-test:
+    name: E2E Tests (Self-Hosted)
+    runs-on: self-hosted
+    needs: [unit-test-backend, unit-test-frontend]
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Start services
+        run: |
+          docker run -d --name mysql-test -e MYSQL_ROOT_PASSWORD=rootpass -e MYSQL_DATABASE=concert_db -p 3306:3306 mysql:8.0
+          docker run -d --name redis-test -p 6379:6379 redis:7.2
+          sleep 10
+      
+      - name: Build & start backend
+        run: |
+          cd main_backend
+          mvn clean package -DskipTests
+          nohup mvn spring-boot:run -Dspring-boot.run.profiles=test > backend.log 2>&1 &
+          echo $! > backend.pid
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: rootpass
+          SPRING_DATA_REDIS_HOST: localhost
+      
+      - name: Wait for backend
+        run: |
+          for i in {1..60}; do
+            curl -f http://localhost:8080/actuator/health && break
+            sleep 3
+          done
+      
+      - name: Start frontend & test
+        run: |
+          cd main_frontend/concert1
+          npm ci --legacy-peer-deps
+          nohup npm run dev > frontend.log 2>&1 &
+          echo $! > frontend.pid
+          sleep 10
+          npm run test:e2e
+        env:
+          NUXT_PUBLIC_API_BASE: http://localhost:8080
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          [ -f main_backend/backend.pid ] && kill $(cat main_backend/backend.pid) || true
+          [ -f main_frontend/concert1/frontend.pid ] && kill $(cat main_frontend/concert1/frontend.pid) || true
+          docker rm -f mysql-test redis-test || true
+
+  k8s-test:
+    name: K8s Deployment Test (Self-Hosted)
+    runs-on: self-hosted
+    needs: e2e-test
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check kubectl
+        run: kubectl version --client || echo "❌ kubectl not available"
+      
+      - name: Check EKS access
+        run: |
+          aws eks update-kubeconfig --region ap-southeast-1 --name concert-cluster || echo "❌ EKS not configured"
+          kubectl get nodes || echo "❌ Cannot access cluster"

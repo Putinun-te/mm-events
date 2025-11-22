@@ -94,7 +94,8 @@ jobs:
           else
             echo "⚠️ Backend deployment manifest missing - creating basic one"
             mkdir -p k8s
-            echo "apiVersion: apps/v1
+            cat > k8s/backend-deployment.yaml << 'EOF'
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: backend
@@ -110,7 +111,8 @@ spec:
     spec:
       containers:
       - name: backend
-        image: backend:latest" > k8s/backend-deployment.yaml
+        image: backend:latest
+EOF
             echo "✅ Created basic backend deployment manifest"
           fi
 

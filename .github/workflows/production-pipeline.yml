@@ -1,0 +1,202 @@
+name: Production Pipeline
+
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: prod-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit-tests:
+    name: Unit Tests
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Backend Unit Tests
+        run: |
+          cd main_backend
+          mvn clean test -Dspring.profiles.active=test
+      
+      - name: Frontend Unit Tests
+        run: |
+          cd main_frontend/concert1
+          npm ci --legacy-peer-deps
+          npm run test
+      
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results
+          path: |
+            main_backend/target/surefire-reports/
+            main_frontend/concert1/coverage/
+
+  integration-tests:
+    name: Integration Tests
+    needs: unit-tests
+    runs-on: self-hosted
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: concert_db
+        ports:
+          - 3306:3306
+      redis:
+        image: redis:7.2
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - name: Run Integration Tests
+        run: |
+          cd main_backend
+          mvn verify -Dspring.profiles.active=test
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: rootpass
+          SPRING_DATA_REDIS_HOST: localhost
+
+  e2e-tests:
+    name: E2E Tests
+    needs: integration-tests
+    runs-on: self-hosted
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpass
+          MYSQL_DATABASE: concert_db
+        ports:
+          - 3306:3306
+      redis:
+        image: redis:7.2
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Start Backend
+        run: |
+          cd main_backend
+          mvn clean package -DskipTests
+          nohup mvn spring-boot:run -Dspring-boot.run.profiles=test > backend.log 2>&1 &
+          echo $! > backend.pid
+        env:
+          SPRING_DATASOURCE_URL: jdbc:mysql://localhost:3306/concert_db
+          SPRING_DATASOURCE_USERNAME: root
+          SPRING_DATASOURCE_PASSWORD: rootpass
+          SPRING_DATA_REDIS_HOST: localhost
+      
+      - name: Wait for Backend
+        run: |
+          for i in {1..60}; do
+            curl -f http://localhost:8080/actuator/health && break
+            sleep 3
+          done
+      
+      - name: Run E2E Tests
+        run: |
+          cd main_frontend/concert1
+          npm ci --legacy-peer-deps
+          npm run test:e2e
+        env:
+          NUXT_PUBLIC_API_BASE: http://localhost:8080
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          [ -f main_backend/backend.pid ] && kill $(cat main_backend/backend.pid) || true
+
+  k8s-deploy:
+    name: K8s Deployment
+    needs: e2e-tests
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Configure kubectl
+        run: |
+          aws eks update-kubeconfig --region ap-southeast-1 --name concert-cluster
+      
+      - name: Deploy to K8s
+        run: |
+          kubectl apply -f k8s/
+          kubectl rollout status deployment/backend
+      
+      - name: Verify Deployment
+        run: |
+          kubectl get pods
+          kubectl get services
+
+  observability:
+    name: Setup Observability
+    needs: k8s-deploy
+    runs-on: self-hosted
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Deploy Prometheus
+        run: |
+          kubectl apply -f k8s/monitoring/prometheus.yaml || echo "Prometheus config not found"
+      
+      - name: Deploy Grafana
+        run: |
+          kubectl apply -f k8s/monitoring/grafana.yaml || echo "Grafana config not found"
+      
+      - name: Setup CloudWatch
+        run: |
+          aws cloudwatch put-metric-data --namespace Concert/App --metric-name DeploymentSuccess --value 1
+      
+      - name: Health Check
+        run: |
+          kubectl get pods -n monitoring || echo "Monitoring namespace not found"
+
+  summary:
+    name: Pipeline Summary
+    needs: [unit-tests, integration-tests, e2e-tests, k8s-deploy, observability]
+    runs-on: self-hosted
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "📊 Production Pipeline Summary"
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "E2E Tests: ${{ needs.e2e-tests.result }}"
+          echo "K8s Deploy: ${{ needs.k8s-deploy.result }}"
+          echo "Observability: ${{ needs.observability.result }}"

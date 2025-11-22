@@ -150,17 +150,20 @@ async function handlesubmit () {
     
     // Update local data with response
     if (res) {
-      userData.fullName = res.name || ''
-      userData.phone = res.phone || ''
-      userData.address = res.address || ''
-      userData.city = res.city || ''
-      userData.country = res.country || ''
+      userData.fullName = res.name ?? ''
+      userData.phone = res.phone ?? ''
+      userData.address = res.address ?? ''
+      userData.city = res.city ?? ''
+      userData.country = res.country ?? ''
       userData.pincode = res.pincode ? Number(res.pincode) : 0
       
       if (userData.fullName) {
         const parts = userData.fullName.split(' ')
         userData.firstName = parts.shift() || ''
         userData.lastName = parts.join(' ')
+      } else {
+        userData.firstName = ''
+        userData.lastName = ''
       }
     }
     
@@ -169,8 +172,11 @@ async function handlesubmit () {
     success('Profile updated successfully!', 'Success')
   } catch (e: any) {
     console.error('Profile update failed:', e)
+    successFlag.value = false
     let msg = 'Failed to save profile.'
-    if (e?.data?.message) {
+    if (e?.statusMessage) {
+      msg = e.statusMessage
+    } else if (e?.data?.message) {
       msg = e.data.message
     } else if (e?.message && e?.message !== '[object Object]') {
       msg = e.message

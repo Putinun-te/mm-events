@@ -86,7 +86,7 @@ async function loadEventData() {
       return
     }
     
-    const event: any = await apiFetch(`/api/events/json/${eventId}`)
+    const event: any = await apiFetch(`/api/events/${eventId}`)
     
     if (!event) {
       error('Event not found', 'Error')
@@ -174,7 +174,7 @@ async function handleSubmit() {
     }
     
     // Update event
-    const updatedEvent: any = await apiFetch(`/api/events/json/${eventId}`, {
+    const updatedEvent: any = await apiFetch(`/api/events/${eventId}`, {
       method: 'PUT',
       body: JSON.stringify(payload)
     })
@@ -205,7 +205,7 @@ async function handleSubmit() {
     }
     
     if (finalPhotoUrl) {
-      await apiFetch(`/api/events/json/${eventId}`, {
+      await apiFetch(`/api/events/${eventId}`, {
         method: 'PUT',
         body: JSON.stringify({ ...payload, photoUrl: finalPhotoUrl })
       })
@@ -269,7 +269,7 @@ async function confirmDelete() {
   }
 
   try {
-    await apiFetch(`/api/events/json/${eventId}`, {
+    await apiFetch(`/api/events/${eventId}`, {
       method: 'DELETE'
     })
     

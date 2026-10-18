@@ -170,13 +170,10 @@ async function addToCart() {
     // Step 1: Create booking
     await apiFetch('/api/bookings', {
       method: 'POST',
+      // Price, title and venue are taken from the event on the server
       body: JSON.stringify({
         eventId: String(event.value.id),
-        quantity: quantity.value,
-        eventTitle: eventTitle.value,
-        eventLocation: eventLocation.value,
-        eventStartDate: event.value.startDate || event.value.datestart,
-        ticketPrice: ticketPrice.value || 0
+        quantity: quantity.value
       })
     })
     
@@ -200,7 +197,8 @@ async function addToCart() {
     // Redirect to bookings page
     setTimeout(() => router.push('/MyBookingsPage'), 1500)
   } catch (e: any) {
-    const message = e?.statusMessage || e?.data?.message || 'Failed to create booking'
+    // The API answers e.g. 409 {"error": "Only 2 seat(s) left"} or 400 {"error": "This event has already ended"}
+    const message = e?.data?.error || e?.data?.message || e?.statusMessage || 'Failed to create booking'
     error(message, 'Booking Failed')
   }
 }

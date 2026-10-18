@@ -1,5 +1,7 @@
 package com.concert.service;
 
+import java.time.Clock;
+import com.concert.exception.ConflictException;
 import com.concert.repository.EventRepository;
 import com.concert.model.Event;
 import com.concert.exception.NotFoundException;
@@ -12,6 +14,7 @@ import com.concert.repository.BookingRepository;
 import com.concert.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -24,43 +27,74 @@ public class BookingService {
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
     private final EventRepository eventRepository;
+    private final Clock clock;
 
     @Autowired
     public BookingService(BookingRepository bookingRepository, UserRepository userRepository,
-                          EventRepository eventRepository) {
+                          EventRepository eventRepository, Clock clock) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
         this.eventRepository = eventRepository;
+        this.clock = clock != null ? clock : Clock.systemDefaultZone();
     }
 
-    @Transactional
+    /**
+     * Books tickets for an existing, not yet finished event. Title, location, start date
+     * and price come from the event, never from the request. The event row is locked
+     * while seats are counted, so concurrent bookings cannot oversell it. READ_COMMITTED
+     * makes the count see bookings committed while this transaction waited for the lock
+     * (MySQL's default REPEATABLE_READ would keep counting from an older snapshot).
+     */
+    @Transactional(isolation = Isolation.READ_COMMITTED)
     public BookingResponse createBooking(String username, CreateBookingRequest request) {
         if (request.getEventId() == null || request.getQuantity() == null || request.getQuantity() <= 0) {
             throw new IllegalArgumentException("Event ID and valid quantity are required");
         }
-        
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        Event event = eventRepository.findByIdForUpdate(parseEventId(request.getEventId()))
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
-        // Calculate total price
-        Double ticketPrice = request.getTicketPrice() != null ? request.getTicketPrice() : 0.0;
-        Double totalPrice = ticketPrice * request.getQuantity();
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (event.getEndDate() != null && event.getEndDate().isBefore(now)) {
+            throw new IllegalArgumentException("This event has already ended");
+        }
 
-        // Create booking with event data from request
+        String eventId = String.valueOf(event.getId());
+        if (event.getPersonLimit() != null) {
+            int booked = bookingRepository.findByEventIdAndStatus(eventId, "CONFIRMED").stream()
+                    .mapToInt(Booking::getQuantity)
+                    .sum();
+            int left = Math.max(event.getPersonLimit() - booked, 0);
+            if (request.getQuantity() > left) {
+                throw new ConflictException(left == 0 ? "This event is sold out" : "Only " + left + " seat(s) left");
+            }
+        }
+
+        double ticketPrice = event.getTicketPrice() != null ? event.getTicketPrice() : 0.0;
+
         Booking booking = new Booking();
         booking.setUser(user);
-        booking.setEventId(request.getEventId());
-        booking.setEventTitle(request.getEventTitle() != null ? request.getEventTitle() : "Event");
-        booking.setEventLocation(request.getEventLocation() != null ? request.getEventLocation() : "TBA");
-        booking.setEventStartDate(request.getEventStartDate());
+        booking.setEventId(eventId);
+        booking.setEventTitle(event.getTitle());
+        booking.setEventLocation(event.getLocation() != null ? event.getLocation() : "TBA");
+        booking.setEventStartDate(event.getStartDate());
         booking.setQuantity(request.getQuantity());
-        booking.setTotalPrice(totalPrice);
+        booking.setTotalPrice(ticketPrice * request.getQuantity());
         booking.setStatus("CONFIRMED");
-        booking.setBookingDate(LocalDateTime.now());
+        booking.setBookingDate(now);
 
         booking = bookingRepository.save(booking);
-
         return toResponse(booking);
+    }
+
+    private static Long parseEventId(String eventId) {
+        try {
+            return Long.valueOf(eventId);
+        } catch (NumberFormatException e) {
+            throw new NotFoundException("Event not found");
+        }
     }
 
     public List<BookingResponse> getUserBookings(String username) {
@@ -101,13 +135,7 @@ public class BookingService {
     @Transactional
     public void cancelAllBookingsForEvent(String eventId, String username) {
         // Only the organizer of the event may cancel everyone's bookings.
-        Long id;
-        try {
-            id = Long.valueOf(eventId);
-        } catch (NumberFormatException e) {
-            throw new NotFoundException("Event not found");
-        }
-        Event event = eventRepository.findById(id)
+        Event event = eventRepository.findById(parseEventId(eventId))
                 .orElseThrow(() -> new NotFoundException("Event not found"));
         if (event.getOrganizer() == null || !username.equals(event.getOrganizer().getUsername())) {
             throw new ForbiddenException("Only the event organizer can cancel all bookings");

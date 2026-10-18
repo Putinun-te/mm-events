@@ -1,0 +1,63 @@
+name: load-test
+
+# k6 "ticket rush" against the Docker Compose backend: many buyers book the same
+# limited event at once while others browse. Fails on unexpected responses,
+# overbooking or slow responses (thresholds in load-tests/booking-rush.js).
+# Manual and weekly only: shared CI runners make timings too noisy for every PR.
+
+on:
+  workflow_dispatch:
+    inputs:
+      seats:
+        description: Seats in the test event
+        default: '50'
+      buyers:
+        description: Buyers trying to book one ticket each
+        default: '120'
+  schedule:
+    - cron: '0 4 * * 1'   # Mondays 04:00 UTC
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-test
+  cancel-in-progress: true
+
+jobs:
+  k6:
+    name: k6 booking rush
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start MySQL, Redis and backend
+        run: docker compose up -d --build --wait --wait-timeout 400 mysql redis backend
+
+      - name: Run k6
+        env:
+          SEATS: ${{ inputs.seats || '50' }}
+          BUYERS: ${{ inputs.buyers || '120' }}
+        run: |
+          docker run --rm -i --network host \
+            -e BASE_URL=http://localhost:8080 -e SEATS -e BUYERS \
+            grafana/k6:2.3.0 run --quiet - < load-tests/booking-rush.js | tee k6-summary.txt
+
+      - name: k6 summary
+        if: always()
+        run: |
+          {
+            echo "## k6 booking rush"
+            echo '```'
+            cat k6-summary.txt 2>/dev/null || echo "k6 did not run"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Backend logs
+        if: failure()
+        run: docker compose logs backend mysql
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v

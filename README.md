@@ -207,7 +207,38 @@ lower it to make a build pass.
 |---|---|---|
 | Frontend unit | `cd main_frontend/concert1 && npm run test` | `npm run test:coverage` for coverage |
 | API end-to-end | `docker compose up -d --build --wait`, then `cd main_frontend/concert1 && npm run test:e2e` | Runs against the local stack on :3000 / :8080 |
-| Cypress UI tests | `cd main_frontend/concert1 && npm run test:cy:headless` | Needs the local stack running |
+| Cypress UI tests | `cd main_frontend/concert1 && npm run test:cy:headless` | Needs the local stack running; sign-up, login, browsing, booking, cancelling and the "sold out" case. Each test creates its own users and events through the API |
+
+### Mutation testing (backend)
+
+[PIT](https://pitest.org) changes the business logic in small ways (flips a condition,
+removes a call, changes a return value) and checks that a unit test fails for each
+change. A surviving mutant is a bug the tests would not notice.
+
+```bash
+cd main_backend
+./mvnw -Pmutation test-compile org.pitest:pitest-maven:mutationCoverage
+open target/pit-reports/index.html
+```
+
+Scope: services, security, error mapping and utilities. Current score 99% (239 of 242;
+the three survivors are equivalent mutants). The build fails below 97%
+(`pit.mutationThreshold` in the `mutation` profile).
+
+### Load testing
+
+`load-tests/booking-rush.js` is a [k6](https://k6.io) "ticket rush": many buyers book the
+same limited event at the same moment while others browse the event list. It fails on
+unexpected responses, on overbooking, or when p95 latency goes over 500 ms (browsing) or
+3 s (booking).
+
+```bash
+docker compose up -d --build --wait mysql redis backend
+docker run --rm -i -e BASE_URL=http://host.docker.internal:8080 grafana/k6:2.3.0 run - < load-tests/booking-rush.js
+```
+
+`SEATS` and `BUYERS` (default 50 and 120) change the size of the rush. Local result: 120
+buyers for 50 seats, exactly 50 sold and 70 told "sold out", booking p95 about 250 ms.
 
 ## CI/CD
 
@@ -228,9 +259,13 @@ cloud credentials, no deploy jobs.
 **`ci.yml`** (push to `main`, every pull request):
 
 1. **frontend** – `npm ci`, Vitest unit tests, `nuxt build`
-2. **e2e** – starts the Docker Compose stack and runs the API e2e suite
+2. **e2e** – starts the Docker Compose stack and runs the API e2e suite and the Cypress UI tests
 3. **docker-images** – builds the backend and frontend images (not pushed)
 4. **secret-scan** – gitleaks over the full git history (`.gitleaks.toml`)
+
+**`mutation-tests.yml`** runs PIT on backend pull requests (not a required check), weekly
+and on demand. **`load-test.yml`** runs the k6 ticket rush on demand and weekly.
+**`deploy-pages.yml`** publishes the frontend to GitHub Pages (see `docs/DEPLOY.md`).
 
 To see why a backend run failed, open the run in the Actions tab: the summary
 page lists failed tests and coverage per package, and the

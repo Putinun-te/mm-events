@@ -223,7 +223,7 @@ onUnmounted(() => {
         <NuxtLink
           v-for="event in events"
           :key="event.id"
-          :to="`/ProductPageDetail/${event.id}`"
+          :to="`/product-page-detail/${event.id}`"
           class="group bg-white rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300"
         >
           <div class="aspect-video overflow-hidden bg-gray-200">

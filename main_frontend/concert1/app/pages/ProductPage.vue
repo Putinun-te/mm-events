@@ -84,8 +84,10 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useApi } from '../../composables/useApi'
 
 const router = useRouter()
+const { apiFetch } = useApi()
 
 const events = ref<any[]>([])
 const loading = ref(true)
@@ -146,8 +148,10 @@ const loadEvents = async () => {
   message.value = ''
   
   try {
-    const response = await $fetch('/api/events')
-    events.value = Array.isArray(response) ? response : []
+    // Call the backend directly: Nuxt server routes do not exist on static hosting.
+    const response: any = await apiFetch('/api/events', { query: { page: 0, size: 100 } })
+    // The backend returns a page object ({ content: [...] }); older proxies returned an array.
+    events.value = Array.isArray(response) ? response : (response?.content ?? [])
   } catch (error: any) {
     message.value = error?.statusMessage || 'Failed to load events.'
     events.value = []
@@ -164,6 +168,6 @@ const clearFilters = () => {
 }
 
 const navigateToDetail = (id: number) => {
-  router.push(`/concert/product/${id}`)
+  router.push(`/product-page-detail/${id}`)
 }
 </script>

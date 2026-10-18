@@ -135,9 +135,13 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     // Assert
-    expect(global.$fetch).toHaveBeenCalledWith('/api/auth/me', {
-      headers: { Authorization: 'Bearer local-storage-token' }
-    })
+    // The page calls the backend directly (no Nuxt server route) with the stored token
+    expect(global.$fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/auth\/me$/),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer local-storage-token' })
+      })
+    )
   })
 
   it('should fallback to sessionStorage token if localStorage is empty', async () => {
@@ -151,12 +155,15 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     // Assert
-    expect(global.$fetch).toHaveBeenCalledWith('/api/auth/me', {
-      headers: { Authorization: 'Bearer session-storage-token' }
-    })
+    expect(global.$fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/auth\/me$/),
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer session-storage-token' })
+      })
+    )
   })
 
-  it('should use empty string if no token is found', async () => {
+  it('should send no Authorization header if no token is found', async () => {
     // Arrange
     const mockUserData = { username: 'testuser', email: 'test@example.com' }
     ;(global.$fetch as any).mockResolvedValue(mockUserData)
@@ -166,9 +173,9 @@ describe('ProfilePage.vue', () => {
     await flushPromises()
 
     // Assert
-    expect(global.$fetch).toHaveBeenCalledWith('/api/auth/me', {
-      headers: { Authorization: 'Bearer ' }
-    })
+    const [url, options] = (global.$fetch as any).mock.calls[0]
+    expect(url).toMatch(/\/api\/auth\/me$/)
+    expect(options.headers).not.toHaveProperty('Authorization')
   })
 
   it('should display "-" for missing username', async () => {

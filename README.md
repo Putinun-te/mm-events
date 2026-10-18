@@ -19,6 +19,12 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 > and authorship are preserved; credentials, Terraform state, keys and build
 > artifacts were removed from all history.
 
+## Live demo
+
+The demo setup is ready in the repository: frontend on GitHub Pages
+(`https://putinun-te.github.io/mm-events/`), backend and MySQL on Railway. It goes live
+after the one-time account setup in [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## Features
 
 - Event catalogue with details, photos and an OpenStreetMap map of the venue (Leaflet, no API key)
@@ -236,6 +242,9 @@ together with the infrastructure. Their history is in the git log and under
 the `archive/*` tags.
 
 ## Deploying again (optional)
+
+For the free-standing demo (GitHub Pages + Railway) follow [docs/DEPLOY.md](docs/DEPLOY.md).
+The options below recreate the original AWS setup.
 
 Everything below creates billable AWS resources in **your** account.
 

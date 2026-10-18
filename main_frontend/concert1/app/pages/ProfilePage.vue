@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
+import { useApi } from '../../composables/useApi'
 
 const { loadFromStorage, isLoggedIn } = useAuth()
+const { apiFetch } = useApi()
 
 const loading = ref(true)
 const message = ref('')
@@ -19,10 +21,8 @@ onMounted(async () => {
     return
   }
   try {
-    const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token') || ''
-    const me: any = await $fetch('/api/auth/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    // apiFetch calls the backend directly and adds the stored token
+    const me: any = await apiFetch('/api/auth/me')
     username.value = me?.username || ''
     email.value = me?.email || ''
 
@@ -31,7 +31,7 @@ onMounted(async () => {
     profile.value = saved ? JSON.parse(saved) : null
   } catch (e: any) {
     console.error('Load profile error', e)
-    message.value = e?.data?.message || 'Failed to load profile'
+    message.value = e?.data?.error || e?.data?.message || 'Failed to load profile'
   } finally {
     loading.value = false
   }

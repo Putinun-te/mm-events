@@ -35,7 +35,7 @@ describe('ProductPage.vue', () => {
       history: createMemoryHistory(),
       routes: [
         { path: '/concert/product', name: 'ProductPage', component: ProductPage },
-        { path: '/concert/product/:id', name: 'ProductDetail', component: { template: '<div>Detail</div>' } }
+        { path: '/product-page-detail/:id', name: 'ProductDetail', component: { template: '<div>Detail</div>' } }
       ]
     })
     

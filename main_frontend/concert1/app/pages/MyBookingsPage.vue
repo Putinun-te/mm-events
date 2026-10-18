@@ -156,7 +156,7 @@ function formatDate(dateStr: string) {
 }
 
 function goToEvent(booking: Booking) {
-  router.push(`/ProductPageDetail/${booking.eventId}`)
+  router.push(`/product-page-detail/${booking.eventId}`)
 }
 </script>
 
@@ -179,7 +179,7 @@ function goToEvent(booking: Booking) {
       title="No bookings yet"
       description="You haven't booked any events yet. Start exploring and book your first event!"
       actionText="Browse Events"
-      :actionLink="'/concert/product-page'"
+      :actionLink="'/ProductPage'"
     />
 
     <!-- Bookings Grid -->

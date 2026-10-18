@@ -22,14 +22,14 @@
     "test:all": "npm run test:coverage && npm run test:e2e"
   },
   "dependencies": {
-    "@aws-amplify/ui-vue": "^4.3.6",
-    "@tailwindcss/vite": "^4.1.12",
-    "aws-amplify": "^6.15.7",
-    "axios": "^1.12.1",
-    "nuxt": "^4.0.3",
+    "@aws-amplify/ui-vue": "^4.4.7",
+    "@tailwindcss/vite": "^4.3.3",
+    "aws-amplify": "^6.22.2",
+    "axios": "^1.20.0",
+    "nuxt": "^4.6.1",
     "tailwindcss": "^4.1.12",
     "vue": "^3.5.20",
-    "vue-router": "^4.5.1"
+    "vue-router": "^5.4.0"
   },
   "devDependencies": {
     "@cypress/code-coverage": "^3.10.0",
@@ -37,17 +37,17 @@
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/user-event": "14.5.2",
     "@testing-library/vue": "8.1.0",
-    "@types/node": "^24.8.0",
-    "@vitejs/plugin-vue": "6.0.1",
+    "@types/node": "^26.6.5",
+    "@vitejs/plugin-vue": "6.0.10",
     "@vitest/coverage-v8": "3.2.0",
     "@vitest/ui": "3.2.0",
     "@vue/test-utils": "2.4.6",
     "cypress": "13.17.0",
     "happy-dom": "^20.0.10",
     "jsdom": "25.0.1",
-    "nyc": "17.1.0",
-    "sass-embedded": "^1.93.3",
-    "typescript": "^5.9.3",
+    "nyc": "18.0.0",
+    "sass-embedded": "^1.105.1",
+    "typescript": "^7.0.2",
     "vitest": "3.2.0"
   },
   "version": "1.0.0"

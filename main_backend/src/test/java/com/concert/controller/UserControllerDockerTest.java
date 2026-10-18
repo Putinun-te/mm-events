@@ -127,7 +127,7 @@ class UserControllerDockerTest {
             assertThat(response.getBody()).contains("dockeruser2");
             System.out.println("✅ Docker test passed - Found all users in response");
         } else {
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
             System.out.println("✅ Docker test passed - Unauthorized access properly blocked");
         }
     }
@@ -160,7 +160,7 @@ class UserControllerDockerTest {
             assertThat(response.getBody()).contains("Docker Test User");
             System.out.println("✅ Docker test passed - User retrieved by ID");
         } else {
-            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+            assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
             System.out.println("✅ Docker test passed - Unauthorized access properly blocked");
         }
     }

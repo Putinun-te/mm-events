@@ -1,5 +1,9 @@
 package com.concert.service;
 
+import com.concert.repository.EventRepository;
+import com.concert.model.Event;
+import com.concert.exception.NotFoundException;
+import com.concert.exception.ForbiddenException;
 import com.concert.dto.BookingResponse;
 import com.concert.dto.CreateBookingRequest;
 import com.concert.model.Booking;
@@ -19,11 +23,14 @@ public class BookingService {
 
     private final BookingRepository bookingRepository;
     private final UserRepository userRepository;
+    private final EventRepository eventRepository;
 
     @Autowired
-    public BookingService(BookingRepository bookingRepository, UserRepository userRepository) {
+    public BookingService(BookingRepository bookingRepository, UserRepository userRepository,
+                          EventRepository eventRepository) {
         this.bookingRepository = bookingRepository;
         this.userRepository = userRepository;
+        this.eventRepository = eventRepository;
     }
 
     @Transactional
@@ -33,7 +40,7 @@ public class BookingService {
         }
         
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         // Calculate total price
         Double ticketPrice = request.getTicketPrice() != null ? request.getTicketPrice() : 0.0;
@@ -58,7 +65,7 @@ public class BookingService {
 
     public List<BookingResponse> getUserBookings(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
 
         return bookingRepository.findByUserIdOrderByBookingDateDesc(user.getId())
                 .stream()
@@ -68,11 +75,11 @@ public class BookingService {
 
     public BookingResponse getBookingById(Long id, String username) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
 
         // Verify ownership
         if (!booking.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Unauthorized access to booking");
+            throw new ForbiddenException("Unauthorized access to booking");
         }
 
         return toResponse(booking);
@@ -81,10 +88,10 @@ public class BookingService {
     @Transactional
     public void cancelBooking(Long id, String username) {
         Booking booking = bookingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Booking not found"));
+                .orElseThrow(() -> new NotFoundException("Booking not found"));
 
         if (!booking.getUser().getUsername().equals(username)) {
-            throw new RuntimeException("Unauthorized access to booking");
+            throw new ForbiddenException("Unauthorized access to booking");
         }
 
         booking.setStatus("CANCELLED");
@@ -92,7 +99,19 @@ public class BookingService {
     }
 
     @Transactional
-    public void cancelAllBookingsForEvent(String eventId) {
+    public void cancelAllBookingsForEvent(String eventId, String username) {
+        // Only the organizer of the event may cancel everyone's bookings.
+        Long id;
+        try {
+            id = Long.valueOf(eventId);
+        } catch (NumberFormatException e) {
+            throw new NotFoundException("Event not found");
+        }
+        Event event = eventRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Event not found"));
+        if (event.getOrganizer() == null || !username.equals(event.getOrganizer().getUsername())) {
+            throw new ForbiddenException("Only the event organizer can cancel all bookings");
+        }
         List<Booking> bookings = bookingRepository.findByEventId(eventId);
         for (Booking booking : bookings) {
             booking.setStatus("CANCELLED");

@@ -1,5 +1,6 @@
 package com.concert.controller;
 
+import com.concert.exception.UnauthorizedException;
 import com.concert.dto.CreateEventRequest;
 import com.concert.dto.EventResponse;
 import com.concert.dto.EventPhotoResponse;
@@ -159,10 +160,10 @@ public class EventController {
 
     private User getCurrentUser(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
-            throw new IllegalArgumentException("Authentication required");
+            throw new UnauthorizedException("Authentication required");
         }
         return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new UnauthorizedException("User not found"));
     }
 
     private User getUserOrNull(Authentication authentication) {

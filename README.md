@@ -21,7 +21,7 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 
 ## Features
 
-- Event catalogue with details, photos and a Longdo map of the venue
+- Event catalogue with details, photos and an OpenStreetMap map of the venue (Leaflet, no API key)
 - Registration and login with JWT (Spring Security); optional AWS Cognito sign-in
 - Create, edit and delete events; join/leave events
 - Ticket bookings, booking cancellation and a "My bookings" page
@@ -31,7 +31,7 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 
 | Layer | Technologies |
 |---|---|
-| Frontend | Nuxt 4 (SPA), Vue 3, Tailwind CSS 4, Axios, AWS Amplify (Cognito) |
+| Frontend | Nuxt 4 (SPA), Vue 3, Tailwind CSS 4, Axios, AWS Amplify (Cognito), Leaflet + OpenStreetMap |
 | Backend | Java 21, Spring Boot 3.5 (Web, Data JPA, Security, Validation, Actuator, Data Redis, Mail), JJWT, AWS SDK v2 (S3) |
 | Data | MySQL 8, Redis 7 |
 | Testing | JUnit 5, Spring Boot Test, Testcontainers, JaCoCo; Vitest, Vue Test Utils, Testing Library; Cypress |
@@ -132,8 +132,7 @@ docker compose up -d --build
 
 The first start takes a few minutes: the backend image is built with Maven and
 the frontend container runs `npm install`. No `.env` file is needed for local
-use; all values in `docker-compose.yml` are local-only defaults. To show the
-venue map, copy `.env.example` to `.env` and set `NUXT_PUBLIC_LONGDO_MAP_KEY`.
+use; all values in `docker-compose.yml` are local-only defaults. The venue map uses OpenStreetMap and needs no key.
 
 Stop everything and delete the database volume:
 

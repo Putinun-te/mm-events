@@ -68,9 +68,7 @@ public class BookingController {
     public ResponseEntity<Void> cancelAllBookingsForEvent(
             @PathVariable String eventId,
             Authentication authentication) {
-        // This endpoint should only be called when deleting an event
-        // Additional authorization check could be added here
-        bookingService.cancelAllBookingsForEvent(eventId);
+        bookingService.cancelAllBookingsForEvent(eventId, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }

@@ -44,6 +44,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      # Install before starting Compose: the frontend service mounts an anonymous volume
+      # at node_modules, and on Linux Docker would otherwise create that directory on the
+      # host as root, so a later npm ci fails with EACCES.
+      - name: Install e2e test dependencies
+        working-directory: main_frontend/concert1
+        run: npm ci --legacy-peer-deps
+
       - name: Start MySQL, backend and frontend
         run: |
           docker compose up -d --build --wait --wait-timeout 400 mysql backend frontend
@@ -51,19 +64,11 @@ jobs:
           for i in $(seq 1 60); do curl -fs http://localhost:3000 >/dev/null && break; sleep 5; done
           curl -fsS -o /dev/null http://localhost:3000
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: main_frontend/concert1/package-lock.json
-
       - name: Run API e2e tests
         working-directory: main_frontend/concert1
         env:
           NUXT_PUBLIC_API_BASE: http://localhost:8080
-        run: |
-          npm ci --legacy-peer-deps
-          npm run test:e2e
+        run: npm run test:e2e
 
       - name: Backend logs
         if: failure()

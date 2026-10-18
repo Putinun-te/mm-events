@@ -192,7 +192,7 @@ covered, red are not, yellow lines have branches that were only partly taken.
 
 The gate (`jacoco.minLine` / `jacoco.minBranch` in `main_backend/pom.xml`) fails
 `mvn verify` when total line or branch coverage drops below the minimum. It is
-set one point below the measured coverage; raise it when you add tests, never
+set one point below the measured coverage (currently 94% lines, 83% branches); raise it when you add tests, never
 lower it to make a build pass.
 
 ### Frontend and end-to-end

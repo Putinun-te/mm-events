@@ -19,6 +19,16 @@
 		<!-- Fail build on low coverage by default; CI can set -Djacoco.haltOnFailure=false -->
 		<!-- Set to false for stability - coverage reports still generated -->
 		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
+		<!-- Coverage gate on the merged unit + integration report (mvn verify) -->
+		<jacoco.minLine>0.60</jacoco.minLine>
+		<jacoco.minBranch>0.60</jacoco.minBranch>
+		<!-- Unit tests run in surefire (mvn test), integration tests in failsafe (mvn verify).
+		     -DskipUTs=true / -DskipITs=true run only one of the two. -->
+		<skipUTs>false</skipUTs>
+		<skipITs>false</skipITs>
+		<!-- Filled in by jacoco prepare-agent / prepare-agent-integration -->
+		<surefireArgLine/>
+		<failsafeArgLine/>
 		<aws.java.sdk.version>2.26.29</aws.java.sdk.version>
 	</properties>
 
@@ -152,48 +162,64 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>3.2.5</version>
 				<configuration>
+					<skip>${skipUTs}</skip>
 					<forkCount>1C</forkCount>
 					<reuseForks>true</reuseForks>
-					<argLine>-Dnet.bytebuddy.experimental=true --add-opens java.base/java.lang=ALL-UNNAMED ${argLine}</argLine>
+					<argLine>-Dnet.bytebuddy.experimental=true --add-opens java.base/java.lang=ALL-UNNAMED @{surefireArgLine}</argLine>
+					<!-- Full-context and Testcontainers tests run in failsafe -->
+					<excludes>
+						<exclude>**/*IT.java</exclude>
+						<exclude>**/integration/**</exclude>
+						<exclude>**/*DockerTest.java</exclude>
+						<exclude>**/ConcertBackendApplicationTest.java</exclude>
+						<exclude>**/ConcertBackendMainMethodTest.java</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-failsafe-plugin</artifactId>
+				<configuration>
+					<skipITs>${skipITs}</skipITs>
+					<forkCount>1C</forkCount>
+					<reuseForks>true</reuseForks>
+					<argLine>-Dnet.bytebuddy.experimental=true --add-opens java.base/java.lang=ALL-UNNAMED @{failsafeArgLine}</argLine>
+					<!-- Use target/classes rather than the repackaged Spring Boot jar -->
+					<classesDirectory>${project.build.outputDirectory}</classesDirectory>
+					<includes>
+						<include>**/*IT.java</include>
+						<include>**/integration/**/*Test.java</include>
+						<include>**/*DockerTest.java</include>
+						<include>**/ConcertBackendApplicationTest.java</include>
+						<include>**/ConcertBackendMainMethodTest.java</include>
+					</includes>
 					<systemPropertyVariables>
 						<testcontainers.checks.disable>true</testcontainers.checks.disable>
 						<testcontainers.ryuk.disabled>true</testcontainers.ryuk.disabled>
 					</systemPropertyVariables>
 				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>integration-test</goal>
+							<goal>verify</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
 				<version>0.8.12</version>
-				<configuration>
-					<!-- New: default plugin configuration to support direct CLI invocation (default-cli) -->
-					<haltOnFailure>${jacoco.haltOnFailure}</haltOnFailure>
-					<rules>
-						<rule>
-							<element>BUNDLE</element>
-							<limits>
-								<limit>
-									<counter>LINE</counter>
-									<value>COVEREDRATIO</value>
-									<minimum>0.60</minimum>
-								</limit>
-								<limit>
-									<counter>BRANCH</counter>
-									<value>COVEREDRATIO</value>
-									<minimum>0.60</minimum>
-								</limit>
-							</limits>
-						</rule>
-					</rules>
-				</configuration>
 				<executions>
 					<execution>
+						<id>prepare-agent</id>
 						<goals>
 							<goal>prepare-agent</goal>
 						</goals>
 						<configuration>
+							<propertyName>surefireArgLine</propertyName>
 							<!-- Limit instrumentation to our code to avoid instrumenting JDK and third-party classes -->
 							<includes>
 								<include>com/concert/**</include>
@@ -208,20 +234,75 @@
 						</configuration>
 					</execution>
 					<execution>
-						<id>report</id>
+						<id>prepare-agent-integration</id>
+						<goals>
+							<goal>prepare-agent-integration</goal>
+						</goals>
+						<configuration>
+							<propertyName>failsafeArgLine</propertyName>
+							<includes>
+								<include>com/concert/**</include>
+							</includes>
+							<excludes>
+								<exclude>**/*$Mockito*</exclude>
+								<exclude>**/*$HibernateProxy*</exclude>
+								<exclude>**/*$ByteBuddy*</exclude>
+								<exclude>**/*$CGLIB*</exclude>
+							</excludes>
+						</configuration>
+					</execution>
+					<!-- Unit-only report after mvn test: target/site/jacoco-unit -->
+					<execution>
+						<id>report-unit</id>
 						<phase>test</phase>
 						<goals>
 							<goal>report</goal>
 						</goals>
+						<configuration>
+							<dataFile>${project.build.directory}/jacoco.exec</dataFile>
+							<outputDirectory>${project.reporting.outputDirectory}/jacoco-unit</outputDirectory>
+						</configuration>
+					</execution>
+					<!-- Unit + integration combined: target/site/jacoco -->
+					<execution>
+						<id>merge</id>
+						<phase>post-integration-test</phase>
+						<goals>
+							<goal>merge</goal>
+						</goals>
+						<configuration>
+							<fileSets>
+								<fileSet>
+									<directory>${project.build.directory}</directory>
+									<includes>
+										<include>jacoco.exec</include>
+										<include>jacoco-it.exec</include>
+									</includes>
+								</fileSet>
+							</fileSets>
+							<destFile>${project.build.directory}/jacoco-merged.exec</destFile>
+						</configuration>
+					</execution>
+					<execution>
+						<id>report</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>report</goal>
+						</goals>
+						<configuration>
+							<dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+						</configuration>
 					</execution>
 					<execution>
 						<id>check</id>
-						<phase>test</phase>
+						<phase>verify</phase>
 						<goals>
 							<goal>check</goal>
 						</goals>
 						<configuration>
-							<!-- Allow CI to not fail the build while still evaluating rules -->
+							<dataFile>${project.build.directory}/jacoco-merged.exec</dataFile>
+							<!-- The gate applies to unit + integration coverage, so skip it with -DskipITs -->
+							<skip>${skipITs}</skip>
 							<haltOnFailure>${jacoco.haltOnFailure}</haltOnFailure>
 							<rules>
 								<rule>
@@ -230,13 +311,12 @@
 										<limit>
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.60</minimum>
+											<minimum>${jacoco.minLine}</minimum>
 										</limit>
-										<!-- Enforce branch coverage as well -->
 										<limit>
 											<counter>BRANCH</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.60</minimum>
+											<minimum>${jacoco.minBranch}</minimum>
 										</limit>
 									</limits>
 								</rule>

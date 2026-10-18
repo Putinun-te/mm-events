@@ -70,3 +70,29 @@ terraform.tfstate.backup
 *.tfplan
 *.tfvars
 .terraform.tfstate.lock.info
+
+# === Secrets & credentials (never commit) ===
+.env*
+!.env.example
+!**/.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+kubeconfig*
+*.kubeconfig
+
+# === Terraform state, vars & plans ===
+**/.terraform/
+terraform.tfstate*
+*.tfstate
+*.tfstate.*
+!*.tfvars.example
+tfplan*
+*.tfplan
+crash.log
+
+# === Editor history / build leftovers ===
+.history/
+main_backend/BOOT-INF/
+*.zip

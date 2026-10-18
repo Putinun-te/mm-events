@@ -115,8 +115,11 @@ function loadScript(src: string): Promise<void> {
 
 onMounted(async () => {
   loadFromStorage()
-  loadScript('https://api.longdo.com/map3/?key=REPLACE_WITH_MAP_API_KEY')
-    .catch(error => console.error("Failed to load Longdo Map script:", error))
+  const { longdoMapKey } = useRuntimeConfig().public
+  if (longdoMapKey) {
+    loadScript(`https://api.longdo.com/map3/?key=${longdoMapKey}`)
+      .catch(error => console.error("Failed to load Longdo Map script:", error))
+  }
 
   loading.value = true
   event.value = window.history.state?.event ?? null

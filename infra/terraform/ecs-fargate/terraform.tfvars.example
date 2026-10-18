@@ -9,10 +9,10 @@ region          = "us-east-1"
 container_image_uri = "123456789012.dkr.ecr.us-east-1.amazonaws.com/concert-api:lambda-v2"
 
 # Existing resources from serverless deployment
-s3_bucket_name        = "concert-prod-web-123456789012"
-efs_access_point_id   = "fsap-REDACTED"
-cognito_client_id     = "5fpck32uhi8m87b5tkirvaf0iu"
-cognito_user_pool_id  = "us-east-1_nTZpyinXc"
+s3_bucket_name        = "concert-prod-web-CHANGE-ME"
+efs_access_point_id   = "fsap-xxxxxxxxxxxxxxxxx"
+cognito_client_id     = "your-cognito-app-client-id"
+cognito_user_pool_id  = "ap-southeast-1_XXXXXXXXX"
 
 # Optional: ACM certificate for HTTPS (leave empty for HTTP testing)
 # acm_certificate_arn = "arn:aws:acm:us-east-1:123456789012:certificate/YOUR-CERT-ID"

@@ -17,7 +17,8 @@ export default defineNuxtConfig({
   },
   runtimeConfig: {
     public: {
-      backendBaseUrl: process.env.NUXT_PUBLIC_BACKEND_BASE_URL || 'https://vg3ht9p21k.execute-api.ap-southeast-1.amazonaws.com'
+      backendBaseUrl: process.env.NUXT_PUBLIC_BACKEND_BASE_URL || 'http://localhost:8080',
+      longdoMapKey: process.env.NUXT_PUBLIC_LONGDO_MAP_KEY || ''
     }
   },
   css: ['~/assets/css/main.css'],

@@ -36,9 +36,8 @@ variable "rds_username" {
 }
 
 variable "rds_password" {
-  description = "RDS password"
+  description = "RDS master password (set in terraform.tfvars or TF_VAR_rds_password; no default)"
   type        = string
-  default     = "REDACTED_DB_MASTER_PASSWORD"
   sensitive   = true
 }
 

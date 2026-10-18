@@ -1,0 +1,16 @@
+title = "MM Events gitleaks config"
+
+[extend]
+useDefault = true
+
+# Documentation placeholders and Terraform references that the default
+# rules flag. None of these are credentials.
+[[allowlists]]
+description = "Placeholder tokens in docs, Terraform variable refs, Cognito auth-flow names"
+regexTarget = "secret"
+regexes = [
+  '''^(YOUR|MY)_[A-Z_]+$''',
+  '''^(invalid|fake|dummy|test|valid|expired|sample|your|admin|user)[.-](token|jwt)$''',
+  '''^var\.[a-z0-9_]+$''',
+  '''^"ALLOW_[A-Z_]+"$''',
+]

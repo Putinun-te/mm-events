@@ -1,0 +1,18 @@
+# Copy to terraform.tfvars and fill in. Placeholder values only.
+# terraform.tfvars is git-ignored - never commit it.
+
+aws_region        = "ap-southeast-1"
+project_name      = "concert"
+environment       = "prod"
+vpc_cidr          = "10.0.0.0/16"
+ec2_instance_type = "t3.small"
+redis_node_type   = "cache.t3.micro"
+
+# RDS master credentials (or export TF_VAR_rds_password instead of writing it here)
+rds_username = "admin"
+rds_password = "change-me"
+
+# API Gateway
+backend_service_url = "http://your-backend-host:8080"
+api_allowed_origins = ["http://localhost:3000", "https://your-frontend.example.com"]
+api_stage_name      = "prod"

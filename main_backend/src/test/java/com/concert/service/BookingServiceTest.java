@@ -1,5 +1,7 @@
 package com.concert.service;
 
+import com.concert.repository.EventRepository;
+import com.concert.model.Event;
 import com.concert.dto.BookingResponse;
 import com.concert.dto.CreateBookingRequest;
 import com.concert.model.Booking;
@@ -31,12 +33,16 @@ class BookingServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private EventRepository eventRepository;
+
     @InjectMocks
     private BookingService bookingService;
 
     private User testUser;
     private Booking testBooking;
     private CreateBookingRequest createRequest;
+    private Event event;
 
     @BeforeEach
     void setUp() {
@@ -57,8 +63,16 @@ class BookingServiceTest {
         testBooking.setStatus("CONFIRMED");
         testBooking.setBookingDate(LocalDateTime.now());
 
+        event = new Event();
+        event.setId(456L);
+        event.setTitle("New Event");
+        event.setLocation("New Location");
+        event.setStartDate(LocalDateTime.of(2099, 1, 1, 19, 0));
+        event.setEndDate(LocalDateTime.of(2099, 1, 1, 22, 0));
+        event.setTicketPrice(50.0);
+
         createRequest = new CreateBookingRequest();
-        createRequest.setEventId("event456");
+        createRequest.setEventId("456");
         createRequest.setEventTitle("New Event");
         createRequest.setEventLocation("New Location");
         createRequest.setEventStartDate(LocalDateTime.now().plusDays(2));
@@ -69,6 +83,7 @@ class BookingServiceTest {
     @Test
     void testCreateBooking_Success() {
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        when(eventRepository.findByIdForUpdate(456L)).thenReturn(Optional.of(event));
         when(bookingRepository.save(any(Booking.class))).thenReturn(testBooking);
 
         BookingResponse response = bookingService.createBooking("testuser", createRequest);
@@ -100,18 +115,15 @@ class BookingServiceTest {
     }
 
     @Test
-    void testCreateBooking_CalculatesTotalPrice() {
+    void testCreateBooking_CalculatesTotalPriceFromEventPrice() {
+        // The price sent by the client is ignored; the event's price is used.
         createRequest.setQuantity(5);
-        createRequest.setTicketPrice(30.0);
-
-        Booking savedBooking = new Booking();
-        savedBooking.setId(2L);
-        savedBooking.setUser(testUser);
-        savedBooking.setQuantity(5);
-        savedBooking.setTotalPrice(150.0); // 5 * 30.0
+        createRequest.setTicketPrice(0.01);
+        event.setTicketPrice(30.0);
 
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-        when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
+        when(eventRepository.findByIdForUpdate(456L)).thenReturn(Optional.of(event));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookingResponse response = bookingService.createBooking("testuser", createRequest);
 
@@ -119,17 +131,14 @@ class BookingServiceTest {
     }
 
     @Test
-    void testCreateBooking_NullTicketPrice_UsesZero() {
-        createRequest.setTicketPrice(null);
+    void testCreateBooking_FreeEvent_UsesZero() {
+        event.setTicketPrice(null);
+        createRequest.setTicketPrice(99.0);
         createRequest.setQuantity(3);
 
-        Booking savedBooking = new Booking();
-        savedBooking.setId(3L);
-        savedBooking.setUser(testUser);
-        savedBooking.setTotalPrice(0.0); // 3 * 0.0
-
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
-        when(bookingRepository.save(any(Booking.class))).thenReturn(savedBooking);
+        when(eventRepository.findByIdForUpdate(456L)).thenReturn(Optional.of(event));
+        when(bookingRepository.save(any(Booking.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         BookingResponse response = bookingService.createBooking("testuser", createRequest);
 

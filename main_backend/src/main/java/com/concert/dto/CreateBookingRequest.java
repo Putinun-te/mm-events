@@ -13,6 +13,8 @@ public class CreateBookingRequest {
     private Integer quantity;
 
     // Optional event details (for display in bookings)
+    // Ignored by the server: title, location, start date and price are read from the
+    // event itself. Kept so older clients that still send them do not fail.
     private String eventTitle;
     private String eventLocation;
     private LocalDateTime eventStartDate;

@@ -66,14 +66,9 @@ class UserTest {
 
     @Test
     void testPreUpdate() {
+        // Fixed past timestamp instead of sleeping until the clock moves
+        user.setUpdatedAt(LocalDateTime.of(2000, 1, 1, 0, 0));
         LocalDateTime initialUpdatedAt = user.getUpdatedAt();
-
-        // Simulate some delay
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
         user.preUpdate();
 

@@ -105,13 +105,13 @@ public class UserControllerExceptionTest {
     void testGetAllUsersWithoutAuthentication() throws Exception {
         // When & Then - access protected endpoint without authentication
         mockMvc.perform(get("/api/users"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     void testGetUserByIdWithoutAuthentication() throws Exception {
         // When & Then - access protected endpoint without authentication
         mockMvc.perform(get("/api/users/1"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

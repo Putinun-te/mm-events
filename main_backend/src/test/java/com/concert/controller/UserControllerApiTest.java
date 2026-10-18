@@ -1,5 +1,6 @@
 package com.concert.controller;
 
+import java.util.List;
 import com.concert.config.SecurityConfig;
 import com.concert.dto.UserProfileResponse;
 import com.concert.model.User;
@@ -64,16 +65,16 @@ class UserControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void everyEndpoint_withoutToken_returns403() throws Exception {
-        mockMvc.perform(get("/api/users")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/users/me")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/users/profile")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/users/1")).andExpect(status().isForbidden());
+    void everyEndpoint_withoutToken_returns401() throws Exception {
+        mockMvc.perform(get("/api/users")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/me")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/profile")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/users/1")).andExpect(status().isUnauthorized());
         mockMvc.perform(put("/api/users/profile").contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(multipart("/api/users/me/photo")
                         .file(new MockMultipartFile("file", "a.png", "image/png", new byte[]{1})))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(userProfileService);
     }
@@ -95,6 +96,23 @@ class UserControllerApiTest extends SecuredApiTestSupport {
         mockMvc.perform(get("/api/users/me").header("Authorization", bearer(OTHER_TOKEN)))
                 .andExpect(status().isInternalServerError())
                 .andExpect(content().string("User not found"));
+    }
+
+    @Test
+    void userEndpoints_neverExposePasswordHashes() throws Exception {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(alice));
+        when(userRepository.findAll()).thenReturn(List.of(alice, user(2L, "bob")));
+
+        mockMvc.perform(get("/api/users/1").header("Authorization", bearer(TOKEN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("alice"))
+                .andExpect(jsonPath("$.password").doesNotExist());
+        mockMvc.perform(get("/api/users").header("Authorization", bearer(TOKEN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].password").doesNotExist())
+                .andExpect(jsonPath("$[1].password").doesNotExist())
+                .andExpect(content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString("$2a$"))));
     }
 
     @Test

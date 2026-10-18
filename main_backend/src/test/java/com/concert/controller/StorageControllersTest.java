@@ -58,14 +58,31 @@ class StorageControllersTest {
     }
 
     @Test
-    void localUpload_withEmptyFile_returns500AndWritesNothing() throws Exception {
-        ResponseEntity<Map<String, String>> response = localUpload(tempDir)
+    void localUpload_rejectsEmptyAndNonImageFiles_andWritesNothing() throws Exception {
+        ResponseEntity<Map<String, String>> empty = localUpload(tempDir)
                 .uploadLocal(new MockMultipartFile("file", "poster.png", "image/png", new byte[0]));
+        ResponseEntity<Map<String, String>> script = localUpload(tempDir)
+                .uploadLocal(new MockMultipartFile("file", "run.sh", "text/x-shellscript", new byte[]{1}));
 
-        assertThat(response.getStatusCode().value()).isEqualTo(500);
-        assertThat(response.getBody().get("error")).isEqualTo("File is empty");
+        assertThat(empty.getStatusCode().value()).isEqualTo(400);
+        assertThat(empty.getBody().get("error")).isEqualTo("File is empty");
+        assertThat(script.getStatusCode().value()).isEqualTo(400);
+        assertThat(script.getBody().get("error")).isEqualTo("Only image files are allowed");
         try (var files = Files.list(tempDir)) {
             assertThat(files).isEmpty();
+        }
+    }
+
+    @Test
+    void localUpload_ignoresUnsafeOrUnknownExtensions() throws Exception {
+        for (String name : new String[]{"evil.jsp", "../../escape.png/..", "x.PNG"}) {
+            ResponseEntity<Map<String, String>> response = localUpload(tempDir)
+                    .uploadLocal(new MockMultipartFile("file", name, "image/png", new byte[]{1}));
+
+            String key = response.getBody().get("key");
+            assertThat(response.getStatusCode().value()).isEqualTo(200);
+            assertThat(key).matches("[0-9a-f-]{36}\\.(jpg|png)");
+            assertThat(Files.exists(tempDir.resolve(key))).isTrue();
         }
     }
 

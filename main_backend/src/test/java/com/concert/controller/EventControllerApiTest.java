@@ -1,5 +1,7 @@
 package com.concert.controller;
 
+import com.concert.exception.NotFoundException;
+import com.concert.exception.ForbiddenException;
 import com.concert.config.SecurityConfig;
 import com.concert.dto.CreateEventRequest;
 import com.concert.dto.EventPhotoResponse;
@@ -23,7 +25,6 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -121,13 +122,13 @@ class EventControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void getEvent_whenMissing_surfacesEventNotFound() {
-        // There is no @ControllerAdvice yet, so this becomes a 500 in a running server.
-        when(eventService.getEvent(99L, null)).thenThrow(new IllegalArgumentException("Event not found"));
+    void getEvent_whenMissing_returns404() throws Exception {
+        when(eventService.getEvent(99L, null)).thenThrow(new NotFoundException("Event not found"));
 
-        assertThatThrownBy(() -> mockMvc.perform(get("/api/events/99")))
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                .hasRootCauseMessage("Event not found");
+        mockMvc.perform(get("/api/events/99"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.status").value(404))
+                .andExpect(jsonPath("$.error").value("Event not found"));
     }
 
     @Test
@@ -150,41 +151,40 @@ class EventControllerApiTest extends SecuredApiTestSupport {
     // --- authentication required --------------------------------------------
 
     @Test
-    void createEvent_withoutToken_returns403() throws Exception {
+    void createEvent_withoutToken_returns401() throws Exception {
         mockMvc.perform(post("/api/events").contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(eventService);
     }
 
     @Test
-    void createEvent_withForgedToken_returns403() throws Exception {
+    void createEvent_withForgedToken_returns401() throws Exception {
         mockMvc.perform(post("/api/events").header("Authorization", bearer("forged-token"))
                         .contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(eventService);
     }
 
     @Test
-    void updateAndDelete_withoutToken_return403() throws Exception {
+    void updateAndDelete_withoutToken_return401() throws Exception {
         mockMvc.perform(put("/api/events/7").contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(delete("/api/events/7"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/events/7/photo/upload-url").param("filename", "a.jpg"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(eventService);
     }
 
     @Test
-    void myEvents_withoutToken_failsWithAuthenticationRequired() {
-        // GET /api/events/** is public, so the controller itself rejects the anonymous call
-        // (500 in a running server because there is no exception handler).
-        assertThatThrownBy(() -> mockMvc.perform(get("/api/events/me")))
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                .hasRootCauseMessage("Authentication required");
+    void myEvents_withoutToken_returns401() throws Exception {
+        // GET /api/events/** is public, so the controller itself rejects the anonymous call.
+        mockMvc.perform(get("/api/events/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Authentication required"));
     }
 
     // --- authenticated writes ------------------------------------------------
@@ -230,13 +230,13 @@ class EventControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void createEvent_withTokenOfUnknownUser_failsWithUserNotFound() {
+    void createEvent_withTokenOfUnknownUser_returns401() throws Exception {
         when(userRepository.findByUsername("bob")).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> mockMvc.perform(post("/api/events").header("Authorization", bearer(OTHER_TOKEN))
-                        .contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT)))
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                .hasRootCauseMessage("User not found");
+        mockMvc.perform(post("/api/events").header("Authorization", bearer(OTHER_TOKEN))
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("User not found"));
         verifyNoInteractions(eventService);
     }
 
@@ -266,14 +266,25 @@ class EventControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void updateEvent_byNonOrganizer_surfacesServiceRejection() {
+    void updateEvent_byNonOrganizer_returns403() throws Exception {
         when(eventService.updateEvent(eq(7L), eq(alice), any(CreateEventRequest.class)))
-                .thenThrow(new IllegalArgumentException("Only event organizer can update this event"));
+                .thenThrow(new ForbiddenException("Only event organizer can update this event"));
 
-        assertThatThrownBy(() -> mockMvc.perform(put("/api/events/7").header("Authorization", bearer(TOKEN))
-                        .contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT)))
-                .hasRootCauseInstanceOf(IllegalArgumentException.class)
-                .hasRootCauseMessage("Only event organizer can update this event");
+        mockMvc.perform(put("/api/events/7").header("Authorization", bearer(TOKEN))
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Only event organizer can update this event"));
+    }
+
+    @Test
+    void updateEvent_withEndBeforeStart_returns400() throws Exception {
+        when(eventService.updateEvent(eq(7L), eq(alice), any(CreateEventRequest.class)))
+                .thenThrow(new IllegalArgumentException("End date must be after start date"));
+
+        mockMvc.perform(put("/api/events/7").header("Authorization", bearer(TOKEN))
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_EVENT))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("End date must be after start date"));
     }
 
     @Test

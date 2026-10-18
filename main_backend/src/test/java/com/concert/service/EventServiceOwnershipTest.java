@@ -1,5 +1,7 @@
 package com.concert.service;
 
+import com.concert.exception.NotFoundException;
+import com.concert.exception.ForbiddenException;
 import com.concert.dto.CreateEventRequest;
 import com.concert.dto.EventResponse;
 import com.concert.model.Booking;
@@ -125,7 +127,7 @@ class EventServiceOwnershipTest {
         when(eventRepository.findById(5L)).thenReturn(Optional.of(event));
 
         assertThatThrownBy(() -> service.updateEvent(5L, stranger, request("Hijack", START, END)))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Only event organizer can update this event");
         verify(eventRepository, never()).save(any());
         assertThat(event.getTitle()).isEqualTo("Old title");
@@ -151,11 +153,15 @@ class EventServiceOwnershipTest {
     }
 
     @Test
-    void deleteEvent_byOrganizer_deletes() {
+    void deleteEvent_byOrganizer_cancelsItsBookingsAndDeletes() {
+        Booking confirmed = booking(user(3L, "carol", "Carol"), 2);
         when(eventRepository.findById(5L)).thenReturn(Optional.of(event));
+        when(bookingRepository.findByEventId("5")).thenReturn(List.of(confirmed));
 
         service.deleteEvent(5L, organizer);
 
+        assertThat(confirmed.getStatus()).isEqualTo("CANCELLED");
+        verify(bookingRepository).saveAll(List.of(confirmed));
         verify(eventRepository).delete(event);
     }
 
@@ -164,9 +170,10 @@ class EventServiceOwnershipTest {
         when(eventRepository.findById(5L)).thenReturn(Optional.of(event));
 
         assertThatThrownBy(() -> service.deleteEvent(5L, stranger))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(ForbiddenException.class)
                 .hasMessage("Only event organizer can delete this event");
         verify(eventRepository, never()).delete(any());
+        verify(bookingRepository, never()).saveAll(any());
     }
 
     @Test
@@ -174,7 +181,7 @@ class EventServiceOwnershipTest {
         when(eventRepository.findById(5L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.deleteEvent(5L, organizer))
-                .isInstanceOf(IllegalArgumentException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessage("Event not found");
     }
 

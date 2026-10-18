@@ -1,5 +1,7 @@
 package com.concert.service;
 
+import com.concert.exception.NotFoundException;
+import com.concert.exception.ForbiddenException;
 import com.concert.config.AwsProperties;
 import com.concert.dto.CreateEventRequest;
 import com.concert.dto.EventPhotoResponse;
@@ -105,7 +107,7 @@ public class EventService {
 
     public EventResponse getEvent(Long id, User currentUser) {
         Event event = eventRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
         return toResponse(event, currentUser);
     }
 
@@ -167,10 +169,10 @@ public class EventService {
     @Transactional
     public EventResponse updateEvent(Long eventId, User organizer, CreateEventRequest request) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         if (!event.getOrganizer().getId().equals(organizer.getId())) {
-            throw new IllegalArgumentException("Only event organizer can update this event");
+            throw new ForbiddenException("Only event organizer can update this event");
         }
 
         if (request.getEndDate().isBefore(request.getStartDate())) {
@@ -201,23 +203,27 @@ public class EventService {
     @Transactional
     public void deleteEvent(Long eventId, User organizer) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         if (!event.getOrganizer().getId().equals(organizer.getId())) {
-            throw new IllegalArgumentException("Only event organizer can delete this event");
+            throw new ForbiddenException("Only event organizer can delete this event");
         }
 
+        // Bookings reference the event by id only, so cancel them together with the event.
+        List<Booking> bookings = bookingRepository.findByEventId(String.valueOf(eventId));
+        bookings.forEach(booking -> booking.setStatus("CANCELLED"));
+        bookingRepository.saveAll(bookings);
         eventRepository.delete(event);
     }
 
     @Transactional
     public EventPhotoResponse uploadEventPhoto(Long eventId, User organizer, MultipartFile file) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         // Verify the organizer owns this event
         if (!event.getOrganizer().getId().equals(organizer.getId())) {
-            throw new IllegalArgumentException("Only event organizer can upload photos");
+            throw new ForbiddenException("Only event organizer can upload photos");
         }
 
         try {
@@ -273,7 +279,7 @@ public class EventService {
 
     public EventPhotoResponse getEventPhoto(Long eventId) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         if (event.getPhotoId() == null || event.getPhotoUrl() == null) {
             return new EventPhotoResponse(null, null, "No photo available for this event");
@@ -337,10 +343,10 @@ public class EventService {
 
     public EventPhotoResponse generateUploadUrl(Long eventId, User organizer, String filename) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         if (!event.getOrganizer().getId().equals(organizer.getId())) {
-            throw new IllegalArgumentException("Only event organizer can upload photos");
+            throw new ForbiddenException("Only event organizer can upload photos");
         }
 
         String bucket = awsProperties.getS3().getEventPicturesBucket();
@@ -366,10 +372,10 @@ public class EventService {
     @Transactional
     public EventPhotoResponse setEventPhotoByFilename(Long eventId, User organizer, String filename) {
         Event event = eventRepository.findById(eventId)
-                .orElseThrow(() -> new IllegalArgumentException("Event not found"));
+                .orElseThrow(() -> new NotFoundException("Event not found"));
 
         if (!event.getOrganizer().getId().equals(organizer.getId())) {
-            throw new IllegalArgumentException("Only event organizer can set photos");
+            throw new ForbiddenException("Only event organizer can set photos");
         }
 
         String bucket = awsProperties.getS3().getEventPicturesBucket();

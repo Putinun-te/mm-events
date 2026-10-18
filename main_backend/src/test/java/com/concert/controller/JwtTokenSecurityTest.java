@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Real JWTs through the real JwtService, JwtAuthenticationFilter and SecurityConfig.
+ * Rejected tokens get 401 (no authentication), not 403.
  * Expired tokens are minted with a negative lifetime, so no test waits on the clock.
  */
 @WebMvcTest(EventController.class)
@@ -63,7 +64,7 @@ class JwtTokenSecurityTest {
 
     @Test
     void missingToken_isRejected() throws Exception {
-        mockMvc.perform(post(PROTECTED)).andExpect(status().isForbidden());
+        mockMvc.perform(post(PROTECTED)).andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -71,7 +72,7 @@ class JwtTokenSecurityTest {
         String expired = issuer(SECRET, -60_000).generateToken("alice");
 
         mockMvc.perform(post(PROTECTED).header("Authorization", "Bearer " + expired))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -79,7 +80,7 @@ class JwtTokenSecurityTest {
         String foreign = issuer(OTHER_SECRET, 3_600_000).generateToken("alice");
 
         mockMvc.perform(post(PROTECTED).header("Authorization", "Bearer " + foreign))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -90,7 +91,7 @@ class JwtTokenSecurityTest {
         String tampered = parts[0] + "." + forgedPayload + "." + parts[2];
 
         mockMvc.perform(post(PROTECTED).header("Authorization", "Bearer " + tampered))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -98,12 +99,12 @@ class JwtTokenSecurityTest {
         String token = jwtService.generateToken("alice");
 
         mockMvc.perform(post(PROTECTED).header("Authorization", "Bearer not-a-jwt"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(post(PROTECTED).header("Authorization", token))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(post(PROTECTED).header("Authorization", "Basic " + token))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(post(PROTECTED).header("Authorization", "Bearer "))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

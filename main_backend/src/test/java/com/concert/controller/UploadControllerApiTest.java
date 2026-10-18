@@ -1,5 +1,11 @@
 package com.concert.controller;
 
+import java.util.Optional;
+import java.util.List;
+import com.concert.repository.UserRepository;
+import com.concert.repository.EventRepository;
+import com.concert.model.User;
+import com.concert.model.Event;
 import com.concert.config.SecurityConfig;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -45,18 +51,36 @@ class UploadControllerApiTest extends SecuredApiTestSupport {
     @MockitoBean
     private S3Client s3Client;
 
+    @MockitoBean
+    private UserRepository userRepository;
+
+    @MockitoBean
+    private EventRepository eventRepository;
+
+    private static final String IMAGE_URL = "https://test-bucket.s3.ap-southeast-1.amazonaws.com/events/a.png";
+
+    /** alice organizes one event whose photo is events/a.png. */
+    private User aliceOwningEventPhoto() {
+        User alice = user(1L, "alice");
+        Event event = new Event();
+        event.setPhotoUrl("https://cdn.test/events/a.png");
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
+        when(eventRepository.findByOrganizerOrderByStartDateAsc(alice)).thenReturn(List.of(event));
+        return alice;
+    }
+
     private static MockMultipartFile image(String name, String contentType, int size) {
         return new MockMultipartFile("file", name, contentType, new byte[size]);
     }
 
     @Test
-    void uploadEndpoints_withoutToken_return403() throws Exception {
+    void uploadEndpoints_withoutToken_return401() throws Exception {
         mockMvc.perform(multipart("/api/upload/avatar").file(image("a.png", "image/png", 10)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(multipart("/api/upload/event-photo").file(image("a.png", "image/png", 10)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
         mockMvc.perform(delete("/api/upload/delete").param("url", "https://test-bucket.s3.amazonaws.com/events/a.png"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(s3Client);
     }
@@ -86,23 +110,22 @@ class UploadControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void uploads_rejectEmptyNonImageAndOversizedFiles() throws Exception {
-        // Validation failures are currently reported as 500 with an error message.
+    void uploads_rejectEmptyNonImageAndOversizedFiles_with400() throws Exception {
         mockMvc.perform(multipart("/api/upload/avatar").file(image("a.png", "image/png", 0))
                         .header("Authorization", bearer(TOKEN)))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("File is empty"));
         mockMvc.perform(multipart("/api/upload/event-photo").file(image("notes.txt", "text/plain", 10))
                         .header("Authorization", bearer(TOKEN)))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Only image files are allowed"));
         mockMvc.perform(multipart("/api/upload/event-photo").file(image("big.png", "image/png", 10 * 1024 * 1024 + 1))
                         .header("Authorization", bearer(TOKEN)))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("File too large. Maximum size is 10MB"));
         mockMvc.perform(multipart("/api/upload/avatar").file(image("a.png", null, 10))
                         .header("Authorization", bearer(TOKEN)))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Only image files are allowed"));
 
         verifyNoInteractions(s3Client);
@@ -124,9 +147,11 @@ class UploadControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void deleteImage_copiesToDeletedFolderThenRemovesOriginal() throws Exception {
+    void deleteImage_ofOwnEventPhoto_copiesToDeletedFolderThenRemovesOriginal() throws Exception {
+        aliceOwningEventPhoto();
+
         mockMvc.perform(delete("/api/upload/delete")
-                        .param("url", "https://test-bucket.s3.ap-southeast-1.amazonaws.com/events/a.png")
+                        .param("url", IMAGE_URL)
                         .header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.originalKey").value("events/a.png"))
@@ -144,16 +169,44 @@ class UploadControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
+    void deleteImage_ofOwnProfilePhoto_isAllowed() throws Exception {
+        User alice = user(1L, "alice");
+        alice.setProfilePhoto("https://cdn.test/avatars/me.png");
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
+
+        mockMvc.perform(delete("/api/upload/delete")
+                        .param("url", "https://test-bucket.s3.ap-southeast-1.amazonaws.com/avatars/me.png")
+                        .header("Authorization", bearer(TOKEN)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.originalKey").value("avatars/me.png"));
+    }
+
+    @Test
+    void deleteImage_ofSomeoneElsesImage_returns403WithoutTouchingS3() throws Exception {
+        aliceOwningEventPhoto();
+        User bob = user(2L, "bob");
+        when(userRepository.findByUsername("bob")).thenReturn(Optional.of(bob));
+        when(eventRepository.findByOrganizerOrderByStartDateAsc(bob)).thenReturn(List.of());
+
+        mockMvc.perform(delete("/api/upload/delete").param("url", IMAGE_URL)
+                        .header("Authorization", bearer(OTHER_TOKEN)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("You can only delete your own images"));
+
+        verifyNoInteractions(s3Client);
+    }
+
+    @Test
     void deleteImage_withUrlOutsideBucket_isRejectedWithoutTouchingS3() throws Exception {
         mockMvc.perform(delete("/api/upload/delete")
                         .param("url", "https://other-bucket.s3.amazonaws.com/events/a.png")
                         .header("Authorization", bearer(TOKEN)))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Invalid image URL"));
         mockMvc.perform(delete("/api/upload/delete")
                         .param("url", "test-bucket")
                         .header("Authorization", bearer(TOKEN)))
-                .andExpect(status().isInternalServerError())
+                .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Invalid image URL"));
 
         verifyNoInteractions(s3Client);
@@ -161,6 +214,7 @@ class UploadControllerApiTest extends SecuredApiTestSupport {
 
     @Test
     void deleteImage_whenCopyFails_returns500() throws Exception {
+        aliceOwningEventPhoto();
         when(s3Client.copyObject(any(CopyObjectRequest.class)))
                 .thenThrow(S3Exception.builder().message("NoSuchKey").build());
 

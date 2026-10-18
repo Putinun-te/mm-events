@@ -1,5 +1,7 @@
 package com.concert.config;
 
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.http.HttpStatus;
 import com.concert.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +35,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             // เปิดใช้ CORS
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            // Missing or invalid token -> 401 (the default would be 403)
+            .exceptionHandling(ex -> ex.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
             // ใช้ stateless session เพราะ JWT
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             // กำหนดสิทธิ์การเข้าถึงแต่ละ endpoint

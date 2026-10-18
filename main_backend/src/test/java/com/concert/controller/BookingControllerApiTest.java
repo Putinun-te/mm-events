@@ -1,5 +1,7 @@
 package com.concert.controller;
 
+import com.concert.exception.NotFoundException;
+import com.concert.exception.ForbiddenException;
 import com.concert.config.SecurityConfig;
 import com.concert.dto.BookingResponse;
 import com.concert.dto.CreateBookingRequest;
@@ -14,7 +16,6 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -51,15 +52,15 @@ class BookingControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void everyEndpoint_withoutToken_returns403() throws Exception {
+    void everyEndpoint_withoutToken_returns401() throws Exception {
         mockMvc.perform(post("/api/bookings").contentType(MediaType.APPLICATION_JSON)
                         .content("{\"eventId\":\"7\",\"quantity\":1}"))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/bookings/me")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/bookings/my-bookings")).andExpect(status().isForbidden());
-        mockMvc.perform(get("/api/bookings/5")).andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/bookings/5")).andExpect(status().isForbidden());
-        mockMvc.perform(delete("/api/bookings/event/7")).andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/bookings/me")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/bookings/my-bookings")).andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/api/bookings/5")).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/bookings/5")).andExpect(status().isUnauthorized());
+        mockMvc.perform(delete("/api/bookings/event/7")).andExpect(status().isUnauthorized());
 
         verifyNoInteractions(bookingService);
     }
@@ -122,13 +123,22 @@ class BookingControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void getBooking_ofAnotherUser_surfacesUnauthorizedAccess() {
-        // No exception handler yet: a running server answers 500, not 403.
+    void getBooking_ofAnotherUser_returns403() throws Exception {
         when(bookingService.getBookingById(5L, "bob"))
-                .thenThrow(new RuntimeException("Unauthorized access to booking"));
+                .thenThrow(new ForbiddenException("Unauthorized access to booking"));
 
-        assertThatThrownBy(() -> mockMvc.perform(get("/api/bookings/5").header("Authorization", bearer(OTHER_TOKEN))))
-                .hasRootCauseMessage("Unauthorized access to booking");
+        mockMvc.perform(get("/api/bookings/5").header("Authorization", bearer(OTHER_TOKEN)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Unauthorized access to booking"));
+    }
+
+    @Test
+    void getBooking_whenMissing_returns404() throws Exception {
+        when(bookingService.getBookingById(99L, "alice")).thenThrow(new NotFoundException("Booking not found"));
+
+        mockMvc.perform(get("/api/bookings/99").header("Authorization", bearer(TOKEN)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("Booking not found"));
     }
 
     @Test
@@ -140,21 +150,29 @@ class BookingControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void cancelBooking_ofAnotherUser_surfacesUnauthorizedAccess() {
-        doThrow(new RuntimeException("Unauthorized access to booking"))
+    void cancelBooking_ofAnotherUser_returns403() throws Exception {
+        doThrow(new ForbiddenException("Unauthorized access to booking"))
                 .when(bookingService).cancelBooking(5L, "bob");
 
-        assertThatThrownBy(() -> mockMvc.perform(delete("/api/bookings/5").header("Authorization", bearer(OTHER_TOKEN))))
-                .hasRootCauseMessage("Unauthorized access to booking");
+        mockMvc.perform(delete("/api/bookings/5").header("Authorization", bearer(OTHER_TOKEN)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
-    void cancelAllBookingsForEvent_withToken_returns204() throws Exception {
-        // Note: the endpoint only requires a valid token; it does not check that the
-        // caller organises the event.
+    void cancelAllBookingsForEvent_passesCallerForOrganizerCheck() throws Exception {
         mockMvc.perform(delete("/api/bookings/event/7").header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isNoContent());
 
-        verify(bookingService).cancelAllBookingsForEvent("7");
+        verify(bookingService).cancelAllBookingsForEvent("7", "alice");
+    }
+
+    @Test
+    void cancelAllBookingsForEvent_byNonOrganizer_returns403() throws Exception {
+        doThrow(new ForbiddenException("Only the event organizer can cancel all bookings"))
+                .when(bookingService).cancelAllBookingsForEvent("7", "bob");
+
+        mockMvc.perform(delete("/api/bookings/event/7").header("Authorization", bearer(OTHER_TOKEN)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.error").value("Only the event organizer can cancel all bookings"));
     }
 }

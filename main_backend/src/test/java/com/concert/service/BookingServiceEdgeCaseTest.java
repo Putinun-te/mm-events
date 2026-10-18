@@ -1,5 +1,9 @@
 package com.concert.service;
 
+import com.concert.repository.EventRepository;
+import com.concert.model.Event;
+import com.concert.exception.NotFoundException;
+import com.concert.exception.ForbiddenException;
 import com.concert.dto.BookingResponse;
 import com.concert.dto.CreateBookingRequest;
 import com.concert.model.Booking;
@@ -33,6 +37,8 @@ class BookingServiceEdgeCaseTest {
     private BookingRepository bookingRepository;
     @Mock
     private UserRepository userRepository;
+    @Mock
+    private EventRepository eventRepository;
     @InjectMocks
     private BookingService bookingService;
 
@@ -75,8 +81,19 @@ class BookingServiceEdgeCaseTest {
         assertThat(response.getEventLocation()).isEqualTo("TBA");
     }
 
+    private Event eventOrganizedBy(String username) {
+        User organizer = new User();
+        organizer.setId(9L);
+        organizer.setUsername(username);
+        Event event = new Event();
+        event.setId(7L);
+        event.setOrganizer(organizer);
+        return event;
+    }
+
     @Test
-    void cancelAllBookingsForEvent_cancelsEveryBookingOfTheEvent() {
+    void cancelAllBookingsForEvent_byOrganizer_cancelsEveryBookingOfTheEvent() {
+        when(eventRepository.findById(7L)).thenReturn(Optional.of(eventOrganizedBy("alice")));
         Booking first = new Booking();
         first.setStatus("CONFIRMED");
         Booking second = new Booking();
@@ -84,18 +101,31 @@ class BookingServiceEdgeCaseTest {
         List<Booking> bookings = List.of(first, second);
         when(bookingRepository.findByEventId("7")).thenReturn(bookings);
 
-        bookingService.cancelAllBookingsForEvent("7");
+        bookingService.cancelAllBookingsForEvent("7", "alice");
 
         assertThat(bookings).extracting(Booking::getStatus).containsOnly("CANCELLED");
         verify(bookingRepository).saveAll(bookings);
     }
 
     @Test
-    void cancelAllBookingsForEvent_withNoBookings_savesNothing() {
-        when(bookingRepository.findByEventId("8")).thenReturn(List.of());
+    void cancelAllBookingsForEvent_byAnotherUser_isForbiddenAndChangesNothing() {
+        when(eventRepository.findById(7L)).thenReturn(Optional.of(eventOrganizedBy("alice")));
 
-        bookingService.cancelAllBookingsForEvent("8");
+        assertThatThrownBy(() -> bookingService.cancelAllBookingsForEvent("7", "mallory"))
+                .isInstanceOf(ForbiddenException.class)
+                .hasMessage("Only the event organizer can cancel all bookings");
+        verifyNoInteractions(bookingRepository);
+    }
 
-        verify(bookingRepository).saveAll(List.of());
+    @Test
+    void cancelAllBookingsForEvent_forUnknownOrInvalidEventId_isNotFound() {
+        when(eventRepository.findById(8L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> bookingService.cancelAllBookingsForEvent("8", "alice"))
+                .isInstanceOf(NotFoundException.class)
+                .hasMessage("Event not found");
+        assertThatThrownBy(() -> bookingService.cancelAllBookingsForEvent("not-a-number", "alice"))
+                .isInstanceOf(NotFoundException.class);
+        verifyNoInteractions(bookingRepository);
     }
 }

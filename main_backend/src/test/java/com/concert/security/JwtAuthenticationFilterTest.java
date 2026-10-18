@@ -5,6 +5,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,12 @@ public class JwtAuthenticationFilterTest {
 
     @BeforeEach
     void setUp() {
+        SecurityContextHolder.clearContext();
+    }
+
+    // Do not leak an authentication to the next test running on this thread.
+    @AfterEach
+    void tearDown() {
         SecurityContextHolder.clearContext();
     }
 

@@ -83,25 +83,17 @@ class JwtServiceTest {
 
     @Test
     public void testTokenExpiration() {
-        // Test with 1 second expiration
-        jwtService.setJwtExpirationInMs(1000);
-        
+        // Keep the default 1-hour lifetime here: the exp claim has whole-second precision,
+        // so a 1-second token can expire within milliseconds of being issued (flaky on CI).
         String token = jwtService.generateToken("testuser");
         
         // Token should be initially valid
         assertTrue(jwtService.validateToken(token, "testuser"), "Token should be initially valid");
         
         // Test with expired token
-        jwtService.setJwtExpirationInMs(1); // 1 millisecond
+        // Negative lifetime: the token is already expired when issued, so no sleep is needed
+        jwtService.setJwtExpirationInMs(-60_000);
         String expiredToken = jwtService.generateToken("testuser");
-        
-        // Wait for token to expire
-        try {
-            Thread.sleep(10); // Wait for expiration
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            fail("Thread interrupted during sleep");
-        }
         
         // Token should now be expired/invalid
         assertFalse(jwtService.validateToken(expiredToken, "testuser"), "Token should be expired and invalid");

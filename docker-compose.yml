@@ -64,7 +64,8 @@ services:
       start_period: 60s
       retries: 3
 
-  # Dockerized backend tests with JaCoCo + Testcontainers
+  # Dockerized backend tests: same commands as CI (unit tests, then integration
+  # tests on Testcontainers + JaCoCo gate). Run with main_backend/run-docker-tests.sh
   backend-tests:
     profiles:
       - tests
@@ -88,7 +89,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - concert-network
-    command: ["bash", "-lc", "mvn -B -T 1C clean test jacoco:report -Dproject.build.sourceEncoding=UTF-8"]
+    command: ["bash", "-lc", "./mvnw -B -ntp clean test && ./mvnw -B -ntp verify -DskipUTs=true"]
 
   frontend:
     image: node:20-alpine

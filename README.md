@@ -50,8 +50,8 @@ flowchart LR
 
   subgraph GH["GitHub"]
     repo["Repository"]
-    subgraph CI["GitHub Actions (ci.yml, GitHub-hosted runners)"]
-      be_test["Backend tests<br/>JUnit + Testcontainers"]
+    subgraph CI["GitHub Actions (backend-ci.yml + ci.yml, GitHub-hosted runners)"]
+      be_test["Backend unit + integration tests<br/>JUnit, Testcontainers, coverage gate"]
       fe_test["Frontend tests + build<br/>Vitest / Nuxt"]
       e2e["API e2e tests<br/>on Docker Compose stack"]
       img["Docker image builds"]
@@ -112,7 +112,7 @@ flowchart LR
 | `k8s/` | EKS manifests: backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment |
 | `aws/` | Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM) |
 | `infra/terraform/` | Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
-| `.github/workflows/ci.yml` | CI pipeline (see below) |
+| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate) and `ci.yml` (frontend, e2e, images, secret scan) |
 | `scripts/` | Optional helpers for a self-hosted runner on EC2 |
 | `docs/` | Design notes, testing guides and course write-ups; `docs/archive/` holds old deployment notes |
 
@@ -152,31 +152,89 @@ npm ci --legacy-peer-deps
 npm run dev
 ```
 
-## Tests
+## Testing
+
+### Backend (`main_backend/`)
+
+Tests are split in two Maven phases, exactly as CI runs them:
+
+| Kind | What runs | Command | Needs |
+|---|---|---|---|
+| Unit | Plain JUnit/Mockito tests and Spring slices (`@WebMvcTest` with the real security config, `@DataJpaTest` on H2) — surefire | `./mvnw -B -ntp test` | JDK 21 |
+| Integration | Full Spring context and Testcontainers tests on MySQL 8.0 (`*IT`, `integration/**`, `*DockerTest`), then the coverage gate — failsafe | `./mvnw -B -ntp verify -DskipUTs=true` | JDK 21 + Docker |
+| Both | Unit, integration and the coverage gate in one go | `./mvnw -B -ntp verify` | JDK 21 + Docker |
+
+`main_backend/run-tests.sh` wraps the same commands:
+
+```bash
+cd main_backend
+./run-tests.sh            # unit, then integration + coverage gate (same as CI)
+./run-tests.sh unit       # unit tests only, no Docker
+./run-tests.sh coverage   # same as CI, then prints a coverage summary
+./run-tests.sh specific EventServicePhotoTest
+```
+
+No local JDK? `main_backend/run-docker-tests.sh` runs the same commands inside
+a Maven container (Docker Compose profile `tests`).
+
+New integration tests go in a class whose name ends in `IT`; everything else
+runs as a unit test. S3 is always a Mockito fake in tests, and nothing needs
+AWS credentials.
+
+### Coverage report
+
+JaCoCo writes two HTML reports:
+
+- `main_backend/target/site/jacoco/index.html` – unit + integration, the one the gate checks
+- `main_backend/target/site/jacoco-unit/index.html` – unit tests only (after `./mvnw test`)
+
+Open `index.html` and drill down package → class → source: green lines are
+covered, red are not, yellow lines have branches that were only partly taken.
+
+The gate (`jacoco.minLine` / `jacoco.minBranch` in `main_backend/pom.xml`) fails
+`mvn verify` when total line or branch coverage drops below the minimum. It is
+set one point below the measured coverage; raise it when you add tests, never
+lower it to make a build pass.
+
+### Frontend and end-to-end
 
 | What | Command | Notes |
 |---|---|---|
-| Backend unit + integration | `cd main_backend && mvn verify` | Needs Docker for Testcontainers. JaCoCo report in `target/site/jacoco/` |
-| Backend in Docker | `docker compose --profile tests run --rm backend-tests` | No local JDK/Maven needed |
 | Frontend unit | `cd main_frontend/concert1 && npm run test` | `npm run test:coverage` for coverage |
 | API end-to-end | `docker compose up -d --build --wait`, then `cd main_frontend/concert1 && npm run test:e2e` | Runs against the local stack on :3000 / :8080 |
 | Cypress UI tests | `cd main_frontend/concert1 && npm run test:cy:headless` | Needs the local stack running |
 
 ## CI/CD
 
-`.github/workflows/ci.yml` runs on every push to `main` and on pull requests,
-using GitHub-hosted runners only:
+All workflows run on GitHub-hosted runners only: no self-hosted runners, no
+cloud credentials, no deploy jobs.
 
-1. **backend** – `mvn verify` with Testcontainers and a JaCoCo report
-2. **frontend** – `npm ci`, Vitest unit tests, `nuxt build`
-3. **e2e** – starts the Docker Compose stack and runs the API e2e suite
-4. **docker-images** – builds the backend and frontend images (not pushed)
-5. **secret-scan** – gitleaks over the full git history (`.gitleaks.toml`)
+**`backend-ci.yml`** (push to `main`, every pull request):
+
+1. **changes** – checks whether `main_backend/**` (or the workflow) changed.
+2. **tests** – only when the backend changed: Temurin 21 with the Maven cache,
+   `./mvnw test` (unit), then `./mvnw verify -DskipUTs=true` (integration on
+   Testcontainers MySQL 8.0 + coverage gate). Uploads the surefire, failsafe
+   and JaCoCo reports as the `backend-test-reports` artifact and writes a
+   test and coverage table to the run's summary page.
+3. **backend-ci** – always runs and reports the result, so it can be a required
+   status check even on pull requests that do not touch the backend.
+
+**`ci.yml`** (push to `main`, every pull request):
+
+1. **frontend** – `npm ci`, Vitest unit tests, `nuxt build`
+2. **e2e** – starts the Docker Compose stack and runs the API e2e suite
+3. **docker-images** – builds the backend and frontend images (not pushed)
+4. **secret-scan** – gitleaks over the full git history (`.gitleaks.toml`)
+
+To see why a backend run failed, open the run in the Actions tab: the summary
+page lists failed tests and coverage per package, and the
+`backend-test-reports` artifact has the full reports.
 
 During the course the pipeline also pushed images to GHCR and deployed to EKS
 through self-hosted runners; those jobs needed AWS credentials and were removed
-together with the infrastructure. Their history is in the git log and on the
-`archive/*` branches.
+together with the infrastructure. Their history is in the git log and under
+the `archive/*` tags.
 
 ## Deploying again (optional)
 
@@ -192,12 +250,13 @@ Everything below creates billable AWS resources in **your** account.
 - **Docker Compose on a VM:** copy `.env.example` to `.env`, fill in the
   production section and run `docker compose -f docker-compose.prod.yml up -d --build`.
 
-## Branches
+## Branches and tags
 
-`main` holds the final state of the project. The `archive/*` branches keep
-earlier lines of work (test branches, the Kubernetes and AWS experiments and
-individual frontend branches) so that every team member's commits remain in the
-history.
+`main` holds the final state of the project. The `archive/*` tags keep earlier
+lines of work (test branches, the Kubernetes and AWS experiments and individual
+frontend branches) so that every team member's commits remain in the history.
+Browse one with `git log archive/k8s-development` or check it out in a separate
+worktree with `git worktree add ../k8s archive/k8s-development`.
 
 ## My role
 

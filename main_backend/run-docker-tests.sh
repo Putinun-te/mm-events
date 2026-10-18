@@ -1,23 +1,19 @@
 #!/bin/bash
+# Run the backend test suite inside Docker (no local JDK or Maven needed).
+#
+# Uses the "backend-tests" service of docker-compose.yml, which runs the same
+# commands as CI (./mvnw test, then ./mvnw verify -DskipUTs=true). Testcontainers
+# starts MySQL through the host's Docker socket.
+set -euo pipefail
 
-# Script to run Docker-based tests
-echo "🐳 Starting Docker Integration Tests..."
-
-# Ensure Docker is running
 if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker is not running. Please start Docker and try again."
+    echo "Docker is not running. Please start Docker and try again." >&2
     exit 1
 fi
 
-echo "✅ Docker is running"
+cd "$(dirname "$0")/.."
+docker compose --profile tests run --rm backend-tests
 
-# Clean up any existing containers
-echo "🧹 Cleaning up existing test containers..."
-docker stop $(docker ps -a -q --filter "ancestor=mysql:8.0" --filter "name=testcontainers") 2>/dev/null || true
-docker rm $(docker ps -a -q --filter "ancestor=mysql:8.0" --filter "name=testcontainers") 2>/dev/null || true
-
-# Run Maven tests with Docker profile
-echo "🚀 Running Docker integration tests..."
-mvn test -Dspring.profiles.active=docker -Dtest="*Docker*Test"
-
-echo "🏁 Docker tests completed!"
+echo
+echo "Reports: main_backend/target/surefire-reports, main_backend/target/failsafe-reports,"
+echo "         main_backend/target/site/jacoco/index.html"

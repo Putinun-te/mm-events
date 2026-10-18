@@ -217,14 +217,9 @@ class EventTest {
         // Arrange
         event.setTitle("Test Event");
         event.prePersist();
+        // Fixed past timestamp instead of sleeping until the clock moves
+        event.setCreatedAt(LocalDateTime.of(2000, 1, 1, 0, 0));
         LocalDateTime originalCreatedAt = event.getCreatedAt();
-        
-        // Wait to ensure different timestamps
-        try {
-            Thread.sleep(10);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
         // Act
         event.preUpdate();

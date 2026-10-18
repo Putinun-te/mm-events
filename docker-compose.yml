@@ -12,7 +12,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database-setup.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - concert-network
     healthcheck:
@@ -20,8 +19,22 @@ services:
       timeout: 20s
       retries: 10
 
+  redis:
+    image: redis:7.2-alpine
+    container_name: concert-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - concert-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   backend:
-    build: 
+    build:
       context: ./main_backend
       dockerfile: Dockerfile
     container_name: concert-backend
@@ -29,10 +42,14 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/concert_db
       SPRING_DATASOURCE_USERNAME: concert_user
       SPRING_DATASOURCE_PASSWORD: concert_password
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_PROFILES_ACTIVE: docker
       JAVA_OPTS: "-Xmx512m -Xms256m"
@@ -83,6 +100,8 @@ services:
       - NUXT_HOST=0.0.0.0
       - NUXT_PORT=3000
       - BACKEND_BASE_URL=http://backend:8080
+      - NUXT_PUBLIC_BACKEND_BASE_URL=${NUXT_PUBLIC_BACKEND_BASE_URL:-http://localhost:8080}
+      - NUXT_PUBLIC_LONGDO_MAP_KEY=${NUXT_PUBLIC_LONGDO_MAP_KEY:-}
     ports:
       - "3000:3000"
     volumes:

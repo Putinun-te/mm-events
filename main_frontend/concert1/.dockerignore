@@ -1,0 +1,10 @@
+node_modules
+.nuxt
+.output
+.data
+coverage
+test-results
+cypress/videos
+cypress/screenshots
+.env*
+!.env.example

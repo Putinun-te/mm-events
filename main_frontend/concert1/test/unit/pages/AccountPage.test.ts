@@ -726,9 +726,11 @@ describe('AccountPage.vue', () => {
   })
 
   // Branch coverage tests for loadUserData
-  it('should return early when no token in loadUserData', async () => {
+  it('should keep userData empty when no profile is returned', async () => {
     localStorage.clear()
     sessionStorage.clear()
+    // loadUserData no longer checks for a token first; it always asks the API
+    ;(globalAny.$fetch as any).mockResolvedValue(null)
 
     const wrapper = mount(AccountPage, {
       global: {

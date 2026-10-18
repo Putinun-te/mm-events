@@ -1,0 +1,123 @@
+name: CI
+
+# Runs on GitHub-hosted runners only. No cloud credentials and no deploy jobs:
+# the AWS infrastructure used during the course has been decommissioned.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests (JUnit + Testcontainers)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: main_backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Test and coverage report
+        run: mvn -B -ntp clean verify
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-reports
+          path: |
+            main_backend/target/surefire-reports/
+            main_backend/target/site/jacoco/
+          retention-days: 7
+
+  frontend:
+    name: Frontend tests and build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: main_frontend/concert1
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      - run: npm ci --legacy-peer-deps
+      - run: npm run test
+      - run: npm run build
+
+  e2e:
+    name: API end-to-end (Docker Compose)
+    needs: [backend, frontend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start MySQL, backend and frontend
+        run: |
+          docker compose up -d --build --wait --wait-timeout 400 mysql backend frontend
+          # the frontend container runs npm install + nuxt dev on start
+          for i in $(seq 1 60); do curl -fs http://localhost:3000 >/dev/null && break; sleep 5; done
+          curl -fsS -o /dev/null http://localhost:3000
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      - name: Run API e2e tests
+        working-directory: main_frontend/concert1
+        env:
+          NUXT_PUBLIC_API_BASE: http://localhost:8080
+        run: |
+          npm ci --legacy-peer-deps
+          npm run test:e2e
+
+      - name: Backend logs
+        if: failure()
+        run: docker compose logs backend mysql frontend
+
+      - name: Stop containers
+        if: always()
+        run: docker compose down -v
+
+  docker-images:
+    name: Build Docker images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: docker build -t mm-events-backend:ci main_backend
+      - name: Build frontend image
+        run: docker build -t mm-events-frontend:ci main_frontend/concert1
+
+  secret-scan:
+    name: Secret scan (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Scan full history
+        run: |
+          curl -sSfL https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz \
+            | tar -xz gitleaks
+          ./gitleaks git . --config .gitleaks.toml --redact --no-banner

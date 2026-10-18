@@ -9,8 +9,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 3  # Reduced limit
-    reviewers:
-      - "MorningMores"
     labels:
       - "dependencies"
       - "frontend"
@@ -34,8 +32,6 @@ updates:
       day: "monday"
       time: "09:00"
     open-pull-requests-limit: 5
-    reviewers:
-      - "MorningMores"
     labels:
       - "dependencies"
       - "backend"

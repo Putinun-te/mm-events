@@ -49,7 +49,7 @@ describe('E2E Events Flow', async () => {
 
   it('should display event details correctly', async () => {
     // Directly navigate to a detail page (assuming ID 1 exists)
-    const page = await createPage('/ProductPageDetail/1')
+    const page = await createPage('/product-page-detail/1')
     await page.waitForTimeout(2000)
     
     const content = await page.content()
@@ -64,7 +64,7 @@ describe('E2E Events Flow', async () => {
   })
 
   it('should have quantity controls on detail page', async () => {
-    const page = await createPage('/ProductPageDetail/1')
+    const page = await createPage('/product-page-detail/1')
     await page.waitForTimeout(2000)
     
     // Look for quantity buttons
@@ -76,7 +76,7 @@ describe('E2E Events Flow', async () => {
   })
 
   it('should have add to cart or buy button', async () => {
-    const page = await createPage('/ProductPageDetail/1')
+    const page = await createPage('/product-page-detail/1')
     await page.waitForTimeout(2000)
     
     // Look for action buttons

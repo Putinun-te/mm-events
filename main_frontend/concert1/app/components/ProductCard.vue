@@ -58,14 +58,14 @@ const formatEventDateTime = (raw: string) => {
 
 function more () {
   router.push({
-    path: `/ProductPageDetail/${props.event.id}`,
+    path: `/product-page-detail/${props.event.id}`,
     state: { event: props.event }
   })
 }
 
 function join () {
   router.push({
-    path: `/ProductPageDetail/${props.event.id}`,
+    path: `/product-page-detail/${props.event.id}`,
     state: { event: props.event }
   })
 }

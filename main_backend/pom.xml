@@ -16,12 +16,12 @@
 	<properties>
 		<!-- Updated to latest LTS -->
 		<java.version>21</java.version>
-		<!-- Fail build on low coverage by default; CI can set -Djacoco.haltOnFailure=false -->
-		<!-- Set to false for stability - coverage reports still generated -->
-		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
-		<!-- Coverage gate on the merged unit + integration report (mvn verify) -->
-		<jacoco.minLine>0.60</jacoco.minLine>
-		<jacoco.minBranch>0.60</jacoco.minBranch>
+		<!-- Coverage gate on the merged unit + integration report (mvn verify).
+		     Set to the measured coverage minus one point (94.35% line / 84.27% branch
+		     when introduced). Raise it when you add tests; never lower it to pass. -->
+		<jacoco.haltOnFailure>true</jacoco.haltOnFailure>
+		<jacoco.minLine>0.93</jacoco.minLine>
+		<jacoco.minBranch>0.83</jacoco.minBranch>
 		<!-- Unit tests run in surefire (mvn test), integration tests in failsafe (mvn verify).
 		     -DskipUTs=true / -DskipITs=true run only one of the two. -->
 		<skipUTs>false</skipUTs>

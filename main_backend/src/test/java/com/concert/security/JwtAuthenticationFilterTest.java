@@ -99,6 +99,23 @@ public class JwtAuthenticationFilterTest {
     }
 
     @Test
+    void testDoFilterInternal_ValidJwtToken_attachesRequestDetails() throws ServletException, IOException {
+        when(request.getHeader("Authorization")).thenReturn("Bearer valid-jwt-token");
+        when(request.getRemoteAddr()).thenReturn("203.0.113.7");
+        when(jwtService.extractUsername("valid-jwt-token")).thenReturn("testuser");
+        when(jwtService.isTokenValid("valid-jwt-token", "testuser")).thenReturn(true);
+
+        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+        Object details = SecurityContextHolder.getContext().getAuthentication().getDetails();
+        org.assertj.core.api.Assertions.assertThat(details)
+                .isInstanceOf(org.springframework.security.web.authentication.WebAuthenticationDetails.class);
+        org.assertj.core.api.Assertions.assertThat(
+                ((org.springframework.security.web.authentication.WebAuthenticationDetails) details).getRemoteAddress())
+                .isEqualTo("203.0.113.7");
+    }
+
+    @Test
     void testDoFilterInternal_InvalidJwtToken() throws ServletException, IOException {
         // Given
         String token = "invalid-jwt-token";

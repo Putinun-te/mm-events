@@ -118,6 +118,7 @@ class EventServicePhotoTest {
         assertThat(response.getPhotoUrl()).isEqualTo("https://events-bucket.s3.amazonaws.com/signed");
         assertThat(response.getPhotoId()).isEqualTo(put.getValue().key());
         assertThat(event.getPhotoId()).isEqualTo(put.getValue().key());
+        assertThat(event.getPhotoUrl()).isEqualTo("https://events-bucket.s3.amazonaws.com/signed");
         verify(eventRepository).save(event);
 
         ArgumentCaptor<GetObjectPresignRequest> presign = ArgumentCaptor.forClass(GetObjectPresignRequest.class);
@@ -305,6 +306,16 @@ class EventServicePhotoTest {
     }
 
     @Test
+    void generateUploadUrl_forMissingEvent_isRejected() {
+        when(eventRepository.findById(6L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.generateUploadUrl(6L, organizer, "poster.jpg"))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Event not found");
+        verifyNoInteractions(s3Presigner);
+    }
+
+    @Test
     void generateUploadUrl_byAnotherUser_isRejected() {
         when(eventRepository.findById(5L)).thenReturn(Optional.of(event));
 
@@ -323,6 +334,8 @@ class EventServicePhotoTest {
         assertThat(response.getPhotoUrl())
                 .isEqualTo("https://events-bucket.s3.ap-southeast-1.amazonaws.com/events/5/poster.jpg");
         assertThat(event.getPhotoId()).isEqualTo("events/5/poster.jpg");
+        assertThat(event.getPhotoUrl())
+                .isEqualTo("https://events-bucket.s3.ap-southeast-1.amazonaws.com/events/5/poster.jpg");
         verify(eventRepository).save(event);
     }
 

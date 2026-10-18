@@ -328,4 +328,56 @@
 		</plugins>
 	</build>
 
+	<profiles>
+		<!-- Mutation testing: ./mvnw -Pmutation test-compile org.pitest:pitest-maven:mutationCoverage
+		     Report: target/pit-reports/index.html. Runs the unit tests only. -->
+		<profile>
+			<id>mutation</id>
+			<properties>
+				<!-- Measured 99% (239/242; the 3 survivors are equivalent mutants). Gate one point lower. -->
+				<pit.mutationThreshold>97</pit.mutationThreshold>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.pitest</groupId>
+						<artifactId>pitest-maven</artifactId>
+						<version>1.30.1</version>
+						<dependencies>
+							<dependency>
+								<groupId>org.pitest</groupId>
+								<artifactId>pitest-junit5-plugin</artifactId>
+								<version>1.2.3</version>
+							</dependency>
+						</dependencies>
+						<configuration>
+							<targetClasses>
+								<param>com.concert.service.*</param>
+								<param>com.concert.security.*</param>
+								<param>com.concert.exception.*</param>
+								<param>com.concert.util.*</param>
+							</targetClasses>
+							<targetTests>
+								<param>com.concert.*</param>
+							</targetTests>
+							<excludedTestClasses>
+								<param>com.concert.*IT</param>
+								<param>com.concert.*DockerTest</param>
+								<param>com.concert.integration.*</param>
+								<param>com.concert.ConcertBackend*</param>
+							</excludedTestClasses>
+							<threads>4</threads>
+							<timestampedReports>false</timestampedReports>
+							<outputFormats>
+								<param>HTML</param>
+								<param>XML</param>
+							</outputFormats>
+							<mutationThreshold>${pit.mutationThreshold}</mutationThreshold>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>

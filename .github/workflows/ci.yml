@@ -38,9 +38,11 @@ jobs:
       - run: npm run build
 
   e2e:
+    # Job name is a required status check; keep it when changing the steps.
     name: API end-to-end (Docker Compose)
     needs: [frontend]
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -49,6 +51,12 @@ jobs:
           node-version: '20'
           cache: npm
           cache-dependency-path: main_frontend/concert1/package-lock.json
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-${{ hashFiles('main_frontend/concert1/package-lock.json') }}
 
       # Install before starting Compose: the frontend service mounts an anonymous volume
       # at node_modules, and on Linux Docker would otherwise create that directory on the
@@ -69,6 +77,19 @@ jobs:
         env:
           NUXT_PUBLIC_API_BASE: http://localhost:8080
         run: npm run test:e2e
+
+      - name: Run Cypress UI tests
+        working-directory: main_frontend/concert1
+        run: npx cypress run --browser electron
+
+      - name: Upload Cypress screenshots
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cypress-screenshots
+          path: main_frontend/concert1/cypress/screenshots/
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Backend logs
         if: failure()

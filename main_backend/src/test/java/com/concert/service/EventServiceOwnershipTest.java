@@ -97,11 +97,18 @@ class EventServiceOwnershipTest {
         when(eventRepository.findById(5L)).thenReturn(Optional.of(event));
         when(eventRepository.save(any(Event.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        EventResponse response = service.updateEvent(5L, organizer, request("New title", START, END.plusHours(1)));
+        EventResponse response = service.updateEvent(5L, organizer, request("New title", START.plusHours(1), END.plusHours(1)));
 
         assertThat(event.getTitle()).isEqualTo("New title");
         assertThat(event.getLegacyName()).isEqualTo("New title");
+        assertThat(event.getDescription()).isEqualTo("Updated");
+        assertThat(event.getCategory()).isEqualTo("Jazz");
+        assertThat(event.getLocation()).isEqualTo("Main Hall");
+        assertThat(event.getAddress()).isEqualTo("1 Road");
         assertThat(event.getCity()).isEqualTo("Bangkok");
+        assertThat(event.getCountry()).isEqualTo("Thailand");
+        assertThat(event.getPhone()).isEqualTo("021234567");
+        assertThat(event.getStartDate()).isEqualTo(START.plusHours(1));
         assertThat(event.getPersonLimit()).isEqualTo(200);
         assertThat(event.getEndDate()).isEqualTo(END.plusHours(1));
         assertThat(event.getTicketPrice()).isEqualTo(30.0);

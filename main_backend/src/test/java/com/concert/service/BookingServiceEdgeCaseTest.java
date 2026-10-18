@@ -207,6 +207,34 @@ class BookingServiceEdgeCaseTest {
         verify(bookingRepository, never()).findByEventIdAndStatus(any(), any());
     }
 
+    @Test
+    void cancelBooking_marksTheBookingCancelledAndSavesIt() {
+        Booking booking = confirmed(2);
+        booking.setUser(alice);
+        when(bookingRepository.findById(11L)).thenReturn(Optional.of(booking));
+
+        bookingService.cancelBooking(11L, "alice");
+
+        assertThat(booking.getStatus()).isEqualTo("CANCELLED");
+        verify(bookingRepository).save(booking);
+    }
+
+    @Test
+    void bookingResponses_includeBookingAndEventDates() {
+        Booking booking = confirmed(2);
+        booking.setId(11L);
+        booking.setUser(alice);
+        booking.setBookingDate(NOW.minusDays(1));
+        booking.setEventStartDate(NOW.plusDays(10));
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(alice));
+        when(bookingRepository.findByUserIdOrderByBookingDateDesc(1L)).thenReturn(List.of(booking));
+
+        BookingResponse response = bookingService.getUserBookings("alice").get(0);
+
+        assertThat(response.getBookingDate()).isEqualTo(NOW.minusDays(1));
+        assertThat(response.getEventStartDate()).isEqualTo(NOW.plusDays(10));
+    }
+
     private Event eventOrganizedBy(String username) {
         User organizer = new User();
         organizer.setId(9L);

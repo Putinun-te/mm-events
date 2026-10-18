@@ -96,3 +96,8 @@ crash.log
 .history/
 main_backend/BOOT-INF/
 *.zip
+
+# === Test output dumps (never commit) ===
+**/coverage*.txt
+**/*test-output*.txt
+**/*-results.txt

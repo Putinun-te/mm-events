@@ -1,4 +1,5 @@
-# Dependabot configuration to prevent excessive workflow runs
+# Dependabot: one grouped pull request per ecosystem per month.
+# Security updates are still opened as soon as they are published.
 version: 2
 updates:
   # Frontend npm dependencies
@@ -8,7 +9,10 @@ updates:
       interval: "monthly"  # Only check monthly to reduce noise
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 3  # Reduced limit
+    open-pull-requests-limit: 2
+    groups:
+      npm-dependencies:
+        patterns: ["*"]
     labels:
       - "dependencies"
       - "frontend"
@@ -28,10 +32,13 @@ updates:
   - package-ecosystem: "maven"
     directory: "/main_backend"
     schedule:
-      interval: "weekly"
+      interval: "monthly"
       day: "monday"
       time: "09:00"
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 2
+    groups:
+      maven-dependencies:
+        patterns: ["*"]
     labels:
       - "dependencies"
       - "backend"
@@ -48,7 +55,10 @@ updates:
     directory: "/"
     schedule:
       interval: "monthly"
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 2
+    groups:
+      github-actions:
+        patterns: ["*"]
     labels:
       - "dependencies"
       - "ci-cd"

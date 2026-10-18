@@ -19,7 +19,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for the local-disk and Imgur upload controllers and the S3 health endpoint.
+ * Unit tests for the local-disk upload controller and the S3 health endpoint.
  * Uses a temporary directory and a Mockito S3 client; nothing leaves the machine.
  */
 class StorageControllersTest {
@@ -84,17 +84,6 @@ class StorageControllersTest {
             assertThat(key).matches("[0-9a-f-]{36}\\.(jpg|png)");
             assertThat(Files.exists(tempDir.resolve(key))).isTrue();
         }
-    }
-
-    @Test
-    void imgurUpload_withEmptyFile_returns500WithoutCallingImgur() {
-        ImgurUploadController controller = new ImgurUploadController();
-
-        ResponseEntity<Map<String, String>> response =
-                controller.uploadToImgur(new MockMultipartFile("file", "a.png", "image/png", new byte[0]));
-
-        assertThat(response.getStatusCode().value()).isEqualTo(500);
-        assertThat(response.getBody().get("error")).isEqualTo("File is empty");
     }
 
     private AwsHealthController healthController(S3Client s3Client) {

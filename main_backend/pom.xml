@@ -19,7 +19,7 @@
 		<!-- Fail build on low coverage by default; CI can set -Djacoco.haltOnFailure=false -->
 		<!-- Set to false for stability - coverage reports still generated -->
 		<jacoco.haltOnFailure>false</jacoco.haltOnFailure>
-		<aws.java.sdk.version>2.26.29</aws.java.sdk.version>
+		<aws.java.sdk.version>2.56.0</aws.java.sdk.version>
 	</properties>
 
 	<dependencyManagement>

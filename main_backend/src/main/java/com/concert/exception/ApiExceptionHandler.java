@@ -25,6 +25,11 @@ public class ApiExceptionHandler {
         return body(HttpStatus.FORBIDDEN, e.getMessage());
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, Object>> conflict(ConflictException e) {
+        return body(HttpStatus.CONFLICT, e.getMessage());
+    }
+
     @ExceptionHandler(UnauthorizedException.class)
     public ResponseEntity<Map<String, Object>> unauthorized(UnauthorizedException e) {
         return body(HttpStatus.UNAUTHORIZED, e.getMessage());

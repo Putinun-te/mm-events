@@ -1,6 +1,7 @@
 package com.concert.controller;
 
 import com.concert.exception.NotFoundException;
+import com.concert.exception.ConflictException;
 import com.concert.exception.ForbiddenException;
 import com.concert.config.SecurityConfig;
 import com.concert.dto.BookingResponse;
@@ -81,6 +82,31 @@ class BookingControllerApiTest extends SecuredApiTestSupport {
         verify(bookingService).createBooking(eq("alice"), body.capture());
         assertThat(body.getValue().getEventId()).isEqualTo("7");
         assertThat(body.getValue().getQuantity()).isEqualTo(2);
+    }
+
+    @Test
+    void createBooking_whenSeatsRunOut_returns409WithMessage() throws Exception {
+        when(bookingService.createBooking(eq("alice"), any(CreateBookingRequest.class)))
+                .thenThrow(new ConflictException("Only 2 seat(s) left"));
+
+        mockMvc.perform(post("/api/bookings").header("Authorization", bearer(TOKEN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventId\":\"7\",\"quantity\":3}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.status").value(409))
+                .andExpect(jsonPath("$.error").value("Only 2 seat(s) left"));
+    }
+
+    @Test
+    void createBooking_forFinishedEvent_returns400() throws Exception {
+        when(bookingService.createBooking(eq("alice"), any(CreateBookingRequest.class)))
+                .thenThrow(new IllegalArgumentException("This event has already ended"));
+
+        mockMvc.perform(post("/api/bookings").header("Authorization", bearer(TOKEN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventId\":\"7\",\"quantity\":1}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").value("This event has already ended"));
     }
 
     @Test

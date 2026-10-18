@@ -163,14 +163,21 @@ class UserRepositoryTest {
     }
 
     @Test
-    void testUpdatedAtChangesOnUpdate() throws InterruptedException {
+    void testUpdatedAtChangesOnUpdate() {
         // Arrange - persist initial entity
-        User saved = entityManager.persistFlushFind(testUser);
-        assertNotNull(saved.getUpdatedAt());
-        var beforeUpdate = saved.getUpdatedAt();
+        User persisted = entityManager.persistFlushFind(testUser);
+        assertNotNull(persisted.getUpdatedAt());
 
-        // Ensure time moves forward to observe change
-        Thread.sleep(5);
+        // Move updatedAt to a fixed past time in the database instead of sleeping
+        entityManager.getEntityManager()
+                .createQuery("update User u set u.updatedAt = :past where u.id = :id")
+                .setParameter("past", java.time.LocalDateTime.of(2000, 1, 1, 0, 0))
+                .setParameter("id", persisted.getId())
+                .executeUpdate();
+        entityManager.clear();
+        User saved = entityManager.find(User.class, persisted.getId());
+        var beforeUpdate = saved.getUpdatedAt();
+        assertEquals(java.time.LocalDateTime.of(2000, 1, 1, 0, 0), beforeUpdate);
 
         // Act - update an attribute and save
         saved.setName("Updated Name");

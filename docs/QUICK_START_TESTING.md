@@ -170,20 +170,10 @@ describe('ProfilePage - Branch Coverage', () => {
 
 **Estimated:** 35-40 additional tests (~12-15 hours)
 
-### Step 3: Fix MapTestingPage Error
-**File:** `vitest.setup.ts`
-
-```typescript
-// Add global mock for longdo
-global.longdo = {
-  Map: vi.fn().mockImplementation(() => ({
-    placeholder: null,
-    // Add other longdo.Map methods as needed
-  }))
-};
-```
-
-**Estimated:** 15 minutes
+### Step 3: Map tests
+The map uses Leaflet + OpenStreetMap (`app/composables/useVenueMap.ts`). Tests set a
+fake `globalThis.L` (see `test/unit/pages/MapTestingPage.test.ts`) so no script is
+downloaded; `useVenueMap.test.ts` covers loading, geocoding and the pinned venue.
 
 ### Step 4: Run Tests and Check Coverage
 ```bash
@@ -499,13 +489,9 @@ dir target\jacoco.exec
 npm run test -- --run
 ```
 
-### Frontend: "longdo is not defined" error
-```typescript
-// Add to vitest.setup.ts
-global.longdo = {
-  Map: vi.fn().mockImplementation(() => ({}))
-};
-```
+### Frontend: "L is not defined" / map errors in tests
+Define a fake Leaflet before mounting a page with a map, e.g.
+`globalThis.L = { map: vi.fn(() => ({ setView: vi.fn() })), tileLayer: vi.fn(() => ({ addTo: vi.fn() })) }`.
 
 ### E2E: Backend not starting
 ```bash

@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
 import { useApi } from '../../../composables/useApi'
 import { useImage } from '~/composables/useImage'
+import { buildVenueQuery, renderVenueMap } from '../../composables/useVenueMap'
 
 definePageMeta({
   // Disable SSR so static hosting always hydrates this view client-side.
@@ -96,30 +97,25 @@ const actualAvailableSeats = computed(() => {
   return remaining > 0 ? remaining : 0
 })
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (document.querySelector(`script[src="${src}"]`)) {
-      resolve()
-      return
-    }
+// Venue map (Leaflet + OpenStreetMap, no API key)
+const mapContainer = ref<HTMLElement | null>(null)
+const mapStatus = ref<'idle' | 'loading' | 'found' | 'not-found' | 'error'>('idle')
 
-    const script = document.createElement('script')
-    script.src = src
-    script.type = 'text/javascript'
-    script.async = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error(`Failed to load script: ${src}`))
-    document.head.appendChild(script)
-  })
+async function showVenueMap() {
+  await nextTick()
+  if (!mapContainer.value || !event.value) return
+  mapStatus.value = 'loading'
+  try {
+    const result = await renderVenueMap(mapContainer.value, buildVenueQuery(event.value))
+    mapStatus.value = result.found ? 'found' : 'not-found'
+  } catch (e) {
+    console.error('Failed to show venue map', e)
+    mapStatus.value = 'error'
+  }
 }
 
 onMounted(async () => {
   loadFromStorage()
-  const { longdoMapKey } = useRuntimeConfig().public
-  if (longdoMapKey) {
-    loadScript(`https://api.longdo.com/map3/?key=${longdoMapKey}`)
-      .catch(error => console.error("Failed to load Longdo Map script:", error))
-  }
 
   loading.value = true
   event.value = window.history.state?.event ?? null
@@ -132,6 +128,7 @@ onMounted(async () => {
     }
   }
   loading.value = false
+  showVenueMap()
 })
 
 const changeQuantity = (delta: number) => {
@@ -226,11 +223,15 @@ async function addToCart() {
                             <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0"></div>
                         </div>
                         
-                        <!-- <div class="grid">
-                            <div>
-                                <div id="map" style="width: 100%; height: 500px;"></div>
-                            </div>
-                        </div> -->
+                        <div class="isolate rounded-2xl overflow-hidden border border-gray-200 bg-gray-100">
+                            <div id="map" ref="mapContainer" class="w-full h-72"></div>
+                            <p v-if="mapStatus === 'not-found'" class="px-4 py-2 text-sm text-gray-500 bg-white">
+                                Could not find this venue on the map.
+                            </p>
+                            <p v-else-if="mapStatus === 'error'" class="px-4 py-2 text-sm text-gray-500 bg-white">
+                                The map is not available right now.
+                            </p>
+                        </div>
                     </div>
 
                     <div class="flex flex-col justify-between space-y-8">

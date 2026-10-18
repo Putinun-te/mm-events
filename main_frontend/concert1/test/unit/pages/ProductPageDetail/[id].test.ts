@@ -375,7 +375,7 @@ describe('ProductDetailPage [id].vue', () => {
     expect(wrapper.exists()).toBe(true)
   })
 
-  it('should load Longdo Map script', async () => {
+  it('should mount without loading an external map script', async () => {
     const createElementSpy = vi.spyOn(document, 'createElement')
     
     const wrapper = mount(ProductDetailPage, {

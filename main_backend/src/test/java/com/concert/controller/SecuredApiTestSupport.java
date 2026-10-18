@@ -4,6 +4,8 @@ import com.concert.model.User;
 import com.concert.service.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -29,6 +31,11 @@ abstract class SecuredApiTestSupport {
 
     @BeforeEach
     void stubTokens() {
+        // Start from an empty security context: MockMvc's test support falls back to
+        // whatever another test left in SecurityContextHolder on this thread.
+        SecurityContextHolder.clearContext();
+        TestSecurityContextHolder.clearContext();
+
         when(jwtService.extractUsername(TOKEN)).thenReturn("alice");
         when(jwtService.isTokenValid(TOKEN, "alice")).thenReturn(true);
         when(jwtService.extractUsername(OTHER_TOKEN)).thenReturn("bob");

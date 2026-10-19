@@ -22,7 +22,7 @@ const router = useRouter()
 const { loadFromStorage, isLoggedIn } = useAuth()
 const { success, error } = useToast()
 const { handleApiError } = useUnauthorizedHandler()
-const { apiFetch, resolveApiUrl } = useApi()
+const { apiFetch, authFetch } = useApi()
 
 const bookings = ref<Booking[]>([])
 const loading = ref(true)
@@ -98,13 +98,10 @@ async function confirmCancelBooking() {
       return
     }
 
-    // Use native fetch to handle DELETE properly
-    const response = await fetch(resolveApiUrl(`/api/bookings/${bookingId}`), {
+    // Native fetch handles the empty DELETE response; authFetch adds the token and renews it on a 401
+    const response = await authFetch(`/api/bookings/${bookingId}`, {
       method: 'DELETE',
-      headers: { 
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
+      headers: { 'Content-Type': 'application/json' }
     })
 
     if (!response.ok) {

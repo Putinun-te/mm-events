@@ -8,6 +8,7 @@ import com.concert.dto.RegisterRequest;
 import com.concert.dto.UserProfileResponse;
 import com.concert.security.LoginAttemptLimiter;
 import com.concert.service.AuthService;
+import com.concert.service.RefreshTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -35,6 +36,9 @@ class AuthControllerApiTest extends SecuredApiTestSupport {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
 
     @Test
     void register_withValidBody_returns200AndToken() throws Exception {
@@ -259,5 +263,116 @@ class AuthControllerApiTest extends SecuredApiTestSupport {
 
         mockMvc.perform(post("/api/auth/logout").header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void login_success_returnsARefreshTokenToo() throws Exception {
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(new AuthResponse("jwt-token", "erin", "erin@example.com"));
+        when(refreshTokenService.issue("erin")).thenReturn("refresh-1");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"usernameOrEmail\":\"erin\",\"password\":\"secret123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("jwt-token"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-1"));
+    }
+
+    @Test
+    void register_success_returnsARefreshTokenToo() throws Exception {
+        when(authService.register(any(RegisterRequest.class)))
+                .thenReturn(new AuthResponse("jwt-token", "frank", "frank@example.com"));
+        when(refreshTokenService.issue("frank")).thenReturn("refresh-2");
+
+        mockMvc.perform(post("/api/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"frank\",\"email\":\"frank@example.com\",\"password\":\"secret123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.refreshToken").value("refresh-2"));
+    }
+
+    @Test
+    void login_failure_issuesNoRefreshToken() throws Exception {
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(new AuthResponse("Invalid username/email or password!"));
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"usernameOrEmail\":\"gina\",\"password\":\"wrong\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist());
+
+        verify(refreshTokenService, never()).issue(any());
+    }
+
+    @Test
+    void refresh_withValidToken_returnsANewPairWithoutAnAccessToken() throws Exception {
+        when(refreshTokenService.refresh("refresh-1"))
+                .thenReturn(new com.concert.service.RefreshTokenService.Session("erin", "new-access", "refresh-2"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"refresh-1\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").value("new-access"))
+                .andExpect(jsonPath("$.refreshToken").value("refresh-2"))
+                .andExpect(jsonPath("$.username").value("erin"))
+                .andExpect(jsonPath("$.type").value("Bearer"));
+    }
+
+    @Test
+    void refresh_withRejectedToken_returns401() throws Exception {
+        when(refreshTokenService.refresh("stale"))
+                .thenThrow(new com.concert.exception.UnauthorizedException("Refresh token expired; please log in again"));
+
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"stale\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Refresh token expired; please log in again"));
+    }
+
+    @Test
+    void refresh_withoutToken_returns400() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\" \"}"))
+                .andExpect(status().isBadRequest());
+
+        verify(refreshTokenService, never()).refresh(any());
+    }
+
+    @Test
+    void logout_withTokenAndRefreshToken_endsBoth() throws Exception {
+        mockMvc.perform(post("/api/auth/logout").header("Authorization", bearer(TOKEN))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"refresh-1\"}"))
+                .andExpect(status().isNoContent());
+
+        verify(tokenRevocationService).revoke(TOKEN);
+        verify(refreshTokenService).revoke("refresh-1");
+    }
+
+    @Test
+    void logout_withOnlyARefreshToken_endsTheSession() throws Exception {
+        // the access token may already have expired when the user logs out
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"refresh-1\"}"))
+                .andExpect(status().isNoContent());
+
+        verify(refreshTokenService).revoke("refresh-1");
+        verify(tokenRevocationService, never()).revoke(any());
+    }
+
+    @Test
+    void logout_withBlankRefreshTokenAndNoAccessToken_returns401() throws Exception {
+        mockMvc.perform(post("/api/auth/logout")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"refreshToken\":\"\"}"))
+                .andExpect(status().isUnauthorized());
+
+        verify(refreshTokenService, never()).revoke(any());
     }
 }

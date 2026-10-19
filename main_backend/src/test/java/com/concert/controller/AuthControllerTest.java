@@ -7,6 +7,7 @@ import com.concert.dto.UserProfileResponse;
 import com.concert.security.LoginAttemptLimiter;
 import com.concert.service.AuthService;
 import com.concert.service.TokenRevocationService;
+import com.concert.service.RefreshTokenService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class AuthControllerTest {
 
     @Mock
     private TokenRevocationService tokenRevocationService;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
 
     @InjectMocks
     private AuthController authController;

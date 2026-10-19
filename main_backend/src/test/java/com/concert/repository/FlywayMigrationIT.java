@@ -75,9 +75,10 @@ class FlywayMigrationIT {
         flyway().migrate();
 
         MigrationInfo[] applied = flyway().info().applied();
-        assertThat(versions(applied, MigrationState.SUCCESS)).containsExactly("1", "2", "3");
+        assertThat(versions(applied, MigrationState.SUCCESS)).containsExactly("1", "2", "3", "4");
         assertThat(indexExists("bookings", "idx_bookings_event_status")).isTrue();
         assertThat(indexExists("revoked_tokens", "PRIMARY")).isTrue();
+        assertThat(indexExists("refresh_tokens", "uk_refresh_tokens_token_hash")).isTrue();
     }
 
     @Test
@@ -90,9 +91,10 @@ class FlywayMigrationIT {
 
         MigrationInfo[] applied = flyway().info().applied();
         assertThat(versions(applied, MigrationState.BASELINE)).containsExactly("1");
-        assertThat(versions(applied, MigrationState.SUCCESS)).containsExactly("2", "3");
+        assertThat(versions(applied, MigrationState.SUCCESS)).containsExactly("2", "3", "4");
         assertThat(indexExists("bookings", "idx_bookings_event_status")).isTrue();
         assertThat(indexExists("revoked_tokens", "PRIMARY")).isTrue();
+        assertThat(indexExists("refresh_tokens", "uk_refresh_tokens_token_hash")).isTrue();
     }
 
     @Test

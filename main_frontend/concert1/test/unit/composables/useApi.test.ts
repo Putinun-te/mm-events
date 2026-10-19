@@ -99,4 +99,106 @@ describe('useApi', () => {
 
     expect(backendUrl).toBe('http://localhost:8080')
   })
+
+  describe('refresh on 401', () => {
+    const unauthorized = () => Object.assign(new Error('Unauthorized'), { status: 401 })
+
+    it('refreshes once and retries the request with the new token', async () => {
+      sessionStorage.setItem('jwt_token', 'expired-access')
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      fetchMock
+        .mockRejectedValueOnce(unauthorized())
+        .mockResolvedValueOnce({ token: 'new-access', refreshToken: 'refresh-2' })
+        .mockResolvedValueOnce({ id: 7 })
+      const { apiFetch } = useApi()
+
+      const result = await apiFetch('/api/bookings/me')
+
+      expect(result).toEqual({ id: 7 })
+      expect(fetchMock.mock.calls[1][0]).toBe('http://api.example.test/api/auth/refresh')
+      expect(fetchMock.mock.calls[1][1].body).toEqual({ refreshToken: 'refresh-1' })
+      expect(fetchMock.mock.calls[2][1].headers.Authorization).toBe('Bearer new-access')
+      expect(sessionStorage.getItem('jwt_token')).toBe('new-access')
+      expect(sessionStorage.getItem('refresh_token')).toBe('refresh-2')
+    })
+
+    it('keeps remembered tokens in localStorage', async () => {
+      localStorage.setItem('jwt_token', 'expired-access')
+      localStorage.setItem('refresh_token', 'refresh-1')
+      fetchMock
+        .mockRejectedValueOnce(unauthorized())
+        .mockResolvedValueOnce({ token: 'new-access', refreshToken: 'refresh-2' })
+        .mockResolvedValueOnce({})
+      const { apiFetch } = useApi()
+
+      await apiFetch('/api/users/me')
+
+      expect(localStorage.getItem('refresh_token')).toBe('refresh-2')
+      expect(sessionStorage.getItem('refresh_token')).toBeNull()
+    })
+
+    it('shares one refresh between requests that fail together', async () => {
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      let resolveRefresh: (value: unknown) => void = () => {}
+      fetchMock.mockImplementation((url: string) => {
+        if (url.endsWith('/api/auth/refresh')) {
+          return new Promise(resolve => { resolveRefresh = resolve })
+        }
+        return sessionStorage.getItem('jwt_token') === 'new-access'
+          ? Promise.resolve({ ok: url })
+          : Promise.reject(unauthorized())
+      })
+      const { apiFetch } = useApi()
+
+      const both = Promise.all([apiFetch('/api/a'), apiFetch('/api/b')])
+      await new Promise(resolve => setTimeout(resolve, 0))
+      resolveRefresh({ token: 'new-access', refreshToken: 'refresh-2' })
+
+      await expect(both).resolves.toHaveLength(2)
+      const refreshCalls = fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/api/auth/refresh'))
+      expect(refreshCalls).toHaveLength(1)
+    })
+
+    it('rethrows the 401 when there is no refresh token', async () => {
+      fetchMock.mockRejectedValueOnce(unauthorized())
+      const { apiFetch } = useApi()
+
+      await expect(apiFetch('/api/users/me')).rejects.toMatchObject({ status: 401 })
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('rethrows the 401 when the refresh is refused', async () => {
+      sessionStorage.setItem('refresh_token', 'revoked')
+      fetchMock
+        .mockRejectedValueOnce(unauthorized())
+        .mockRejectedValueOnce(unauthorized())
+      const { apiFetch } = useApi()
+
+      await expect(apiFetch('/api/users/me')).rejects.toMatchObject({ status: 401 })
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+      expect(sessionStorage.getItem('refresh_token')).toBe('revoked')
+    })
+
+    it('rethrows when the refresh answer has no tokens', async () => {
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      fetchMock
+        .mockRejectedValueOnce(unauthorized())
+        .mockResolvedValueOnce({ message: 'odd' })
+      const { apiFetch } = useApi()
+
+      await expect(apiFetch('/api/users/me')).rejects.toMatchObject({ status: 401 })
+    })
+
+    it('does not refresh for other errors or for the auth endpoints', async () => {
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      fetchMock
+        .mockRejectedValueOnce(Object.assign(new Error('Forbidden'), { status: 403 }))
+        .mockRejectedValueOnce(Object.assign(new Error('Unauthorized'), { statusCode: 401 }))
+      const { apiFetch } = useApi()
+
+      await expect(apiFetch('/api/events/1')).rejects.toMatchObject({ status: 403 })
+      await expect(apiFetch('/api/auth/login', { method: 'POST' })).rejects.toMatchObject({ statusCode: 401 })
+      expect(fetchMock).toHaveBeenCalledTimes(2)
+    })
+  })
 })

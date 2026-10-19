@@ -4,6 +4,7 @@ import com.concert.config.ClockConfig;
 import com.concert.config.SecurityConfig;
 import com.concert.security.LoginAttemptLimiter;
 import com.concert.service.AuthService;
+import com.concert.service.RefreshTokenService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.context.annotation.Import;
@@ -26,6 +27,9 @@ class CorsAndHeadersApiTest extends SecuredApiTestSupport {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
 
     private static org.springframework.test.web.servlet.RequestBuilder preflight(String origin) {
         return options("/api/auth/login")

@@ -165,11 +165,11 @@ flowchart LR
 | `docker-compose.prod.yml` | Backend + frontend images against an external RDS database (reads `.env`) |
 | `deploy/` | Deployable Terraform for EKS, GKE and AKS (`deploy/terraform/<cloud>/`), the shared Helm chart (`deploy/helm/mm-events/`) and the architecture diagrams with their sources (`deploy/diagrams/`) |
 | `k8s/` | Course infrastructure, shut down: EKS manifests (backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment) |
-| `aws/` | Course infrastructure, shut down: Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM) |
+| `aws/` | Course infrastructure, shut down: Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM), plus the Lambda sources and EC2 user data |
 | `infra/terraform/` | Course infrastructure, shut down: Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
-| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate) and `ci.yml` (frontend, e2e, images, secret scan) |
-| `scripts/` | Optional helpers for a self-hosted runner on EC2 |
-| `docs/` | Design notes, testing guides and course write-ups; `docs/archive/` holds old deployment notes |
+| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate), `ci.yml` (frontend, e2e, images, secret scan), `mutation-tests.yml`, `load-test.yml`, `deploy-pages.yml`, `deploy-checks.yml` (Terraform and Helm checks for `deploy/`) |
+| `load-tests/` | k6 booking-rush script |
+| `docs/` | Live demo setup (`DEPLOY.md`) and design notes comparing AWS hosting options; see [docs/README.md](docs/README.md) |
 
 ## Run locally
 

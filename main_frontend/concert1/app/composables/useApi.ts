@@ -168,11 +168,14 @@ export const useApi = () => {
   // Plain fetch with the stored token, for requests apiFetch cannot send: a FormData body needs
   // the browser to set its own multipart Content-Type. Resolves to the Response like fetch does;
   // a 401 is retried once after a refresh, and if that is not possible the 401 is returned.
-  const authFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
+  const authFetch = async (
+    url: string,
+    init: Omit<RequestInit, 'headers'> & { headers?: Record<string, string> } = {}
+  ): Promise<Response> => {
     const fullUrl = resolveApiUrl(url)
     const sendRaw = () => {
       const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
-      const headers: Record<string, string> = { ...(init.headers as Record<string, string> || {}) }
+      const headers: Record<string, string> = { ...init.headers }
       if (token) {
         headers['Authorization'] = `Bearer ${token}`
       }

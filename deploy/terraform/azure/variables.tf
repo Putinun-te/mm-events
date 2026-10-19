@@ -10,57 +10,69 @@ variable "name" {
 }
 
 variable "location" {
-  description = "Azure region for everything except the Static Web App."
+  description = "Azure region."
   type        = string
   default     = "southeastasia"
 }
 
-variable "static_web_app_location" {
-  description = "Region of the Static Web App's management resource (only a few regions are offered; the site itself is served globally)."
-  type        = string
-  default     = "eastasia"
-}
-
 variable "vnet_cidr" {
-  description = "Address space of the VNet. A /23 goes to Container Apps, a /24 to MySQL."
+  description = "Address space of the VNet: a /22 for AKS, a /24 for MySQL and a /24 for Application Gateway for Containers."
   type        = string
   default     = "10.60.0.0/16"
 }
 
-variable "image_tag" {
-  description = "Tag of the backend image in ACR to run."
+variable "service_cidr" {
+  description = "Kubernetes Service range; must not overlap the VNet."
   type        = string
-  default     = "latest"
+  default     = "10.61.0.0/16"
 }
 
-variable "spring_profile" {
-  description = "Spring profile. The 'railway' profile reads everything (port, database, JWT secret, CORS) from environment variables, so it works on any container platform."
+variable "kubernetes_version" {
+  description = "AKS Kubernetes version, e.g. \"1.34\". null = the current AKS default ('az aks get-versions')."
   type        = string
-  default     = "railway"
+  default     = null
 }
 
-variable "backend_cpu" {
-  description = "vCPUs per replica (Consumption profile: 0.25 steps, memory = 2 GiB per vCPU)."
-  type        = number
-  default     = 0.5
+variable "api_server_authorized_ip_ranges" {
+  description = "Networks allowed to reach the Kubernetes API. Empty = no restriction. Set this to your own IP."
+  type        = list(string)
+  default     = []
 }
 
-variable "backend_memory" {
-  description = "Memory per replica. Must match backend_cpu (0.5 vCPU -> 1Gi). The image starts the JVM with -Xmx512m."
+variable "node_vm_size" {
+  description = "VM size of the node pool."
   type        = string
-  default     = "1Gi"
+  default     = "Standard_B2s"
 }
 
-variable "min_replicas" {
-  description = "Minimum replicas. 0 scales to zero (cheapest, but the first request after idle waits for Spring Boot to start)."
-  type        = number
-  default     = 0
-}
-
-variable "max_replicas" {
-  description = "Maximum replicas."
+variable "node_count" {
+  description = "Initial number of nodes."
   type        = number
   default     = 2
+}
+
+variable "node_min_count" {
+  description = "Minimum nodes (cluster autoscaler)."
+  type        = number
+  default     = 1
+}
+
+variable "node_max_count" {
+  description = "Maximum nodes (cluster autoscaler)."
+  type        = number
+  default     = 3
+}
+
+variable "k8s_namespace" {
+  description = "Namespace the Helm chart is installed into."
+  type        = string
+  default     = "mm-events"
+}
+
+variable "k8s_service_account" {
+  description = "Service account of the backend (chart value backend.serviceAccount.name). Its federated managed identity may read the two Key Vault secrets."
+  type        = string
+  default     = "mm-events-backend"
 }
 
 variable "db_name" {
@@ -94,7 +106,7 @@ variable "secret_version" {
 }
 
 variable "log_retention_days" {
-  description = "Log Analytics retention for the backend logs."
+  description = "Log Analytics retention for the cluster and container logs."
   type        = number
   default     = 30
 }

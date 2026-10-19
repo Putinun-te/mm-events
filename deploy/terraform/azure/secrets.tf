@@ -32,15 +32,11 @@ resource "azurerm_role_assignment" "deployer_secrets" {
   principal_id         = data.azurerm_client_config.current.object_id
 }
 
-# Role assignments take a little while to reach Key Vault and ACR
+# The deployer's role assignment takes a little while to reach Key Vault
 resource "time_sleep" "rbac" {
   create_duration = "60s"
 
-  depends_on = [
-    azurerm_role_assignment.deployer_secrets,
-    azurerm_role_assignment.backend_secrets,
-    azurerm_role_assignment.backend_acr_pull,
-  ]
+  depends_on = [azurerm_role_assignment.deployer_secrets]
 }
 
 resource "azurerm_key_vault_secret" "db_password" {

@@ -32,7 +32,7 @@ resource "azurerm_log_analytics_workspace" "main" {
   retention_in_days   = var.log_retention_days
 }
 
-# --- Network: Container Apps and MySQL share a VNet, MySQL has no public endpoint --------
+# --- Network: AKS, Application Gateway for Containers and MySQL share a VNet ------------
 
 resource "azurerm_virtual_network" "main" {
   name                = "vnet-${var.name}"
@@ -41,16 +41,25 @@ resource "azurerm_virtual_network" "main" {
   address_space       = [var.vnet_cidr]
 }
 
-resource "azurerm_subnet" "apps" {
-  name                 = "snet-apps"
+# AKS nodes and pods (Azure CNI: pods take IPs from this subnet)
+resource "azurerm_subnet" "aks" {
+  name                 = "snet-aks"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = [cidrsubnet(var.vnet_cidr, 7, 0)]
+  address_prefixes     = [cidrsubnet(var.vnet_cidr, 6, 0)]
+}
+
+# Application Gateway for Containers needs its own delegated subnet (/24 or larger)
+resource "azurerm_subnet" "agc" {
+  name                 = "snet-agc"
+  resource_group_name  = azurerm_resource_group.main.name
+  virtual_network_name = azurerm_virtual_network.main.name
+  address_prefixes     = [cidrsubnet(var.vnet_cidr, 8, 5)]
 
   delegation {
-    name = "container-apps"
+    name = "agc"
     service_delegation {
-      name    = "Microsoft.App/environments"
+      name    = "Microsoft.ServiceNetworking/trafficControllers"
       actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
     }
   }
@@ -60,7 +69,7 @@ resource "azurerm_subnet" "mysql" {
   name                 = "snet-mysql"
   resource_group_name  = azurerm_resource_group.main.name
   virtual_network_name = azurerm_virtual_network.main.name
-  address_prefixes     = [cidrsubnet(var.vnet_cidr, 8, 2)]
+  address_prefixes     = [cidrsubnet(var.vnet_cidr, 8, 4)]
 
   delegation {
     name = "mysql-flexible"

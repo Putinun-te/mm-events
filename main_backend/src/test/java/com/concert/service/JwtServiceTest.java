@@ -8,7 +8,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
 import java.util.Date;
@@ -147,9 +146,9 @@ class JwtServiceTest {
     void testValidateTokenWithNoExpirationClaim() {
         // Build a token without the exp claim (same subject), so isTokenExpired() hits exception path and returns true
         String tokenWithoutExp = Jwts.builder()
-                .setSubject(testUsername)
-                .setIssuedAt(new Date())
-                .signWith(Keys.hmacShaKeyFor(testSecret.getBytes()), SignatureAlgorithm.HS512)
+                .subject(testUsername)
+                .issuedAt(new Date())
+                .signWith(Keys.hmacShaKeyFor(testSecret.getBytes()), Jwts.SIG.HS512)
                 .compact();
 
         assertTrue(jwtService.isTokenExpired(tokenWithoutExp), "Token without exp should be treated as expired");

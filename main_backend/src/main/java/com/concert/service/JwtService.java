@@ -2,12 +2,11 @@ package com.concert.service;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.security.Key;
+import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.UUID;
 import java.util.function.Function;
@@ -25,11 +24,11 @@ public class JwtService {
         Date expiryDate = new Date(System.currentTimeMillis() + jwtExpirationInMs);
         
         return Jwts.builder()
-                .setId(UUID.randomUUID().toString()) // lets a single token be revoked on logout
-                .setSubject(username)
-                .setIssuedAt(new Date())
-                .setExpiration(expiryDate)
-                .signWith(getSigningKey(), SignatureAlgorithm.HS512)
+                .id(UUID.randomUUID().toString()) // lets a single token be revoked on logout
+                .subject(username)
+                .issuedAt(new Date())
+                .expiration(expiryDate)
+                .signWith(getSigningKey(), Jwts.SIG.HS512)
                 .compact();
     }
     
@@ -52,11 +51,11 @@ public class JwtService {
     }
     
     private Claims getAllClaimsFromToken(String token) {
-        return Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+        return Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(token)
-                .getBody();
+                .parseSignedClaims(token)
+                .getPayload();
     }
     
     public Boolean isTokenExpired(String token) {
@@ -79,7 +78,7 @@ public class JwtService {
         }
     }
     
-    private Key getSigningKey() {
+    private SecretKey getSigningKey() {
         byte[] keyBytes = jwtSecret.getBytes();
         return Keys.hmacShaKeyFor(keyBytes);
     }

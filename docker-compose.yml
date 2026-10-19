@@ -91,7 +91,7 @@ services:
     command: ["bash", "-lc", "./mvnw -B -ntp clean test && ./mvnw -B -ntp verify -DskipUTs=true"]
 
   frontend:
-    image: node:20-alpine
+    image: node:22-alpine
     container_name: concert-frontend
     working_dir: /app
     environment:

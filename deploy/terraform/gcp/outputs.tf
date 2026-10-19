@@ -1,39 +1,84 @@
-output "frontend_url" {
-  description = "Public URL of the site (load balancer)."
-  value       = local.site_url
+output "site_url" {
+  description = "Public URL of the site and API (GKE Ingress on the reserved static IP)."
+  value       = "http://${google_compute_global_address.ingress.address}"
 }
 
-output "api_base_url" {
-  description = "Base URL of the API, used as NUXT_PUBLIC_BACKEND_BASE_URL. Same origin as the site; the app calls <this>/api/..."
-  value       = local.site_url
+output "ingress_ip" {
+  description = "Static IP of the Ingress load balancer. With a domain, point its A record here."
+  value       = google_compute_global_address.ingress.address
 }
 
-output "health_url" {
-  description = "Backend health check through the load balancer."
-  value       = "${local.site_url}/actuator/health"
+output "cluster_name" {
+  description = "GKE cluster name."
+  value       = google_container_cluster.main.name
 }
 
-output "load_balancer_ip" {
-  description = "IP address of the load balancer. With a domain, point its A record here."
-  value       = google_compute_global_address.lb.address
+output "kubeconfig_command" {
+  description = "Writes a kubeconfig entry for the cluster (needs the gke-gcloud-auth-plugin)."
+  value       = "gcloud container clusters get-credentials ${google_container_cluster.main.name} --zone ${var.zone} --project ${var.project_id}"
 }
 
 output "image_repository" {
-  description = "Push the backend image as <this>/backend:<tag>."
-  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend.repository_id}"
+  description = "Push images as <this>/backend:<tag> and <this>/frontend:<tag>."
+  value       = local.image_repository
 }
 
-output "site_bucket" {
-  description = "Cloud Storage bucket for the static frontend files."
-  value       = google_storage_bucket.site.name
+output "db_private_ip" {
+  description = "Cloud SQL private IP (reachable from the VPC only)."
+  value       = google_sql_database_instance.mysql.private_ip_address
 }
 
-output "cloud_run_service" {
-  description = "Cloud Run service name."
-  value       = google_cloud_run_v2_service.backend.name
+output "backend_gcp_service_account" {
+  description = "Google service account mapped to the backend's Kubernetes service account."
+  value       = google_service_account.backend.email
 }
 
-output "db_instance" {
-  description = "Cloud SQL instance name (private IP only)."
-  value       = google_sql_database_instance.mysql.name
+# Values for deploy/helm/mm-events, together with values-gcp.yaml. Contains no secret
+# values, only names and addresses:
+#   terraform output -raw helm_values > mm-events-values.yaml
+output "helm_values" {
+  description = "Cloud-specific values for the Helm chart (no secrets)."
+  value = yamlencode({
+    publicUrl = "http://${google_compute_global_address.ingress.address}"
+    backend = {
+      image = { repository = "${local.image_repository}/backend" }
+      datasource = {
+        host     = google_sql_database_instance.mysql.private_ip_address
+        database = var.db_name
+        username = var.db_username
+      }
+      serviceAccount = {
+        name        = var.k8s_service_account
+        annotations = { "iam.gke.io/gcp-service-account" = google_service_account.backend.email }
+      }
+    }
+    frontend = {
+      image = { repository = "${local.image_repository}/frontend" }
+    }
+    ingress = {
+      annotations = {
+        "kubernetes.io/ingress.class"                 = "gce"
+        "kubernetes.io/ingress.global-static-ip-name" = google_compute_global_address.ingress.name
+      }
+    }
+    secrets = {
+      externalSecrets = {
+        provider = {
+          gcpsm = {
+            projectID = var.project_id
+            auth = {
+              workloadIdentity = {
+                clusterLocation   = var.zone
+                clusterName       = google_container_cluster.main.name
+                clusterProjectID  = var.project_id
+                serviceAccountRef = { name = var.k8s_service_account }
+              }
+            }
+          }
+        }
+        dbPassword = { key = google_secret_manager_secret.db_password.secret_id }
+        jwtSecret  = { key = google_secret_manager_secret.jwt.secret_id }
+      }
+    }
+  })
 }

@@ -13,6 +13,12 @@ RUN npm ci
 # Copy source code
 COPY . .
 
+# Public URL of the API, baked into the static build
+# (docker build --build-arg NUXT_PUBLIC_BACKEND_BASE_URL=https://events.example.com).
+# Unset keeps the nuxt.config default, http://localhost:8080.
+ARG NUXT_PUBLIC_BACKEND_BASE_URL
+ENV NUXT_PUBLIC_BACKEND_BASE_URL=${NUXT_PUBLIC_BACKEND_BASE_URL}
+
 # Build the application
 RUN npm run build
 

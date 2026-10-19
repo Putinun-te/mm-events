@@ -27,6 +27,9 @@ updates:
       - dependency-name: "@nuxt/test-utils"
       - dependency-name: "@testing-library/*"
       - dependency-name: "@vue/test-utils"
+      # Major versions need code changes (e.g. vue-router 5, TypeScript 7); update them by hand
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
     
   # Backend Maven dependencies
   - package-ecosystem: "maven"
@@ -49,6 +52,9 @@ updates:
       - dependency-name: "org.apache.maven.plugins:*"
       - dependency-name: "org.jacoco:*"
       - dependency-name: "org.springframework.boot:spring-boot-maven-plugin"
+      # Major versions need code changes (e.g. springdoc 3 requires Spring Boot 4); update them by hand
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
   
   # GitHub Actions
   - package-ecosystem: "github-actions"

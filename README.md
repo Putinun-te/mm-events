@@ -12,9 +12,9 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 > Cognito, API Gateway, EKS) was used during the course and **has been
 > decommissioned**; that AWS account is closed. The course's Terraform and
 > Kubernetes code (`aws/`, `infra/terraform/`, `k8s/`) is kept as a record only.
-> The app now runs as a demo on GitHub Pages + Railway, and `deploy/terraform/`
-> has new, deployable Terraform for AWS, Google Cloud and Azure (see
-> [Infrastructure](#infrastructure)).
+> The app now runs as a demo on GitHub Pages + Railway, and `deploy/` has new,
+> deployable Terraform and a Helm chart for managed Kubernetes on AWS (EKS),
+> Google Cloud (GKE) and Azure (AKS) (see [Infrastructure](#infrastructure)).
 >
 > This repository is a cleaned copy of the team repository
 > [MorningMores/develop](https://github.com/MorningMores/develop). Commit history
@@ -43,22 +43,26 @@ after the one-time account setup in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 Setup steps and limits: [docs/DEPLOY.md](docs/DEPLOY.md).
 
-### Deploying to AWS, Google Cloud or Azure (`deploy/`)
+### Deploying to Kubernetes on AWS, Google Cloud or Azure (`deploy/`)
 
-Terraform for running the same image and static build on a public cloud, each with an
-architecture diagram, a README (prerequisites, `init/plan/apply`, pushing the image,
-uploading the frontend, rough monthly cost, `destroy`) and a `terraform.tfvars.example`.
+Terraform per cloud for the network, managed Kubernetes cluster, container registry,
+managed MySQL 8, secret store and workload identities, plus one Helm chart
+([`deploy/helm/mm-events`](deploy/helm/mm-events)) that runs the backend (probes, HPA,
+PodDisruptionBudget), the nginx frontend and an Ingress on all three, with secrets pulled
+from the cloud's secret store by the External Secrets Operator. Each cloud has an
+architecture diagram, a README (`terraform apply`, kubeconfig, pushing the images,
+`helm install`, rough monthly cost, `destroy`) and a `terraform.tfvars.example`.
 Overview and diagrams: [deploy/README.md](deploy/README.md).
 
-| Cloud | Backend | Database | Secrets | Frontend | Rough cost / month |
+| Cloud | Kubernetes | Ingress | Database | Secrets | Rough cost / month |
 |---|---|---|---|---|---|
-| [AWS](deploy/terraform/aws/README.md) | ECS Fargate + ALB | RDS MySQL 8 | Secrets Manager | S3 + CloudFront | ~USD 80 |
-| [Google Cloud](deploy/terraform/gcp/README.md) | Cloud Run | Cloud SQL MySQL 8 | Secret Manager | Cloud Storage + LB + Cloud CDN | ~USD 30-35 |
-| [Azure](deploy/terraform/azure/README.md) | Container Apps | MySQL Flexible Server | Key Vault | Static Web Apps | ~USD 25-30 |
+| [AWS](deploy/terraform/aws/README.md) | EKS + managed node group | ALB (AWS Load Balancer Controller) | RDS MySQL 8 | Secrets Manager + IRSA | ~USD 255 |
+| [Google Cloud](deploy/terraform/gcp/README.md) | GKE Standard, zonal | GKE Ingress (external Application LB) | Cloud SQL MySQL 8 | Secret Manager + Workload Identity | ~USD 100 |
+| [Azure](deploy/terraform/azure/README.md) | AKS, Free tier | Application Gateway for Containers | MySQL Flexible Server | Key Vault + Workload Identity | ~USD 225 |
 
-These modules are checked with `terraform fmt` and `terraform validate` in CI
-(`terraform.yml`) and have not been applied from this repository: `terraform apply`
-creates billable resources in your own account.
+These are checked in CI (`deploy-checks.yml`: `terraform fmt`/`validate`, `helm lint`,
+`helm template | kubeconform`) and have not been applied from this repository:
+`terraform apply` creates billable resources in your own account.
 
 ### Course infrastructure (shut down)
 
@@ -159,7 +163,7 @@ flowchart LR
 | `main_frontend/concert1/` | Nuxt 4 app (`app/`), unit tests (`test/unit`), e2e tests (`test/e2e`), Cypress specs, Dockerfile + nginx config |
 | `docker-compose.yml` | Local stack: MySQL, Redis, backend, frontend (and a `tests` profile for Dockerised backend tests) |
 | `docker-compose.prod.yml` | Backend + frontend images against an external RDS database (reads `.env`) |
-| `deploy/` | Deployable Terraform for AWS, Google Cloud and Azure (`deploy/terraform/<cloud>/`) and the architecture diagrams with their sources (`deploy/diagrams/`) |
+| `deploy/` | Deployable Terraform for EKS, GKE and AKS (`deploy/terraform/<cloud>/`), the shared Helm chart (`deploy/helm/mm-events/`) and the architecture diagrams with their sources (`deploy/diagrams/`) |
 | `k8s/` | Course infrastructure, shut down: EKS manifests (backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment) |
 | `aws/` | Course infrastructure, shut down: Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM) |
 | `infra/terraform/` | Course infrastructure, shut down: Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
@@ -340,8 +344,9 @@ cloud credentials, no deploy jobs.
 **`mutation-tests.yml`** runs PIT on backend pull requests (not a required check), weekly
 and on demand. **`load-test.yml`** runs the k6 ticket rush on demand and weekly.
 **`deploy-pages.yml`** publishes the frontend to GitHub Pages (see `docs/DEPLOY.md`).
-**`terraform.yml`** runs `terraform fmt -check` and `terraform validate` on the modules in
-`deploy/terraform/` (no cloud credentials).
+**`deploy-checks.yml`** runs `terraform fmt -check` and `terraform validate` on the modules
+in `deploy/terraform/`, and `helm lint` plus `helm template | kubeconform -strict` on the
+chart for each cloud (no cloud credentials).
 
 To see why a backend run failed, open the run in the Actions tab: the summary
 page lists failed tests and coverage per package, and the
@@ -355,7 +360,8 @@ the `archive/*` tags.
 ## Deploying again (optional)
 
 For the free-standing demo (GitHub Pages + Railway) follow [docs/DEPLOY.md](docs/DEPLOY.md).
-For AWS, Google Cloud or Azure use the Terraform in [deploy/](deploy/README.md).
+For Kubernetes on AWS, Google Cloud or Azure use the Terraform and Helm chart in
+[deploy/](deploy/README.md).
 
 The options below recreate the original course setup from the shut-down infrastructure
 code. They are kept for reference and create billable AWS resources in **your** account.

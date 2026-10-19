@@ -76,6 +76,12 @@ variable "db_engine_version" {
   default     = "8.0"
 }
 
+variable "secret_version" {
+  description = "Bump to generate and store a new JWT secret (the DB password is rotated by RDS)."
+  type        = number
+  default     = 1
+}
+
 variable "deletion_protection" {
   description = "Protect the database from deletion. Off by default so that 'terraform destroy' works for a demo; turn it on for real data."
   type        = bool

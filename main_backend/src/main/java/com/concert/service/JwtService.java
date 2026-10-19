@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 import java.util.function.Function;
 
 @Service
@@ -24,6 +25,7 @@ public class JwtService {
         Date expiryDate = new Date(System.currentTimeMillis() + jwtExpirationInMs);
         
         return Jwts.builder()
+                .setId(UUID.randomUUID().toString()) // lets a single token be revoked on logout
                 .setSubject(username)
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
@@ -35,6 +37,11 @@ public class JwtService {
         return getClaimFromToken(token, Claims::getSubject);
     }
     
+    /** The token's id (jti claim), or null for tokens issued before ids were added. */
+    public String getTokenId(String token) {
+        return getClaimFromToken(token, Claims::getId);
+    }
+
     public Date getExpirationDateFromToken(String token) {
         return getClaimFromToken(token, Claims::getExpiration);
     }

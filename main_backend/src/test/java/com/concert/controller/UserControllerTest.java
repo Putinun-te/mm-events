@@ -39,6 +39,9 @@ class UserControllerTest {
     private com.concert.service.JwtService jwtService;
 
     @MockBean
+    private com.concert.service.TokenRevocationService tokenRevocationService;
+
+    @MockBean
     private com.concert.service.UserProfileService userProfileService;
 
     private User testUser1;

@@ -50,7 +50,6 @@ services:
       SPRING_DATASOURCE_PASSWORD: concert_password
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: "6379"
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_PROFILES_ACTIVE: docker
       JAVA_OPTS: "-Xmx512m -Xms256m"
     ports:

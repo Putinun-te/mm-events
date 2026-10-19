@@ -32,13 +32,15 @@ after the one-time account setup in [docs/DEPLOY.md](docs/DEPLOY.md).
 - Create, edit and delete events; join/leave events
 - Ticket bookings, booking cancellation and a "My bookings" page
 - Profile and account settings with avatar upload (local disk or S3 presigned URLs)
+- OpenAPI document and Swagger UI for the REST API
+- Schema migrations with Flyway; logout that revokes the token; login rate limiting
 
 ## Tech stack
 
 | Layer | Technologies |
 |---|---|
 | Frontend | Nuxt 4 (SPA), Vue 3, Tailwind CSS 4, Axios, AWS Amplify (Cognito), Leaflet + OpenStreetMap |
-| Backend | Java 21, Spring Boot 3.5 (Web, Data JPA, Security, Validation, Actuator, Data Redis, Mail), JJWT, AWS SDK v2 (S3) |
+| Backend | Java 21, Spring Boot 3.5 (Web, Data JPA, Security, Validation, Actuator, Data Redis, Mail), Flyway, springdoc-openapi, JJWT, AWS SDK v2 (S3) |
 | Data | MySQL 8, Redis 7 |
 | Testing | JUnit 5, Spring Boot Test, Testcontainers, JaCoCo; Vitest, Vue Test Utils, Testing Library; Cypress |
 | Containers | Docker (multi-stage images), Docker Compose |
@@ -135,10 +137,39 @@ docker compose up -d --build
 | Frontend | http://localhost:3000 |
 | Backend API | http://localhost:8080 |
 | Health check | http://localhost:8080/actuator/health |
+| API docs (Swagger UI) | http://localhost:8080/swagger-ui.html |
+| OpenAPI document | http://localhost:8080/v3/api-docs |
 
 The first start takes a few minutes: the backend image is built with Maven and
 the frontend container runs `npm install`. No `.env` file is needed for local
 use; all values in `docker-compose.yml` are local-only defaults. The venue map uses OpenStreetMap and needs no key.
+
+In Swagger UI, log in with `POST /api/auth/login`, copy the `token` from the response and
+paste it under **Authorize** to call the protected endpoints.
+
+### Database schema (Flyway)
+
+The schema is created by Flyway from `main_backend/src/main/resources/db/migration`
+(`V1__baseline.sql`, `V2__...`). Hibernate only validates it (`ddl-auto=validate`), so a
+mismatch between an entity and the tables stops startup instead of silently changing the
+database. A database that Hibernate created before Flyway was added is adopted at version 1
+and receives only the later migrations. To change the schema, add a new file
+`V<next>__<description>.sql`; never edit a migration that has already run.
+
+### Security settings
+
+| Setting | Variable | Default |
+|---|---|---|
+| Origins allowed by CORS (comma-separated, patterns such as `http://localhost:[*]`) | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:[*],http://127.0.0.1:[*]` |
+| Token lifetime in ms | `JWT_EXPIRATION_MS` | `86400000` (24 hours) |
+| Signing key, at least 64 characters | `JWT_SECRET` | local profiles only; required in `prod` and `railway` |
+
+- `POST /api/auth/logout` revokes the current token (its id is stored until it expires).
+- After 5 failed logins for the same account from the same address, further attempts get
+  `429 Too Many Requests` with `Retry-After` for 15 minutes (in memory, per instance).
+- Error responses do not include exception messages; details go to the backend log.
+- The H2 console is not exposed, and responses carry `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
 
 Stop everything and delete the database volume:
 

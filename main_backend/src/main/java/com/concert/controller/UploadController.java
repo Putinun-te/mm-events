@@ -27,7 +27,6 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/upload")
-@CrossOrigin(origins = "*")
 public class UploadController {
 
     private static final Logger log = LoggerFactory.getLogger(UploadController.class);
@@ -94,7 +93,7 @@ public class UploadController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Upload failed", e);
-            return error(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e.getClass().getSimpleName());
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "Upload failed", null);
         }
     }
 
@@ -140,7 +139,7 @@ public class UploadController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Delete failed", e);
-            return error(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), null);
+            return error(HttpStatus.INTERNAL_SERVER_ERROR, "Delete failed", null);
         }
     }
 

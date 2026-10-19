@@ -4,6 +4,7 @@ import com.concert.config.SecurityConfig;
 import com.concert.repository.UserRepository;
 import com.concert.service.EventService;
 import com.concert.service.JwtService;
+import com.concert.service.TokenRevocationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -47,6 +48,9 @@ class JwtTokenSecurityTest {
     @MockitoBean
     private UserRepository userRepository;
 
+    @MockitoBean
+    private TokenRevocationService tokenRevocationService;
+
     private static JwtService issuer(String secret, long lifetimeMs) {
         JwtService issuer = new JwtService();
         issuer.setJwtSecret(secret);
@@ -60,6 +64,15 @@ class JwtTokenSecurityTest {
 
         mockMvc.perform(post(PROTECTED).header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void revokedToken_isRejected() throws Exception {
+        String token = jwtService.generateToken("alice");
+        org.mockito.Mockito.when(tokenRevocationService.isRevoked(token)).thenReturn(true);
+
+        mockMvc.perform(post(PROTECTED).header("Authorization", "Bearer " + token))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

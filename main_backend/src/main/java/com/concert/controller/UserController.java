@@ -2,9 +2,13 @@ package com.concert.controller;
 
 import com.concert.dto.UpdateProfileRequest;
 import com.concert.dto.UserProfileResponse;
+import com.concert.exception.NotFoundException;
+import com.concert.exception.UnauthorizedException;
 import com.concert.model.User;
 import com.concert.repository.UserRepository;
 import com.concert.service.UserProfileService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -14,8 +18,9 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
-@CrossOrigin(origins = "*")
 public class UserController {
+
+    private static final Logger logger = LoggerFactory.getLogger(UserController.class);
     
     private final UserRepository userRepository;
     private final UserProfileService userProfileService;
@@ -37,23 +42,23 @@ public class UserController {
     
     @GetMapping("/me")
     public ResponseEntity<?> getMe(Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
         try {
-            User currentUser = getCurrentUser(authentication);
             UserProfileResponse profile = userProfileService.buildResponse(currentUser);
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return serverError("Failed to load profile", e);
         }
     }
 
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(Authentication authentication) {
+        User currentUser = getCurrentUser(authentication);
         try {
-            User currentUser = getCurrentUser(authentication);
             UserProfileResponse profile = userProfileService.buildResponse(currentUser);
             return ResponseEntity.ok(profile);
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return serverError("Failed to load profile", e);
         }
     }
 
@@ -97,7 +102,7 @@ public class UserController {
                     })
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
-            return ResponseEntity.status(500).body("Error updating profile: " + e.getMessage());
+            return serverError("Error updating profile", e);
         }
     }
 
@@ -126,30 +131,36 @@ public class UserController {
                     })
                     .orElse(ResponseEntity.notFound().build());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return serverError("Error updating profile", e);
         }
     }
 
     @PostMapping("/me/photo")
     public ResponseEntity<?> uploadProfilePhoto(Authentication authentication,
                                                 @RequestParam("file") MultipartFile file) {
+        User currentUser = getCurrentUser(authentication);
         try {
-            User currentUser = getCurrentUser(authentication);
             UserProfileResponse response = userProfileService.uploadProfilePhoto(currentUser, file);
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(e.getMessage());
+            return serverError("Profile photo upload failed", e);
         }
     }
 
     private User getCurrentUser(Authentication authentication) {
         if (authentication == null || authentication.getName() == null) {
-            throw new IllegalArgumentException("Authentication required");
+            throw new UnauthorizedException("Authentication required");
         }
         return userRepository.findByUsername(authentication.getName())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new NotFoundException("User not found"));
+    }
+
+    /** 500 without the exception's message, which can contain SQL or storage details. */
+    private static ResponseEntity<String> serverError(String message, Exception e) {
+        logger.error(message, e);
+        return ResponseEntity.internalServerError().body(message);
     }
 
 }

@@ -132,18 +132,20 @@ class UploadControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void upload_whenS3Fails_returns500WithErrorType() throws Exception {
+    void upload_whenS3Fails_returns500WithoutS3Details() throws Exception {
         when(s3Client.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
                 .thenThrow(S3Exception.builder().message("Access Denied").build());
 
         mockMvc.perform(multipart("/api/upload/event-photo").file(image("a.png", "image/png", 10))
                         .header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.type").value("S3Exception"));
+                .andExpect(jsonPath("$.error").value("Upload failed"))
+                .andExpect(jsonPath("$.type").doesNotExist());
         mockMvc.perform(multipart("/api/upload/avatar").file(image("a.png", "image/png", 10))
                         .header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.type").value("S3Exception"));
+                .andExpect(jsonPath("$.error").value("Upload failed"))
+                .andExpect(jsonPath("$.type").doesNotExist());
     }
 
     @Test
@@ -222,6 +224,6 @@ class UploadControllerApiTest extends SecuredApiTestSupport {
                         .param("url", "https://test-bucket.s3.ap-southeast-1.amazonaws.com/events/a.png")
                         .header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.error").value("NoSuchKey"));
+                .andExpect(jsonPath("$.error").value("Delete failed"));
     }
 }

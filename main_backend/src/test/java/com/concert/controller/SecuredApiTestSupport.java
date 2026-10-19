@@ -2,6 +2,7 @@ package com.concert.controller;
 
 import com.concert.model.User;
 import com.concert.service.JwtService;
+import com.concert.service.TokenRevocationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -13,8 +14,9 @@ import static org.mockito.Mockito.when;
 
 /**
  * Shared setup for @WebMvcTest API tests that run behind the real SecurityConfig
- * and JwtAuthenticationFilter. Only JwtService is mocked: TOKEN authenticates
+ * and JwtAuthenticationFilter. JwtService is mocked: TOKEN authenticates
  * "alice" and OTHER_TOKEN authenticates "bob"; any other token is rejected.
+ * TokenRevocationService is mocked too and reports no token as revoked.
  *
  * Concrete classes add @WebMvcTest(SomeController.class) and @Import(SecurityConfig.class).
  */
@@ -28,6 +30,9 @@ abstract class SecuredApiTestSupport {
 
     @MockitoBean
     protected JwtService jwtService;
+
+    @MockitoBean
+    protected TokenRevocationService tokenRevocationService;
 
     @BeforeEach
     void stubTokens() {

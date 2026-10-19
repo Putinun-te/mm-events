@@ -118,11 +118,11 @@ flowchart LR
 | `docker-compose.yml` | Local stack: MySQL, Redis, backend, frontend (and a `tests` profile for Dockerised backend tests) |
 | `docker-compose.prod.yml` | Backend + frontend images against an external RDS database (reads `.env`) |
 | `k8s/` | EKS manifests: backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment |
-| `aws/` | Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM) |
+| `aws/` | Course Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM), plus the Lambda sources and EC2 user data |
 | `infra/terraform/` | Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
-| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate) and `ci.yml` (frontend, e2e, images, secret scan) |
-| `scripts/` | Optional helpers for a self-hosted runner on EC2 |
-| `docs/` | Design notes, testing guides and course write-ups; `docs/archive/` holds old deployment notes |
+| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate), `ci.yml` (frontend, e2e, images, secret scan), `mutation-tests.yml`, `load-test.yml`, `deploy-pages.yml` |
+| `load-tests/` | k6 booking-rush script |
+| `docs/` | Live demo setup (`DEPLOY.md`) and design notes comparing AWS hosting options; see [docs/README.md](docs/README.md) |
 
 ## Run locally
 

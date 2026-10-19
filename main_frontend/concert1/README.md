@@ -1,87 +1,17 @@
-# npm install 
-# npm run dev
+# MM Events frontend
 
-
-
-
-
-
-
-
-
-
-# Nuxt Minimal Starter
-
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
-
-## Setup
-
-Make sure to install dependencies:
+Nuxt 4 single-page app (`ssr: false`); the source is in `app/`. It calls the
+Spring Boot API directly at `NUXT_PUBLIC_BACKEND_BASE_URL`
+(default `http://localhost:8080`).
 
 ```bash
-# npm
-npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+npm ci --legacy-peer-deps
+npm run dev            # http://localhost:3000
+npm run test           # Vitest unit tests (test/unit)
+npm run test:e2e       # API end-to-end tests against a running backend
+npm run test:cy        # Cypress UI tests against the running stack
+npx nuxt generate      # static build for GitHub Pages (set NUXT_APP_BASE_URL)
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Requires Node 22. In code and tests `~/` means `app/`, as in Nuxt.
+See the main [README](../../README.md) for the whole stack.

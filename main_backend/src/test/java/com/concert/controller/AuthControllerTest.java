@@ -4,7 +4,9 @@ import com.concert.dto.AuthResponse;
 import com.concert.dto.LoginRequest;
 import com.concert.dto.RegisterRequest;
 import com.concert.dto.UserProfileResponse;
+import com.concert.security.LoginAttemptLimiter;
 import com.concert.service.AuthService;
+import com.concert.service.TokenRevocationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,12 @@ class AuthControllerTest {
 
     @Mock
     private AuthService authService;
+
+    @Mock
+    private LoginAttemptLimiter loginAttemptLimiter;
+
+    @Mock
+    private TokenRevocationService tokenRevocationService;
 
     @InjectMocks
     private AuthController authController;
@@ -125,7 +133,7 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(registerRequest)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("Registration failed: Database connection failed"));
+                .andExpect(jsonPath("$.message").value("Registration failed")); // no exception text
     }
 
     @Test
@@ -137,7 +145,7 @@ class AuthControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(loginRequest)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("Login failed: Authentication service unavailable"));
+                .andExpect(jsonPath("$.message").value("Login failed")); // no exception text
     }
 
     @Test

@@ -8,6 +8,7 @@ vi.mock('~/composables/useAuth', () => ({
   useAuth: () => ({
     loadFromStorage: vi.fn(),
     clearAuth: vi.fn(),
+    logout: vi.fn(),
     isLoggedIn: { value: true }
   })
 }))

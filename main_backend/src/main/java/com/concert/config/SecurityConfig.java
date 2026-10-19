@@ -3,6 +3,7 @@ package com.concert.config;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.http.HttpStatus;
 import com.concert.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -13,19 +14,31 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final List<String> allowedOrigins;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    /**
+     * @param allowedOrigins comma-separated origins (or patterns such as http://localhost:[*])
+     *                       that browsers may call the API from; set APP_CORS_ALLOWED_ORIGINS
+     */
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
+                          @Value("${app.cors.allowed-origins:http://localhost:[*],http://127.0.0.1:[*]}") String allowedOrigins) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isEmpty())
+                .toList();
     }
 
     @Bean
@@ -42,6 +55,7 @@ public class SecurityConfig {
             // กำหนดสิทธิ์การเข้าถึงแต่ละ endpoint
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers(HttpMethod.OPTIONS).permitAll()  // Allow ALL OPTIONS requests
+                    .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                     .requestMatchers("/api/auth/**").permitAll()  // Allow all auth endpoints
                     .requestMatchers("/api/upload/**").authenticated()  // Require auth for upload
                     .requestMatchers("/api/health/**").permitAll()  // Allow health checks
@@ -51,15 +65,15 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.DELETE, "/api/events/**").authenticated()
                     .requestMatchers("/api/bookings/**").authenticated()
                     .requestMatchers("/api/users/**").authenticated()
-                    .requestMatchers("/h2-console/**").permitAll()
+                    .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     .requestMatchers("/error").permitAll()
                     .requestMatchers("/actuator/health").permitAll()
                     .anyRequest().authenticated()
             )
             // เพิ่ม JWT filter ก่อน UsernamePasswordAuthenticationFilter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-            // สำหรับ H2 console
-            .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.disable()));
+            // Spring's default headers (nosniff, X-Frame-Options DENY, no-cache, HSTS on https) plus no referrer
+            .headers(headers -> headers.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER)));
 
         return http.build();
     }
@@ -67,21 +81,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(
-            "http://localhost:*",
-            "http://127.0.0.1:*",
-            "http://concert-web-singapore-*.s3-website-ap-southeast-1.amazonaws.com",
-            "https://concert-web-singapore-*.s3-website-ap-southeast-1.amazonaws.com",
-            "https://*.cloudfront.net",
-            "https://dzh397ixo71bk.cloudfront.net",
-            "https://*.execute-api.*.amazonaws.com",
-            "http://*.elb.amazonaws.com",
-            "https://*.elb.amazonaws.com",
-            "*" // Allow all origins for development
-        ));
+        configuration.setAllowedOriginPatterns(allowedOrigins);
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
-        configuration.setAllowCredentials(false); // Set to false when allowing all origins
+        configuration.setAllowCredentials(false); // the JWT travels in a header, not a cookie
         configuration.setMaxAge(3600L);
         
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

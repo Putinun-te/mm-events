@@ -120,6 +120,7 @@ class StorageControllersTest {
         assertThat(response.getBody())
                 .containsEntry("status", "unhealthy")
                 .containsEntry("s3Access", "FAILED")
-                .containsEntry("error", "Forbidden");
+                // the S3 error text stays in the server log
+                .doesNotContainKey("error");
     }
 }

@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+import { useRuntimeConfig } from 'nuxt/app'
 
 export interface AuthUser { username?: string; email?: string; token?: string }
 
@@ -61,9 +62,26 @@ export function useAuth() {
     user.value = null
   }
 
+  /**
+   * Logs out here and on the server: the backend revokes the token, so a copy of it
+   * (another tab, a leaked value) stops working too. Local logout never waits for the
+   * network and still happens if the request fails.
+   */
+  function logout() {
+    const token = user.value?.token || localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
+    clearAuth()
+    if (!token) return
+    const baseURL = useRuntimeConfig().public.backendBaseUrl
+    fetch(`${baseURL}/api/auth/logout`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      keepalive: true
+    }).catch(() => {})
+  }
+
   function shouldCompleteProfile(): boolean {
     return localStorage.getItem('profile_completed') !== 'true'
   }
 
-  return { user, remember, isLoggedIn, loadFromStorage, saveAuth, clearAuth, shouldCompleteProfile }
+  return { user, remember, isLoggedIn, loadFromStorage, saveAuth, clearAuth, logout, shouldCompleteProfile }
 }

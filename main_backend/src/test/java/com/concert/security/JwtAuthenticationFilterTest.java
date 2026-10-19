@@ -1,6 +1,7 @@
 package com.concert.security;
 
 import com.concert.service.JwtService;
+import com.concert.service.TokenRevocationService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,6 +25,9 @@ public class JwtAuthenticationFilterTest {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private TokenRevocationService tokenRevocationService;
 
     @Mock
     private HttpServletRequest request;
@@ -113,6 +117,19 @@ public class JwtAuthenticationFilterTest {
         org.assertj.core.api.Assertions.assertThat(
                 ((org.springframework.security.web.authentication.WebAuthenticationDetails) details).getRemoteAddress())
                 .isEqualTo("203.0.113.7");
+    }
+
+    @Test
+    void testDoFilterInternal_RevokedToken_leavesRequestUnauthenticated() throws ServletException, IOException {
+        when(request.getHeader("Authorization")).thenReturn("Bearer logged-out-token");
+        when(jwtService.extractUsername("logged-out-token")).thenReturn("testuser");
+        when(jwtService.isTokenValid("logged-out-token", "testuser")).thenReturn(true);
+        when(tokenRevocationService.isRevoked("logged-out-token")).thenReturn(true);
+
+        jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
+
+        org.assertj.core.api.Assertions.assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        verify(filterChain).doFilter(request, response);
     }
 
     @Test

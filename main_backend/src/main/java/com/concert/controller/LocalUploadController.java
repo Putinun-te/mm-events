@@ -68,7 +68,7 @@ public class LocalUploadController {
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             log.error("Local upload failed", e);
-            return error(500, e.getMessage());
+            return error(500, "Upload failed");
         }
     }
 

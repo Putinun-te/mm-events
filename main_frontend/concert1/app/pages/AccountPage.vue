@@ -25,7 +25,7 @@ interface UserStats {
 }
 
 const router = useRouter()
-const { loadFromStorage, isLoggedIn, clearAuth } = useAuth()
+const { loadFromStorage, isLoggedIn, logout } = useAuth()
 const saving = ref(false)
 const message = ref('')
 const successFlag = ref(false)
@@ -196,7 +196,7 @@ function handleLogout() {
 }
 
 function confirmLogout() {
-  clearAuth()
+  logout()
   localStorage.removeItem('profile_data')
   success('Logged out successfully', 'Goodbye!')
   router.push('/')

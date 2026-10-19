@@ -46,6 +46,16 @@ class AuthAndJwtGapsTest {
     }
 
     @Test
+    void everyToken_getsItsOwnId() {
+        JwtService service = jwt(3_600_000);
+
+        String first = service.getTokenId(service.generateToken("alice"));
+        String second = service.getTokenId(service.generateToken("alice"));
+
+        assertThat(first).hasSize(36).isNotEqualTo(second);
+    }
+
+    @Test
     void isTokenExpired_isTrueForExpiredOrUnreadableTokens_andFalseForFreshOnes() {
         JwtService service = jwt(3_600_000);
 

@@ -28,7 +28,7 @@ after the one-time account setup in [docs/DEPLOY.md](docs/DEPLOY.md).
 ## Features
 
 - Event catalogue with details, photos and an OpenStreetMap map of the venue (Leaflet, no API key)
-- Registration and login with JWT (Spring Security); optional AWS Cognito sign-in
+- Registration and login with JWT (Spring Security)
 - Create, edit and delete events; join/leave events
 - Ticket bookings, booking cancellation and a "My bookings" page
 - Profile and account settings with avatar upload (local disk or S3 presigned URLs)
@@ -39,7 +39,7 @@ after the one-time account setup in [docs/DEPLOY.md](docs/DEPLOY.md).
 
 | Layer | Technologies |
 |---|---|
-| Frontend | Nuxt 4 (SPA), Vue 3, Tailwind CSS 4, Axios, AWS Amplify (Cognito), Leaflet + OpenStreetMap |
+| Frontend | Nuxt 4 (SPA), Vue 3, Tailwind CSS 4, Leaflet + OpenStreetMap |
 | Backend | Java 21, Spring Boot 3.5 (Web, Data JPA, Security, Validation, Actuator, Data Redis, Mail), Flyway, springdoc-openapi, JJWT, AWS SDK v2 (S3) |
 | Data | MySQL 8, Redis 7 |
 | Testing | JUnit 5, Spring Boot Test, Testcontainers, JaCoCo; Vitest, Vue Test Utils, Testing Library; Cypress |

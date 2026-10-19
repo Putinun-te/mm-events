@@ -1,0 +1,20 @@
+# EKS: AWS Load Balancer Controller creates an internet-facing ALB from the Ingress.
+# Combine with the Terraform output: terraform -chdir=deploy/terraform/aws output -raw helm_values
+ingress:
+  className: alb
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}]'
+    alb.ingress.kubernetes.io/load-balancer-name: mm-events
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "15"
+
+backend:
+  service:
+    annotations:
+      alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
+
+frontend:
+  service:
+    annotations:
+      alb.ingress.kubernetes.io/healthcheck-path: /health

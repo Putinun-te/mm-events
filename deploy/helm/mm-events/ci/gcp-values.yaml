@@ -1,0 +1,35 @@
+# Placeholder values for 'helm lint' / 'helm template' in CI. Not a real project.
+publicUrl: http://203.0.113.10
+backend:
+  image:
+    repository: asia-southeast1-docker.pkg.dev/example-project/mm-events/backend
+    tag: "1.0.1"
+  datasource:
+    host: 10.100.0.3
+  serviceAccount:
+    annotations:
+      iam.gke.io/gcp-service-account: mm-events-backend@example-project.iam.gserviceaccount.com
+frontend:
+  image:
+    repository: asia-southeast1-docker.pkg.dev/example-project/mm-events/frontend
+    tag: "1.0.1"
+ingress:
+  annotations:
+    kubernetes.io/ingress.class: gce
+    kubernetes.io/ingress.global-static-ip-name: mm-events-ingress
+secrets:
+  externalSecrets:
+    provider:
+      gcpsm:
+        projectID: example-project
+        auth:
+          workloadIdentity:
+            clusterLocation: asia-southeast1-a
+            clusterName: mm-events
+            clusterProjectID: example-project
+            serviceAccountRef:
+              name: mm-events-backend
+    dbPassword:
+      key: mm-events-db-password
+    jwtSecret:
+      key: mm-events-jwt-secret

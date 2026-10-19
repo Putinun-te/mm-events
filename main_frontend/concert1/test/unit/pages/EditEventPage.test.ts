@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import EditEventPage from '~/pages/EditEventPage.vue'
 
@@ -608,5 +608,78 @@ describe('EditEventPage', () => {
     })
     await new Promise(resolve => setTimeout(resolve, 150))
     expect(mockPush).toHaveBeenCalledWith('/MyEventsPage')
+  })
+
+  describe('photo upload after the access token expired', () => {
+    const nuxtFetch = () => global.$fetch as any as ReturnType<typeof vi.fn>
+    const rawFetch = () => global.fetch as any as ReturnType<typeof vi.fn>
+    const photoUpdate = () => nuxtFetch().mock.calls.filter(([url, init]: any[]) =>
+      url === '/api/events/123' && init?.method === 'PUT' && String(init.body).includes('photoUrl'))
+
+    // $fetch serves the event API and the token refresh; the multipart upload goes through fetch
+    const serveBackend = (refresh: () => Promise<unknown>) => {
+      nuxtFetch().mockImplementation((url: string) => {
+        if (url.endsWith('/api/auth/refresh')) return refresh()
+        return Promise.resolve({ id: 123, title: 'Old title', description: 'Old description' })
+      })
+    }
+
+    const submitWithPhoto = async () => {
+      const wrapper = mount(EditEventPage, { global: { stubs: { NuxtLink: true } } })
+      await new Promise(resolve => setTimeout(resolve, 0))
+      const vm = wrapper.vm as any
+      Object.assign(vm.form, {
+        title: 'New title',
+        description: 'New description',
+        dateStart: '2030-12-31',
+        timeStart: '18:00',
+        dateEnd: '2030-12-31',
+        timeEnd: '23:00'
+      })
+      vm.handlePhotoSelect({ target: { files: [new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' })] } })
+      await vm.handleSubmit()
+    }
+
+    beforeEach(() => {
+      rawFetch().mockReset()
+      nuxtFetch().mockReset()
+      localStorage.clear()
+      sessionStorage.setItem('jwt_token', 'expired-access')
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+    })
+
+    afterEach(() => {
+      sessionStorage.clear()
+    })
+
+    it('renews the token and retries the upload with the same file', async () => {
+      serveBackend(() => Promise.resolve({ token: 'new-access', refreshToken: 'refresh-2' }))
+      rawFetch()
+        .mockResolvedValueOnce({ ok: false, status: 401 })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ url: 'https://cdn.example.test/photo.jpg' }) })
+
+      await submitWithPhoto()
+
+      expect(rawFetch()).toHaveBeenCalledTimes(2)
+      const [url, init] = rawFetch().mock.calls[1]
+      expect(url).toBe('/api/upload/event-photo')
+      expect(init.method).toBe('POST')
+      expect(init.headers).toEqual({ Authorization: 'Bearer new-access' })
+      expect((init.body as FormData).get('file')).toMatchObject({ name: 'photo.jpg' })
+      expect(photoUpdate()).toHaveLength(1)
+      expect(String(photoUpdate()[0][1].body)).toContain('"photoUrl":"https://cdn.example.test/photo.jpg"')
+      expect(mockPush).toHaveBeenCalledWith('/MyEventsPage')
+    })
+
+    it('still saves the other changes when the session cannot be renewed', async () => {
+      serveBackend(() => Promise.reject(Object.assign(new Error('Unauthorized'), { status: 401 })))
+      rawFetch().mockResolvedValueOnce({ ok: false, status: 401 })
+
+      await submitWithPhoto()
+
+      expect(rawFetch()).toHaveBeenCalledTimes(1)
+      expect(photoUpdate()).toHaveLength(0)
+      expect(mockPush).toHaveBeenCalledWith('/MyEventsPage')
+    })
   })
 })

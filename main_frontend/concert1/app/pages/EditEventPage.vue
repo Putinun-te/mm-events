@@ -26,7 +26,7 @@ const router = useRouter()
 const route = useRoute()
 const { loadFromStorage, isLoggedIn, user } = useAuth()
 const { success, error } = useToast()
-const { apiFetch, backendUrl } = useApi()
+const { apiFetch, authFetch } = useApi()
 
 const submitting = ref(false)
 const loading = ref(true)
@@ -186,12 +186,10 @@ async function handleSubmit() {
         const formData = new FormData()
         formData.append('file', photoFile.value)
         
-        const uploadResponse = await fetch(`${backendUrl}/api/upload/event-photo`, {
+        // No Content-Type: the browser sets the multipart boundary. authFetch renews an expired token.
+        const uploadResponse = await authFetch('/api/upload/event-photo', {
           method: 'POST',
-          body: formData,
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+          body: formData
         })
         
         if (uploadResponse.ok) {

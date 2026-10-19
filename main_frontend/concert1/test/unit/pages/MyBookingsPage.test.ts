@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { mount } from '@vue/test-utils'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { mount, flushPromises } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import MyBookingsPage from '~/pages/MyBookingsPage.vue'
+import { useToast } from '~/composables/useToast'
 
 // Mock $fetch globally
 (globalThis as any).$fetch = vi.fn()
@@ -127,26 +128,20 @@ describe('MyBookingsPage.vue', () => {
     await wrapper.vm.$nextTick()
     
     const vm = wrapper.vm as any
+    ;(global.fetch as any).mockResolvedValueOnce({ ok: true, status: 204 })
     
-    // If cancel function exists
-    if (vm.cancelBooking || vm.handleCancelBooking) {
-      // Mock cancel API
-      ;(global.fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ message: 'Booking cancelled' })
+    vm.openCancelModal({ id: 1, eventId: 101, quantity: 2, status: 'CONFIRMED', totalPrice: 1000 })
+    await vm.confirmCancelBooking()
+    
+    // Should call delete API with the stored token
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/bookings/1'),
+      expect.objectContaining({
+        method: 'DELETE',
+        headers: expect.objectContaining({ Authorization: 'Bearer test-token' })
       })
-      
-      const cancelFn = vm.cancelBooking || vm.handleCancelBooking
-      await cancelFn(1)
-      
-      // Should call delete API
-      expect(global.fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/api/bookings/1'),
-        expect.objectContaining({
-          method: 'DELETE'
-        })
-      )
-    }
+    )
+    expect(vm.showCancelModal).toBe(false)
   })
 
   it('should redirect to login if not authenticated', async () => {
@@ -662,6 +657,88 @@ describe('MyBookingsPage.vue', () => {
       }
     })
   })
+
+  describe('Cancelling after the access token expired', () => {
+    const booking = { id: 5, eventId: 101, quantity: 2, status: 'CONFIRMED', totalPrice: 1000 }
+    const nuxtFetch = () => (globalThis as any).$fetch as ReturnType<typeof vi.fn>
+    const toastsOfType = (type: string) => useToast().toasts.value.filter(t => t.type === type)
+
+    // $fetch serves the bookings list and the token refresh; the DELETE goes through global.fetch
+    const serveBackend = (refresh: () => Promise<unknown>) => {
+      nuxtFetch().mockImplementation((url: string) =>
+        url.endsWith('/api/auth/refresh') ? refresh() : Promise.resolve([{ ...booking }])
+      )
+    }
+
+    const mountWithBooking = async () => {
+      const wrapper = mount(MyBookingsPage, { global: { plugins: [router] } })
+      await flushPromises()
+      const vm = wrapper.vm as any
+      vm.openCancelModal(vm.bookings[0])
+      return vm
+    }
+
+    beforeEach(() => {
+      // clearAllMocks keeps queued mockResolvedValueOnce answers from earlier tests
+      ;(global.fetch as any).mockReset()
+      nuxtFetch().mockReset()
+      vi.useFakeTimers({ toFake: ['setTimeout'] })
+      localStorage.clear()
+      sessionStorage.clear()
+      sessionStorage.setItem('jwt_token', 'expired-access')
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      useToast().toasts.value = []
+    })
+
+    afterEach(() => {
+      vi.useRealTimers()
+      localStorage.clear()
+      sessionStorage.clear()
+      localStorage.setItem('jwt_token', 'test-token')
+    })
+
+    it('renews the token and retries the DELETE once', async () => {
+      serveBackend(() => Promise.resolve({ token: 'new-access', refreshToken: 'refresh-2' }))
+      ;(global.fetch as any)
+        .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+        .mockResolvedValueOnce({ ok: true, status: 204 })
+      const pushSpy = vi.spyOn(router, 'push')
+      const vm = await mountWithBooking()
+
+      await vm.confirmCancelBooking()
+
+      const deletes = (global.fetch as any).mock.calls
+      expect(deletes).toHaveLength(2)
+      expect(deletes[0][0]).toBe('/api/bookings/5')
+      expect(deletes[0][1].headers.Authorization).toBe('Bearer expired-access')
+      expect(deletes[1][0]).toBe('/api/bookings/5')
+      expect(deletes[1][1]).toMatchObject({ method: 'DELETE', headers: { Authorization: 'Bearer new-access' } })
+      expect(vm.bookings[0].status).toBe('CANCELLED')
+      expect(vm.showCancelModal).toBe(false)
+      expect(toastsOfType('success')).toHaveLength(1)
+      expect(toastsOfType('error')).toHaveLength(0)
+      expect(pushSpy).not.toHaveBeenCalledWith('/LoginPage')
+      expect(sessionStorage.getItem('jwt_token')).toBe('new-access')
+    })
+
+    it('sends the user to the login page when the session cannot be renewed', async () => {
+      serveBackend(() => Promise.reject(Object.assign(new Error('Unauthorized'), { status: 401 })))
+      ;(global.fetch as any).mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ message: 'Session expired' })
+      })
+      const pushSpy = vi.spyOn(router, 'push')
+      const vm = await mountWithBooking()
+
+      await vm.confirmCancelBooking()
+
+      expect(global.fetch).toHaveBeenCalledTimes(1)
+      expect(pushSpy).toHaveBeenCalledWith('/LoginPage')
+      expect(toastsOfType('error').map(t => t.title)).toContain('Authentication Required')
+      expect(vm.bookings[0].status).toBe('CONFIRMED')
+      expect(sessionStorage.getItem('jwt_token')).toBeNull()
+      expect(localStorage.getItem('redirect_after_login')).toBe('/MyBookingsPage')
+    })
+  })
 })
-
-

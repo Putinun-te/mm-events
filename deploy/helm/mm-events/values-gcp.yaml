@@ -1,0 +1,11 @@
+# GKE: the built-in GKE Ingress controller creates a global external Application Load
+# Balancer on the static IP reserved by Terraform (annotation set by the Terraform output).
+# Combine with: terraform -chdir=deploy/terraform/gcp output -raw helm_values
+ingress:
+  # GKE selects its controller with the annotation, not spec.ingressClassName
+  className: ""
+  annotations:
+    kubernetes.io/ingress.class: gce
+
+gkeBackendConfig:
+  enabled: true

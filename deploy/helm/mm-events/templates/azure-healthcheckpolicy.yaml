@@ -1,0 +1,34 @@
+{{- if .Values.azureAlbHealthCheckPolicy.enabled }}
+{{- $targets := list (dict "name" (include "mm-events.backendName" .) "path" "/actuator/health") -}}
+{{- if .Values.frontend.enabled }}
+{{- $targets = append $targets (dict "name" (include "mm-events.frontendName" .) "path" "/health") -}}
+{{- end }}
+{{- range $targets }}
+---
+# Application Gateway for Containers health probe for one Service
+apiVersion: alb.networking.azure.io/v1
+kind: HealthCheckPolicy
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "mm-events.labels" $ | nindent 4 }}
+spec:
+  targetRef:
+    group: ""
+    kind: Service
+    name: {{ .name }}
+    namespace: {{ $.Release.Namespace }}
+  default:
+    interval: 10s
+    timeout: 5s
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+    http:
+      path: {{ .path }}
+      match:
+        statusCodes:
+          - start: 200
+            end: 299
+    useTLS: false
+{{- end }}
+{{- end }}

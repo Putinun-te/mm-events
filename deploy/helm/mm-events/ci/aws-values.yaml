@@ -1,0 +1,30 @@
+# Placeholder values for 'helm lint' / 'helm template' in CI. Not a real account.
+publicUrl: http://mm-events-123456789.ap-southeast-1.elb.amazonaws.com
+backend:
+  image:
+    repository: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/mm-events-backend
+    tag: "1.0.1"
+  datasource:
+    host: mm-events.abcdefghijkl.ap-southeast-1.rds.amazonaws.com
+  serviceAccount:
+    annotations:
+      eks.amazonaws.com/role-arn: arn:aws:iam::123456789012:role/mm-events-backend
+frontend:
+  image:
+    repository: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/mm-events-frontend
+    tag: "1.0.1"
+secrets:
+  externalSecrets:
+    provider:
+      aws:
+        service: SecretsManager
+        region: ap-southeast-1
+        auth:
+          jwt:
+            serviceAccountRef:
+              name: mm-events-backend
+    dbPassword:
+      key: arn:aws:secretsmanager:ap-southeast-1:123456789012:secret:rds!db-00000000-0000-0000-0000-000000000000-AbCdEf
+      property: password
+    jwtSecret:
+      key: mm-events/jwt-secret

@@ -1,0 +1,27 @@
+{{- if .Values.gkeBackendConfig.enabled }}
+{{- $targets := list (dict "name" (include "mm-events.backendName" .) "path" "/actuator/health" "port" 8080) -}}
+{{- if .Values.frontend.enabled }}
+{{- $targets = append $targets (dict "name" (include "mm-events.frontendName" .) "path" "/health" "port" 80) -}}
+{{- end }}
+{{- range $targets }}
+---
+# Health check of the GKE Ingress load balancer for one Service (attached through the
+# cloud.google.com/backend-config annotation on that Service)
+apiVersion: cloud.google.com/v1
+kind: BackendConfig
+metadata:
+  name: {{ .name }}
+  labels:
+    {{- include "mm-events.labels" $ | nindent 4 }}
+spec:
+  healthCheck:
+    type: HTTP
+    requestPath: {{ .path }}
+    port: {{ .port }}
+    checkIntervalSec: 10
+    timeoutSec: 5
+    healthyThreshold: 1
+    unhealthyThreshold: 3
+  timeoutSec: 60
+{{- end }}
+{{- end }}

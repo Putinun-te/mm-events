@@ -1,0 +1,13 @@
+apiVersion: v2
+name: mm-events
+description: MM Events concert booking app (Spring Boot API + static Nuxt frontend) for EKS, GKE and AKS
+type: application
+version: 0.1.0
+appVersion: "1.0.1"
+home: https://github.com/Putinun-te/mm-events
+sources:
+  - https://github.com/Putinun-te/mm-events
+keywords:
+  - spring-boot
+  - nuxt
+  - mysql

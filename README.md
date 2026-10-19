@@ -10,9 +10,11 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 
 > **Status:** the AWS infrastructure (EC2, RDS, ElastiCache, S3/CloudFront,
 > Cognito, API Gateway, EKS) was used during the course and **has been
-> decommissioned**. The Terraform and Kubernetes code is kept for reference and
-> can be redeployed to your own account; nothing in this repository points at
-> live resources.
+> decommissioned**; that AWS account is closed. The course's Terraform and
+> Kubernetes code (`aws/`, `infra/terraform/`, `k8s/`) is kept as a record only.
+> The app now runs as a demo on GitHub Pages + Railway, and `deploy/` has new,
+> deployable Terraform and a Helm chart for managed Kubernetes on AWS (EKS),
+> Google Cloud (GKE) and Azure (AKS) (see [Infrastructure](#infrastructure)).
 >
 > This repository is a cleaned copy of the team repository
 > [MorningMores/develop](https://github.com/MorningMores/develop). Commit history
@@ -24,6 +26,50 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 The demo setup is ready in the repository: frontend on GitHub Pages
 (`https://putinun-te.github.io/mm-events/`), backend and MySQL on Railway. It goes live
 after the one-time account setup in [docs/DEPLOY.md](docs/DEPLOY.md).
+
+## Infrastructure
+
+### Current setup: GitHub Pages + Railway
+
+![Current infrastructure: GitHub Pages and Railway](deploy/diagrams/current-railway-pages.png)
+
+| Part | Where it runs | Configured by |
+|---|---|---|
+| Frontend (static Nuxt SPA) | GitHub Pages, `https://putinun-te.github.io/mm-events/` | `.github/workflows/deploy-pages.yml` (`nuxt generate` on every merge to `main`) |
+| Backend (Spring Boot API) | Railway service built from `main_backend/Dockerfile` | `main_backend/railway.json`, `application-railway.properties` |
+| Database (MySQL 8) | Railway MySQL, private network | Railway reference variables |
+| Secrets (DB password, JWT secret) | Railway service variables | set once in the Railway dashboard, never in the repository |
+| CI | GitHub-hosted runners | `.github/workflows/` (see [CI/CD](#cicd)) |
+
+Setup steps and limits: [docs/DEPLOY.md](docs/DEPLOY.md).
+
+### Deploying to Kubernetes on AWS, Google Cloud or Azure (`deploy/`)
+
+Terraform per cloud for the network, managed Kubernetes cluster, container registry,
+managed MySQL 8, secret store and workload identities, plus one Helm chart
+([`deploy/helm/mm-events`](deploy/helm/mm-events)) that runs the backend (probes, HPA,
+PodDisruptionBudget), the nginx frontend and an Ingress on all three, with secrets pulled
+from the cloud's secret store by the External Secrets Operator. Each cloud has an
+architecture diagram, a README (`terraform apply`, kubeconfig, pushing the images,
+`helm install`, rough monthly cost, `destroy`) and a `terraform.tfvars.example`.
+Overview and diagrams: [deploy/README.md](deploy/README.md).
+
+| Cloud | Kubernetes | Ingress | Database | Secrets | Rough cost / month |
+|---|---|---|---|---|---|
+| [AWS](deploy/terraform/aws/README.md) | EKS + managed node group | ALB (AWS Load Balancer Controller) | RDS MySQL 8 | Secrets Manager + IRSA | ~USD 255 |
+| [Google Cloud](deploy/terraform/gcp/README.md) | GKE Standard, zonal | GKE Ingress (external Application LB) | Cloud SQL MySQL 8 | Secret Manager + Workload Identity | ~USD 100 |
+| [Azure](deploy/terraform/azure/README.md) | AKS, Free tier | Application Gateway for Containers | MySQL Flexible Server | Key Vault + Workload Identity | ~USD 225 |
+
+These are checked in CI (`deploy-checks.yml`: `terraform fmt`/`validate`, `helm lint`,
+`helm template | kubeconform`) and have not been applied from this repository:
+`terraform apply` creates billable resources in your own account.
+
+### Course infrastructure (shut down)
+
+`aws/`, `infra/terraform/` and `k8s/` are the original infrastructure from the ITDS323
+course (EC2, ECS Fargate, Lambda, API Gateway, Cognito, ElastiCache and EKS on AWS). The
+account they ran in has been closed and none of those resources exist any more. The code
+is kept as a record of the course work; use `deploy/terraform/` for a new deployment.
 
 ## Features
 
@@ -77,7 +123,7 @@ flowchart LR
     be --> cache
   end
 
-  subgraph AWS["AWS (used during the course, decommissioned)"]
+  subgraph AWS["AWS (course infrastructure, shut down)"]
     subgraph TF["Terraform: aws/ and infra/terraform/"]
       cdn["S3 + CloudFront<br/>static frontend"]
       apigw["API Gateway"]
@@ -117,10 +163,11 @@ flowchart LR
 | `main_frontend/concert1/` | Nuxt 4 app (`app/`), unit tests (`test/unit`), e2e tests (`test/e2e`), Cypress specs, Dockerfile + nginx config |
 | `docker-compose.yml` | Local stack: MySQL, Redis, backend, frontend (and a `tests` profile for Dockerised backend tests) |
 | `docker-compose.prod.yml` | Backend + frontend images against an external RDS database (reads `.env`) |
-| `k8s/` | EKS manifests: backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment |
-| `aws/` | Course Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM), plus the Lambda sources and EC2 user data |
-| `infra/terraform/` | Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
-| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate), `ci.yml` (frontend, e2e, images, secret scan), `mutation-tests.yml`, `load-test.yml`, `deploy-pages.yml` |
+| `deploy/` | Deployable Terraform for EKS, GKE and AKS (`deploy/terraform/<cloud>/`), the shared Helm chart (`deploy/helm/mm-events/`) and the architecture diagrams with their sources (`deploy/diagrams/`) |
+| `k8s/` | Course infrastructure, shut down: EKS manifests (backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment) |
+| `aws/` | Course infrastructure, shut down: Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM), plus the Lambda sources and EC2 user data |
+| `infra/terraform/` | Course infrastructure, shut down: Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
+| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate), `ci.yml` (frontend, e2e, images, secret scan), `mutation-tests.yml`, `load-test.yml`, `deploy-pages.yml`, `deploy-checks.yml` (Terraform and Helm checks for `deploy/`) |
 | `load-tests/` | k6 booking-rush script |
 | `docs/` | Live demo setup (`DEPLOY.md`) and design notes comparing AWS hosting options; see [docs/README.md](docs/README.md) |
 
@@ -304,6 +351,9 @@ cloud credentials, no deploy jobs.
 **`mutation-tests.yml`** runs PIT on backend pull requests (not a required check), weekly
 and on demand. **`load-test.yml`** runs the k6 ticket rush on demand and weekly.
 **`deploy-pages.yml`** publishes the frontend to GitHub Pages (see `docs/DEPLOY.md`).
+**`deploy-checks.yml`** runs `terraform fmt -check` and `terraform validate` on the modules
+in `deploy/terraform/`, and `helm lint` plus `helm template | kubeconform -strict` on the
+chart for each cloud (no cloud credentials).
 
 To see why a backend run failed, open the run in the Actions tab: the summary
 page lists failed tests and coverage per package, and the
@@ -317,9 +367,11 @@ the `archive/*` tags.
 ## Deploying again (optional)
 
 For the free-standing demo (GitHub Pages + Railway) follow [docs/DEPLOY.md](docs/DEPLOY.md).
-The options below recreate the original AWS setup.
+For Kubernetes on AWS, Google Cloud or Azure use the Terraform and Helm chart in
+[deploy/](deploy/README.md).
 
-Everything below creates billable AWS resources in **your** account.
+The options below recreate the original course setup from the shut-down infrastructure
+code. They are kept for reference and create billable AWS resources in **your** account.
 
 - **Terraform:** `cd aws` (or `infra/terraform/<variant>`), copy
   `terraform.tfvars.example` to `terraform.tfvars`, fill in your values, then

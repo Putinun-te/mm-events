@@ -1,35 +1,52 @@
-"""GCP deployment from deploy/terraform/gcp."""
+"""GCP deployment: deploy/terraform/gcp + deploy/helm/mm-events on GKE."""
 
 from diagrams import Cluster, Diagram, Edge
-from diagrams.gcp.compute import Run
+from diagrams.gcp.compute import GKE, ComputeEngine
 from diagrams.gcp.database import SQL
 from diagrams.gcp.devtools import ContainerRegistry
-from diagrams.gcp.network import CDN, LoadBalancing
-from diagrams.gcp.security import SecretManager
-from diagrams.gcp.storage import GCS
+from diagrams.gcp.network import NAT, LoadBalancing
+from diagrams.gcp.security import Iam, SecretManager
+from diagrams.k8s.clusterconfig import HPA
+from diagrams.k8s.compute import Deployment, Pod
+from diagrams.k8s.podconfig import Secret
 from diagrams.onprem.client import Users
 
 from common import diagram_kwargs
 
-with Diagram(**diagram_kwargs("MM Events on Google Cloud (deploy/terraform/gcp)", "gcp")):
+with Diagram(**diagram_kwargs("MM Events on Google Kubernetes Engine (deploy/terraform/gcp + deploy/helm)", "gcp")):
     users = Users("Browser")
 
-    with Cluster("Global external Application Load Balancer"):
-        lb = LoadBalancing("URL map\n/* site, /api/* API")
-        cdn = CDN("Cloud CDN")
+    lb = LoadBalancing("External Application LB\nfrom the GKE Ingress\n(reserved static IP)")
 
-    with Cluster("Region (asia-southeast1)"):
-        site = GCS("Cloud Storage\nstatic Nuxt build")
-        registry = ContainerRegistry("Artifact Registry\nbackend image")
+    with Cluster("Project (asia-southeast1)"):
+        registry = ContainerRegistry("Artifact Registry\nbackend + frontend images")
         secrets = SecretManager("Secret Manager\nDB password, JWT secret")
-        api = Run("Cloud Run\nSpring Boot\n(ingress: LB only)")
+        wi = Iam("Workload Identity\nKSA -> Google SA")
 
-        with Cluster("VPC (Private Service Access)"):
+        with Cluster("VPC (VPC-native subnet, Private Google Access)"):
+            nat = NAT("Cloud NAT")
+
+            with Cluster("GKE Standard, zonal, private nodes"):
+                control = GKE("GKE control plane")
+
+                with Cluster("Node pool (2 x e2-medium, 1-3)"):
+                    nodes = ComputeEngine("nodes")
+                    eso = Pod("External Secrets\nOperator")
+                    frontend = Deployment("frontend\nnginx + Nuxt build")
+                    backend = Deployment("backend\nSpring Boot")
+                    hpa = HPA("HPA 2-4")
+                    k8s_secret = Secret("Secret\nDB password, JWT")
+
             db = SQL("Cloud SQL MySQL 8\nprivate IP, TLS")
 
-    users >> Edge(label="HTTP / HTTPS\n(with a domain)") >> lb
-    lb >> cdn >> Edge(label="backend bucket") >> site
-    lb >> Edge(label="serverless NEG") >> api
-    api >> Edge(label="Direct VPC egress\nJDBC + TLS") >> db
-    registry >> Edge(label="pull", style="dashed") >> api
-    secrets >> Edge(label="env from secrets", style="dashed") >> api
+    users >> Edge(label="HTTP :80") >> lb
+    lb >> Edge(label="/  (NEG)") >> frontend
+    lb >> Edge(label="/api/*  (NEG)") >> backend
+    backend >> Edge(label="JDBC + TLS\n(Private Service Access)") >> db
+    hpa >> Edge(style="dotted") >> backend
+    secrets >> Edge(label="Workload Identity", style="dashed") >> eso
+    wi >> Edge(style="dotted") >> eso
+    eso >> Edge(style="dashed") >> k8s_secret >> Edge(style="dashed") >> backend
+    registry >> Edge(label="pull", style="dashed") >> nodes
+    nodes >> Edge(style="dotted") >> nat
+    control >> Edge(style="dotted") >> nodes

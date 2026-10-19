@@ -1,0 +1,47 @@
+{{- if .Values.ingress.enabled }}
+{{- $i := .Values.ingress -}}
+{{- $backend := include "mm-events.backendName" . -}}
+{{- $frontend := include "mm-events.frontendName" . -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "mm-events.fullname" . }}
+  labels:
+    {{- include "mm-events.labels" . | nindent 4 }}
+  {{- with $i.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with $i.className }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- with $i.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - http:
+        paths:
+          {{- range $i.apiPaths }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $backend }}
+                port:
+                  name: http
+          {{- end }}
+          {{- if .Values.frontend.enabled }}
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ $frontend }}
+                port:
+                  name: http
+          {{- end }}
+      {{- with $i.host }}
+      host: {{ . | quote }}
+      {{- end }}
+{{- end }}

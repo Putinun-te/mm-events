@@ -1,0 +1,108 @@
+{{- if .Values.frontend.enabled }}
+{{- $name := include "mm-events.frontendName" . -}}
+{{- $f := .Values.frontend -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "mm-events.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  replicas: {{ $f.replicas }}
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      {{- include "mm-events.selectorLabels" (dict "root" . "component" "frontend") | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "mm-events.selectorLabels" (dict "root" . "component" "frontend") | nindent 8 }}
+        {{- with $f.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- with $f.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              {{- include "mm-events.selectorLabels" (dict "root" . "component" "frontend") | nindent 14 }}
+      containers:
+        - name: nginx
+          image: {{ include "mm-events.image" (dict "image" $f.image "component" "frontend") }}
+          imagePullPolicy: {{ $f.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          {{- with $f.readinessProbe }}
+          readinessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with $f.livenessProbe }}
+          livenessProbe:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          resources:
+            {{- toYaml $f.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+      {{- with $f.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $f.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with $f.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "mm-events.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+  {{- with (include "mm-events.serviceAnnotations" (dict "root" $ "name" $name "annotations" $f.service.annotations)) }}
+  annotations:
+    {{- . | nindent 4 }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "mm-events.selectorLabels" (dict "root" . "component" "frontend") | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ $f.service.port }}
+      targetPort: http
+      protocol: TCP
+{{- if $f.podDisruptionBudget.enabled }}
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ $name }}
+  labels:
+    {{- include "mm-events.labels" . | nindent 4 }}
+    app.kubernetes.io/component: frontend
+spec:
+  minAvailable: {{ $f.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "mm-events.selectorLabels" (dict "root" . "component" "frontend") | nindent 6 }}
+{{- end }}
+{{- end }}

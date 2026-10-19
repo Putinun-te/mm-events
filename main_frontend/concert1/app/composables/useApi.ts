@@ -47,6 +47,7 @@ const resolveRuntimeConfig = () => {
 
 // Requests that must not trigger a token refresh (they are how a session starts or ends).
 const NO_REFRESH = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/auth/logout']
+const isRefreshable = (fullUrl: string): boolean => !NO_REFRESH.some(path => fullUrl.includes(path))
 
 // One refresh at a time: requests that fail together wait for the same refresh.
 let refreshInFlight: Promise<boolean> | null = null
@@ -158,14 +159,34 @@ export const useApi = () => {
     try {
       return await send<T>(fullUrl, options)
     } catch (error) {
-      const refreshable = statusOf(error) === 401 && !NO_REFRESH.some(path => fullUrl.includes(path))
+      const refreshable = statusOf(error) === 401 && isRefreshable(fullUrl)
       if (!refreshable || !(await refreshSession())) throw error
       return await send<T>(fullUrl, options)
     }
   }
 
+  // Plain fetch with the stored token, for requests apiFetch cannot send: a FormData body needs
+  // the browser to set its own multipart Content-Type. Resolves to the Response like fetch does;
+  // a 401 is retried once after a refresh, and if that is not possible the 401 is returned.
+  const authFetch = async (url: string, init: RequestInit = {}): Promise<Response> => {
+    const fullUrl = resolveApiUrl(url)
+    const sendRaw = () => {
+      const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
+      const headers: Record<string, string> = { ...(init.headers as Record<string, string> || {}) }
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`
+      }
+      return fetch(fullUrl, { ...init, headers })
+    }
+
+    const response = await sendRaw()
+    if (response.status !== 401 || !isRefreshable(fullUrl) || !(await refreshSession())) return response
+    return sendRaw()
+  }
+
   return {
     apiFetch,
+    authFetch,
     backendUrl: origin + (basePath || ''),
     resolveApiUrl
   }

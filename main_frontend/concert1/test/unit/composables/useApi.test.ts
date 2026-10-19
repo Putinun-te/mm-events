@@ -201,4 +201,137 @@ describe('useApi', () => {
       expect(fetchMock).toHaveBeenCalledTimes(2)
     })
   })
+
+  describe('authFetch', () => {
+    const rawFetch = vi.fn()
+    const response = (status: number) => ({ status, ok: status >= 200 && status < 300 })
+
+    beforeEach(() => {
+      rawFetch.mockReset().mockResolvedValue(response(200))
+      vi.stubGlobal('fetch', rawFetch)
+    })
+
+    it('sends the stored token without adding a JSON content type', async () => {
+      localStorage.setItem('jwt_token', 'remembered-token')
+      const body = new FormData()
+      body.append('file', new Blob(['x']), 'photo.jpg')
+      const { authFetch } = useApi()
+
+      const result = await authFetch('/api/upload/event-photo', { method: 'POST', body })
+
+      expect(result).toEqual(response(200))
+      expect(rawFetch).toHaveBeenCalledWith('http://api.example.test/api/upload/event-photo', {
+        method: 'POST',
+        body,
+        headers: { Authorization: 'Bearer remembered-token' }
+      })
+      expect(fetchMock).not.toHaveBeenCalled()
+    })
+
+    it('renews the token on a 401 and retries a DELETE once', async () => {
+      sessionStorage.setItem('jwt_token', 'expired-access')
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      rawFetch.mockResolvedValueOnce(response(401)).mockResolvedValueOnce(response(204))
+      fetchMock.mockResolvedValueOnce({ token: 'new-access', refreshToken: 'refresh-2' })
+      const { authFetch } = useApi()
+
+      const result = await authFetch('/api/bookings/5', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      expect(result.status).toBe(204)
+      expect(fetchMock).toHaveBeenCalledTimes(1)
+      expect(fetchMock.mock.calls[0][0]).toBe('http://api.example.test/api/auth/refresh')
+      expect(fetchMock.mock.calls[0][1].body).toEqual({ refreshToken: 'refresh-1' })
+      expect(rawFetch).toHaveBeenCalledTimes(2)
+      expect(rawFetch.mock.calls[0][1].headers.Authorization).toBe('Bearer expired-access')
+      expect(rawFetch.mock.calls[1]).toEqual(['http://api.example.test/api/bookings/5', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer new-access' }
+      }])
+      expect(sessionStorage.getItem('refresh_token')).toBe('refresh-2')
+    })
+
+    it('renews the token on a 401 and resends the same multipart body', async () => {
+      localStorage.setItem('jwt_token', 'expired-access')
+      localStorage.setItem('refresh_token', 'refresh-1')
+      rawFetch.mockResolvedValueOnce(response(401)).mockResolvedValueOnce(response(200))
+      fetchMock.mockResolvedValueOnce({ token: 'new-access', refreshToken: 'refresh-2' })
+      const body = new FormData()
+      body.append('file', new Blob(['x']), 'photo.jpg')
+      const { authFetch } = useApi()
+
+      const result = await authFetch('/api/upload/event-photo', { method: 'POST', body })
+
+      expect(result.status).toBe(200)
+      expect(rawFetch).toHaveBeenCalledTimes(2)
+      const [, retry] = rawFetch.mock.calls[1]
+      expect(retry.body).toBe(body)
+      expect(retry.headers).toEqual({ Authorization: 'Bearer new-access' })
+      expect(localStorage.getItem('jwt_token')).toBe('new-access')
+    })
+
+    it('returns the 401 when the refresh is refused', async () => {
+      sessionStorage.setItem('jwt_token', 'expired-access')
+      sessionStorage.setItem('refresh_token', 'revoked')
+      rawFetch.mockResolvedValueOnce(response(401))
+      fetchMock.mockRejectedValueOnce(Object.assign(new Error('Unauthorized'), { status: 401 }))
+      const { authFetch } = useApi()
+
+      const result = await authFetch('/api/bookings/5', { method: 'DELETE' })
+
+      expect(result.status).toBe(401)
+      expect(rawFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('returns the 401 without a refresh when there is no refresh token', async () => {
+      sessionStorage.setItem('jwt_token', 'expired-access')
+      rawFetch.mockResolvedValueOnce(response(401))
+      const { authFetch } = useApi()
+
+      const result = await authFetch('/api/bookings/5', { method: 'DELETE' })
+
+      expect(result.status).toBe(401)
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(rawFetch).toHaveBeenCalledTimes(1)
+    })
+
+    it('does not refresh for other statuses or for the auth endpoints', async () => {
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      rawFetch.mockResolvedValueOnce(response(403)).mockResolvedValueOnce(response(401))
+      const { authFetch } = useApi()
+
+      expect((await authFetch('/api/bookings/5', { method: 'DELETE' })).status).toBe(403)
+      expect((await authFetch('/api/auth/logout', { method: 'POST' })).status).toBe(401)
+      expect(fetchMock).not.toHaveBeenCalled()
+      expect(rawFetch).toHaveBeenCalledTimes(2)
+    })
+
+    it('shares one refresh with apiFetch when both fail together', async () => {
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      let resolveRefresh: (value: unknown) => void = () => {}
+      fetchMock.mockImplementation((url: string) => {
+        if (url.endsWith('/api/auth/refresh')) {
+          return new Promise(resolve => { resolveRefresh = resolve })
+        }
+        return sessionStorage.getItem('jwt_token') === 'new-access'
+          ? Promise.resolve({ ok: url })
+          : Promise.reject(Object.assign(new Error('Unauthorized'), { status: 401 }))
+      })
+      rawFetch.mockImplementation(() => Promise.resolve(
+        response(sessionStorage.getItem('jwt_token') === 'new-access' ? 204 : 401)
+      ))
+      const { apiFetch, authFetch } = useApi()
+
+      const both = Promise.all([apiFetch('/api/bookings/me'), authFetch('/api/bookings/5', { method: 'DELETE' })])
+      await new Promise(resolve => setTimeout(resolve, 0))
+      resolveRefresh({ token: 'new-access', refreshToken: 'refresh-2' })
+
+      const [, deleted] = await both
+      expect(deleted.status).toBe(204)
+      const refreshCalls = fetchMock.mock.calls.filter(([url]) => String(url).endsWith('/api/auth/refresh'))
+      expect(refreshCalls).toHaveLength(1)
+    })
+  })
 })

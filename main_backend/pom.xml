@@ -29,7 +29,7 @@
 		<!-- Filled in by jacoco prepare-agent / prepare-agent-integration -->
 		<surefireArgLine/>
 		<failsafeArgLine/>
-		<aws.java.sdk.version>2.26.29</aws.java.sdk.version>
+		<aws.java.sdk.version>2.56.0</aws.java.sdk.version>
 	</properties>
 
 	<dependencyManagement>
@@ -110,7 +110,7 @@
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.8.13</version>
+			<version>3.1.1</version>
 		</dependency>
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -120,18 +120,18 @@
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
-			<version>0.11.5</version>
+			<version>0.13.0</version>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-impl</artifactId>
-			<version>0.11.5</version>
+			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-jackson</artifactId>
-			<version>0.11.5</version>
+			<version>0.13.0</version>
 			<scope>runtime</scope>
 		</dependency>
 		
@@ -139,7 +139,7 @@
 		<dependency>
 			<groupId>com.nimbusds</groupId>
 			<artifactId>nimbus-jose-jwt</artifactId>
-			<version>9.37.3</version>
+			<version>10.10</version>
 		</dependency>
 
 		<!-- Test dependencies -->

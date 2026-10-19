@@ -1,66 +1,94 @@
 # Deploying MM Events
 
-Four ways to run the app outside your laptop. They all use the same backend image
-(`main_backend/Dockerfile`) and the same static frontend build (`npx nuxt generate` in
-`main_frontend/concert1/`); only the hosting differs.
+Four ways to run the app outside your laptop. All of them use the same backend image
+(`main_backend/Dockerfile`) and the same Nuxt build (`main_frontend/concert1`).
 
-| Target | Backend | Database | Secrets | Frontend | Rough cost / month | Guide |
+| Target | Kubernetes | Database | Secrets | Ingress | Rough cost / month | Guide |
 |---|---|---|---|---|---|---|
-| **Current demo** | Railway | Railway MySQL | Railway variables | GitHub Pages | Railway plan (Pages is free) | [docs/DEPLOY.md](../docs/DEPLOY.md) |
-| AWS | ECS Fargate + ALB | RDS MySQL 8 | Secrets Manager | S3 + CloudFront | ~USD 80 | [terraform/aws](terraform/aws/README.md) |
-| Google Cloud | Cloud Run | Cloud SQL MySQL 8 | Secret Manager | Cloud Storage + LB + Cloud CDN | ~USD 30-35 | [terraform/gcp](terraform/gcp/README.md) |
-| Azure | Container Apps | MySQL Flexible Server 8.0 | Key Vault | Static Web Apps | ~USD 25-30 | [terraform/azure](terraform/azure/README.md) |
+| **Current demo** | none (Railway service) | Railway MySQL | Railway variables | Railway domain + GitHub Pages | Railway plan (Pages is free) | [docs/DEPLOY.md](../docs/DEPLOY.md) |
+| AWS | EKS + managed node group | RDS MySQL 8 | Secrets Manager (IRSA) | ALB via AWS Load Balancer Controller | ~USD 255 | [terraform/aws](terraform/aws/README.md) |
+| Google Cloud | GKE Standard (zonal) | Cloud SQL MySQL 8 | Secret Manager (Workload Identity) | GKE Ingress (external Application LB) | ~USD 100 | [terraform/gcp](terraform/gcp/README.md) |
+| Azure | AKS (Free tier) | MySQL Flexible Server 8.0 | Key Vault (Workload Identity) | Application Gateway for Containers | ~USD 225 | [terraform/azure](terraform/azure/README.md) |
 
-The Terraform modules have been checked with `terraform fmt` and `terraform validate` only.
-They have **not** been applied to a real account by this repository: every
-`terraform apply` creates billable resources in the account you are logged in to.
+The ITDS323 course required Kubernetes, so the three cloud targets all run the app on the
+cloud's managed Kubernetes service with one shared Helm chart. Terraform builds the cloud
+side (network, cluster, registry, database, secret store, identities); the chart deploys the
+app the same way everywhere.
+
+The Terraform modules and the chart have been checked with `terraform fmt`,
+`terraform validate`, `helm lint` and `kubeconform` only. They have **not** been applied to a
+real account from this repository: every `terraform apply` creates billable resources in the
+account you are logged in to.
+
+## Layout
+
+```
+deploy/
+├── terraform/{aws,gcp,azure}/   one root module per cloud, each with a README and terraform.tfvars.example
+├── helm/mm-events/              chart shared by EKS, GKE and AKS
+│   ├── values.yaml              defaults
+│   ├── values-{aws,gcp,azure}.yaml   ingress class, annotations and health checks per cloud
+│   └── ci/                      placeholder values for lint and kubeconform
+└── diagrams/                    Python 'diagrams' sources and the rendered PNGs
+```
+
+## The Helm chart
+
+[`helm/mm-events`](helm/mm-events) installs:
+
+| Object | Details |
+|---|---|
+| Backend `Deployment` | Spring Boot image, `railway` profile, startup/readiness/liveness probes on `/actuator/health`, requests 250m CPU / 768Mi, limit 1Gi, read-only root filesystem, no capabilities |
+| `HorizontalPodAutoscaler` | 2-4 backend replicas at 70 % CPU |
+| `PodDisruptionBudget` | at least one backend and one frontend pod during node drains and upgrades |
+| Frontend `Deployment` | nginx serving the static Nuxt build, probes on `/health` |
+| `Ingress` | `/api`, `/actuator/health`, `/swagger-ui`, `/v3/api-docs` to the backend, everything else to the frontend |
+| `SecretStore` + `ExternalSecret` | External Secrets Operator copies the DB password and JWT secret from the cloud's secret store into a Kubernetes `Secret`, using the backend service account's cloud identity |
+| `BackendConfig` (GKE) / `HealthCheckPolicy` (AKS) | point the cloud load balancer's health checks at the readiness endpoints |
+
+Values come in three layers: `values-<cloud>.yaml` (static per cloud), the Terraform output
+`helm_values` (IDs and hostnames of that deployment; no secret values), and `--set` for
+image tags. The backend environment is the same as on Railway:
+
+| Variable | Source |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | `railway` (reads everything below from the environment) |
+| `PORT` | `8080` |
+| `SPRING_DATASOURCE_URL` | `jdbc:mysql://<private db host>:3306/concert_db?sslMode=REQUIRED` |
+| `SPRING_DATASOURCE_USERNAME` | `concert` |
+| `SPRING_DATASOURCE_PASSWORD`, `JWT_SECRET` | Kubernetes `Secret` synced from the cloud's secret store |
+| `APP_CORS_ALLOWED_ORIGINS` | `publicUrl` (the site's own origin) |
+
+**Why the frontend runs behind the ingress** instead of object storage + CDN: the site and
+the API share one origin, so there is no CORS and no mixed content even without a domain or
+certificate; the same chart works unchanged on all three clouds; and it reuses the existing
+nginx image. The cost is no CDN in front of the static files. The frontend image is built
+with `--build-arg NUXT_PUBLIC_BACKEND_BASE_URL=<site URL>`, which each cloud README shows.
+
+**No secrets in Terraform state or in git.** Passwords and the JWT secret are generated by
+ephemeral resources and written through write-only arguments (Terraform 1.11+); on AWS the
+DB password is generated by RDS itself. Do not commit `terraform.tfvars`, state files, plans
+or the generated `mm-events-values.yaml`; `.gitignore` excludes them.
 
 ## Current demo: GitHub Pages + Railway
 
 ![Current demo architecture](diagrams/current-railway-pages.png)
 
-## AWS
+## AWS (EKS)
 
 ![AWS architecture](diagrams/aws.png)
 
-## Google Cloud
+## Google Cloud (GKE)
 
 ![GCP architecture](diagrams/gcp.png)
 
-## Azure
+## Azure (AKS)
 
 ![Azure architecture](diagrams/azure.png)
 
-## What every target gives the backend
+## Checking everything without a cloud account
 
-All three modules run the image with the `railway` Spring profile
-(`application-railway.properties`). Despite the name it is not tied to Railway: it reads
-everything from environment variables.
-
-| Variable | Source |
-|---|---|
-| `SPRING_PROFILES_ACTIVE` | `railway` (Terraform variable `spring_profile`) |
-| `PORT` | `8080` |
-| `SPRING_DATASOURCE_URL` | `jdbc:mysql://<private db host>:3306/concert_db?sslMode=REQUIRED` |
-| `SPRING_DATASOURCE_USERNAME` | `concert` |
-| `SPRING_DATASOURCE_PASSWORD` | the cloud's secret store |
-| `JWT_SECRET` | the cloud's secret store (96 random characters) |
-| `APP_CORS_ALLOWED_ORIGINS` | the frontend URL created by the same module |
-
-The frontend is built with `NUXT_PUBLIC_BACKEND_BASE_URL` set to the module's
-`api_base_url` output. On AWS and Google Cloud the site and API share one origin (the CDN
-or load balancer routes `/api/*` to the backend); on Azure they are two origins and CORS
-applies.
-
-Secrets are generated by Terraform with ephemeral resources and written through
-write-only arguments (Terraform 1.11+), so neither the database password nor the JWT secret
-is stored in the Terraform state or in any file in this repository. Do not commit
-`terraform.tfvars`, state files or plans; the repository's `.gitignore` already excludes
-them.
-
-## Checking the modules without a cloud account
-
-No credentials are needed. From the repository root:
+No credentials are needed; every tool runs from its Docker image. From the repository root:
 
 ```bash
 docker run --rm -v "$PWD/deploy/terraform:/w" -w /w hashicorp/terraform:1.16 fmt -check -recursive
@@ -70,14 +98,23 @@ docker run --rm -v "$PWD/deploy/terraform:/w" -w /w hashicorp/terraform:1.16 fmt
 for m in aws gcp azure; do docker run --rm -v "$PWD/deploy/terraform:/w" -w "/w/$m" --entrypoint sh hashicorp/terraform:1.16 -c 'terraform init -backend=false -input=false >/dev/null && terraform validate'; done
 ```
 
-The `terraform` workflow in `.github/workflows/terraform.yml` runs the same checks on every
-pull request that touches `deploy/terraform/`.
+```bash
+for c in aws gcp azure; do docker run --rm -v "$PWD/deploy/helm:/apps" -w /apps alpine/helm:3.19.0 lint --strict mm-events -f mm-events/values-$c.yaml -f mm-events/ci/$c-values.yaml; done
+```
+
+```bash
+for c in aws gcp azure; do docker run --rm -v "$PWD/deploy/helm:/apps" -w /apps alpine/helm:3.19.0 template mm-events mm-events -n mm-events -f mm-events/values-$c.yaml -f mm-events/ci/$c-values.yaml | docker run --rm -i ghcr.io/yannh/kubeconform:v0.8.0 -strict -summary -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'; done
+```
+
+The second `-schema-location` validates the custom resources (`ExternalSecret`,
+`SecretStore`, `BackendConfig`, `HealthCheckPolicy`) against the community CRD catalog. The
+`deploy` workflow (`.github/workflows/deploy-checks.yml`) runs the same checks on every pull
+request that touches `deploy/`.
 
 ## Regenerating the diagrams
 
-The diagrams are drawn with the Python [diagrams](https://diagrams.mingrammer.com/) library
-and the official AWS, Google Cloud and Azure icons it ships. Sources are the `*.py` files
-in `diagrams/`; they render inside Docker, so nothing is installed on the host:
+The diagrams use the Python [diagrams](https://diagrams.mingrammer.com/) library and the
+official AWS, Google Cloud, Azure and Kubernetes icons it ships. They render inside Docker:
 
 ```bash
 docker build -t mm-events-diagrams deploy/diagrams
@@ -89,7 +126,8 @@ docker run --rm -v "$PWD/deploy/diagrams:/work" mm-events-diagrams
 
 ## Older infrastructure in this repository
 
-`aws/`, `infra/terraform/` and `k8s/` are the infrastructure used during the ITDS323
-course (EC2/ECS/EKS on AWS). That AWS account has been closed and those resources no longer
-exist; the code is kept as a record of the course work. The modules in `deploy/terraform/`
-are new, independent of it, and are the ones to use for a fresh deployment.
+`aws/`, `infra/terraform/` and `k8s/` are the infrastructure used during the ITDS323 course
+(EC2, ECS, Lambda and EKS on AWS). That AWS account has been closed and those resources no
+longer exist; the code is kept as a record of the course work. `k8s/` holds the course-era
+EKS manifests that this chart replaces (Deployment, Service, HPA with the secrets inline).
+Use `deploy/` for a new deployment.

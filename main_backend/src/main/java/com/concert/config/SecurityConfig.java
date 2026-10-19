@@ -55,7 +55,6 @@ public class SecurityConfig {
             // กำหนดสิทธิ์การเข้าถึงแต่ละ endpoint
             .authorizeHttpRequests(authz -> authz
                     .requestMatchers(HttpMethod.OPTIONS).permitAll()  // Allow ALL OPTIONS requests
-                    .requestMatchers(HttpMethod.POST, "/api/auth/logout").authenticated()
                     .requestMatchers("/api/auth/**").permitAll()  // Allow all auth endpoints
                     .requestMatchers("/api/upload/**").authenticated()  // Require auth for upload
                     .requestMatchers("/api/health/**").permitAll()  // Allow health checks

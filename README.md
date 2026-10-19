@@ -236,7 +236,7 @@ lower it to make a build pass.
 
 | What | Command | Notes |
 |---|---|---|
-| Frontend unit | `cd main_frontend/concert1 && npm run test` | `npm run test:coverage` for coverage |
+| Frontend unit | `cd main_frontend/concert1 && npm run test` | `npm run test:coverage` for coverage. As in Nuxt, `~/` means `app/`, so tests import and mock the same files the app uses |
 | API end-to-end | `docker compose up -d --build --wait`, then `cd main_frontend/concert1 && npm run test:e2e` | Runs against the local stack on :3000 / :8080 |
 | Cypress UI tests | `cd main_frontend/concert1 && npm run test:cy:headless` | Needs the local stack running; sign-up, login, browsing, booking, cancelling and the "sold out" case. Each test creates its own users and events through the API |
 

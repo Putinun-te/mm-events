@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
 import CreateEventPage from '~/pages/CreateEventPage.vue'
@@ -7,6 +7,7 @@ import CreateEventPage from '~/pages/CreateEventPage.vue'
 const mockLoadFromStorage = vi.fn()
 const mockSuccess = vi.fn()
 const mockError = vi.fn()
+const mockWarning = vi.fn()
 const mockPush = vi.fn()
 const mockBack = vi.fn()
 
@@ -25,7 +26,7 @@ vi.mock('~/composables/useToast', () => ({
     success: mockSuccess,
     error: mockError,
     info: vi.fn(),
-    warning: vi.fn()
+    warning: mockWarning
   })
 }))
 
@@ -934,5 +935,83 @@ describe('CreateEventPage.vue', () => {
     
     expect(mockError).toHaveBeenCalledWith('Failed to create event.', 'Creation Failed')
   })
-})
 
+  describe('photo upload after the access token expired', () => {
+    const nuxtFetch = () => global.$fetch as any as ReturnType<typeof vi.fn>
+    const rawFetch = () => global.fetch as any as ReturnType<typeof vi.fn>
+
+    // $fetch serves the event API and the token refresh; the multipart upload goes through fetch
+    const serveBackend = (refresh: () => Promise<unknown>) => {
+      nuxtFetch().mockImplementation((url: string) => {
+        if (url.endsWith('/api/auth/refresh')) return refresh()
+        if (url.endsWith('/api/events/json')) return Promise.resolve({ id: 42 })
+        return Promise.resolve({})
+      })
+    }
+
+    const submitWithPhoto = async () => {
+      const wrapper = mount(CreateEventPage, {
+        global: { plugins: [router], stubs: { NuxtLink: true } }
+      })
+      const vm = wrapper.vm as any
+      Object.assign(vm.form, {
+        title: 'Test Event',
+        description: 'Test Description',
+        dateStart: '2030-12-31',
+        timeStart: '18:00',
+        dateEnd: '2030-12-31',
+        timeEnd: '23:00'
+      })
+      vm.handlePhotoSelect({ target: { files: [new File(['jpeg'], 'photo.jpg', { type: 'image/jpeg' })] } })
+      await vm.handleSubmit()
+    }
+
+    beforeEach(() => {
+      rawFetch().mockReset()
+      nuxtFetch().mockReset()
+      localStorage.clear()
+      sessionStorage.setItem('jwt_token', 'expired-access')
+      sessionStorage.setItem('refresh_token', 'refresh-1')
+      vi.spyOn(router, 'push').mockResolvedValue(undefined)
+    })
+
+    afterEach(() => {
+      sessionStorage.clear()
+    })
+
+    it('renews the token and retries the upload with the same file', async () => {
+      serveBackend(() => Promise.resolve({ token: 'new-access', refreshToken: 'refresh-2' }))
+      rawFetch()
+        .mockResolvedValueOnce({ ok: false, status: 401, text: async () => '' })
+        .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ url: 'https://cdn.example.test/photo.jpg' }) })
+
+      await submitWithPhoto()
+
+      expect(rawFetch()).toHaveBeenCalledTimes(2)
+      const [url, init] = rawFetch().mock.calls[1]
+      expect(url).toBe('/api/upload/event-photo')
+      expect(init.method).toBe('POST')
+      expect(init.headers).toEqual({ Authorization: 'Bearer new-access' })
+      expect((init.body as FormData).get('file')).toMatchObject({ name: 'photo.jpg' })
+      expect(rawFetch().mock.calls[0][1].body).toBe(init.body)
+      expect(nuxtFetch()).toHaveBeenCalledWith('/api/events/json/42', expect.objectContaining({
+        method: 'PUT',
+        body: expect.stringContaining('"photoUrl":"https://cdn.example.test/photo.jpg"')
+      }))
+      expect(mockWarning).not.toHaveBeenCalled()
+      expect(mockSuccess).toHaveBeenCalledWith('Event created successfully!', 'Event Created')
+      expect(router.push).toHaveBeenCalledWith('/product-page')
+    })
+
+    it('keeps the event and warns about the photo when the session cannot be renewed', async () => {
+      serveBackend(() => Promise.reject(Object.assign(new Error('Unauthorized'), { status: 401 })))
+      rawFetch().mockResolvedValueOnce({ ok: false, status: 401, text: async () => '' })
+
+      await submitWithPhoto()
+
+      expect(rawFetch()).toHaveBeenCalledTimes(1)
+      expect(mockWarning).toHaveBeenCalledWith('Event created but photo upload failed', 'Partial Success')
+      expect(nuxtFetch()).not.toHaveBeenCalledWith('/api/events/json/42', expect.anything())
+    })
+  })
+})

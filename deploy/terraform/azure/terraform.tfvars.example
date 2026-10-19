@@ -1,0 +1,14 @@
+# Copy to terraform.tfvars (git-ignored) and adjust.
+# No secrets go in this file; the database password and JWT secret are generated.
+
+# Required: the subscription to deploy into ('az account show --query id -o tsv')
+subscription_id = "00000000-0000-0000-0000-000000000000"
+
+# Optional
+# name                    = "mm-events"
+# location                = "southeastasia"
+# static_web_app_location = "eastasia"
+# image_tag               = "latest"
+# min_replicas            = 0
+# max_replicas            = 2
+# db_sku                  = "B_Standard_B1ms"

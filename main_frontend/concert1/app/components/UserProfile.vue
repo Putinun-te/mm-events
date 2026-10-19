@@ -147,8 +147,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useApi } from '../composables/useApi'
-import { useAuth } from '../composables/useAuth'
+import { useApi } from '~/composables/useApi'
+import { useAuth } from '~/composables/useAuth'
 
 interface EditFormData {
   fullName: string

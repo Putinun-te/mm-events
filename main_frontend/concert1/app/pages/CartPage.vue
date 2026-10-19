@@ -26,7 +26,7 @@
           >
             <div class="flex items-center gap-4">
               <img 
-                :src="item.image || '/img/event-placeholder.jpg'" 
+                :src="item.image || placeholderImg" 
                 :alt="item.title"
                 class="w-24 h-24 object-cover rounded"
               />
@@ -92,6 +92,7 @@ import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from '~/composables/useToast'
 
+const placeholderImg = new URL('../assets/img/event.jpg', import.meta.url).href
 const router = useRouter()
 const { success } = useToast()
 

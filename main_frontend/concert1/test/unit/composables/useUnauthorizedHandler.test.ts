@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useUnauthorizedHandler } from '~/app/composables/useUnauthorizedHandler'
+import { useUnauthorizedHandler } from '~/composables/useUnauthorizedHandler'
 
 // Mock dependencies
 vi.mock('vue-router', () => ({
@@ -8,13 +8,13 @@ vi.mock('vue-router', () => ({
   })
 }))
 
-vi.mock('~/app/composables/useToast', () => ({
+vi.mock('~/composables/useToast', () => ({
   useToast: () => ({
     error: vi.fn()
   })
 }))
 
-vi.mock('~/app/composables/useAuth', () => ({
+vi.mock('~/composables/useAuth', () => ({
   useAuth: () => ({
     clearAuth: vi.fn()
   })

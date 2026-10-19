@@ -1,10 +1,12 @@
 package com.concert.controller;
 
+import com.concert.config.ClockConfig;
 import com.concert.config.SecurityConfig;
 import com.concert.dto.AuthResponse;
 import com.concert.dto.LoginRequest;
 import com.concert.dto.RegisterRequest;
 import com.concert.dto.UserProfileResponse;
+import com.concert.security.LoginAttemptLimiter;
 import com.concert.service.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -14,11 +16,13 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -26,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * /api/auth/** through the real security chain: status codes, validation and error bodies.
  */
 @WebMvcTest(AuthController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, LoginAttemptLimiter.class, ClockConfig.class})
 class AuthControllerApiTest extends SecuredApiTestSupport {
 
     @MockitoBean
@@ -81,7 +85,7 @@ class AuthControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void register_whenServiceThrows_returns500WithMessage() throws Exception {
+    void register_whenServiceThrows_returns500WithoutDetails() throws Exception {
         when(authService.register(any(RegisterRequest.class)))
                 .thenThrow(new RuntimeException("Database connection failed"));
 
@@ -89,7 +93,7 @@ class AuthControllerApiTest extends SecuredApiTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"alice\",\"email\":\"alice@example.com\",\"password\":\"secret123\"}"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("Registration failed: Database connection failed"));
+                .andExpect(jsonPath("$.message").value("Registration failed"));
     }
 
     @Test
@@ -127,7 +131,7 @@ class AuthControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void login_whenServiceThrows_returns500WithMessage() throws Exception {
+    void login_whenServiceThrows_returns500WithoutDetails() throws Exception {
         when(authService.login(any(LoginRequest.class)))
                 .thenThrow(new RuntimeException("Authentication service unavailable"));
 
@@ -135,7 +139,7 @@ class AuthControllerApiTest extends SecuredApiTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"usernameOrEmail\":\"alice\",\"password\":\"secret123\"}"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(jsonPath("$.message").value("Login failed: Authentication service unavailable"));
+                .andExpect(jsonPath("$.message").value("Login failed"));
     }
 
     @Test
@@ -188,6 +192,72 @@ class AuthControllerApiTest extends SecuredApiTestSupport {
 
         mockMvc.perform(get("/api/auth/me").header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Failed to get user profile: db down"));
+                .andExpect(content().string("Failed to get user profile"));
+    }
+
+    private static final String WRONG_PASSWORD = "{\"usernameOrEmail\":\"carol\",\"password\":\"wrong\"}";
+
+    @Test
+    void login_afterFiveFailures_returns429WithRetryAfter_andSkipsTheService() throws Exception {
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(new AuthResponse("Invalid username/email or password!"));
+
+        for (int i = 0; i < 5; i++) {
+            mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(WRONG_PASSWORD))
+                    .andExpect(status().isBadRequest());
+        }
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(WRONG_PASSWORD))
+                .andExpect(status().isTooManyRequests())
+                .andExpect(header().string("Retry-After", org.hamcrest.Matchers.matchesRegex("89\\d|900")))
+                .andExpect(jsonPath("$.message").value("Too many failed login attempts. Try again in 15 minute(s)."))
+                .andExpect(jsonPath("$.token").doesNotExist());
+
+        verify(authService, times(5)).login(any());
+    }
+
+    @Test
+    void login_successfulLogin_clearsEarlierFailures() throws Exception {
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(new AuthResponse("Invalid username/email or password!"))
+                .thenReturn(new AuthResponse("Invalid username/email or password!"))
+                .thenReturn(new AuthResponse("Invalid username/email or password!"))
+                .thenReturn(new AuthResponse("Invalid username/email or password!"))
+                .thenReturn(new AuthResponse("jwt-token", "dave", "dave@example.com"))
+                .thenReturn(new AuthResponse("Invalid username/email or password!"));
+        String body = "{\"usernameOrEmail\":\"dave\",\"password\":\"x\"}";
+
+        for (int i = 0; i < 4; i++) {
+            mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest());
+        }
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk());
+        // counting starts again, so one more failure is not blocked
+        mockMvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void logout_withToken_revokesItAndReturns204() throws Exception {
+        mockMvc.perform(post("/api/auth/logout").header("Authorization", bearer(TOKEN)))
+                .andExpect(status().isNoContent());
+
+        verify(tokenRevocationService).revoke(TOKEN);
+    }
+
+    @Test
+    void logout_withoutToken_returns401() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isUnauthorized());
+
+        verify(tokenRevocationService, never()).revoke(any());
+    }
+
+    @Test
+    void revokedToken_isRejected() throws Exception {
+        when(tokenRevocationService.isRevoked(TOKEN)).thenReturn(true);
+
+        mockMvc.perform(post("/api/auth/logout").header("Authorization", bearer(TOKEN)))
+                .andExpect(status().isUnauthorized());
     }
 }

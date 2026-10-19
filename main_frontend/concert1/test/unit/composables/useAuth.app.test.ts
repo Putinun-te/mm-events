@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useAuth } from '~/app/composables/useAuth'
+import { useAuth } from '~/composables/useAuth'
 
 describe('app/composables/useAuth', () => {
   beforeEach(() => {
@@ -59,6 +59,17 @@ describe('app/composables/useAuth', () => {
       expect(user.value?.username).toBe('sessionuser')
       expect(remember.value).toBe(false)
       expect(isLoggedIn.value).toBe(true)
+    })
+
+    it('should prefer the remembered localStorage token over a sessionStorage one', () => {
+      localStorage.setItem('jwt_token', 'remembered-token')
+      sessionStorage.setItem('jwt_token', 'session-token')
+
+      const { loadFromStorage, user, remember } = useAuth()
+      loadFromStorage()
+
+      expect(user.value?.token).toBe('remembered-token')
+      expect(remember.value).toBe(true)
     })
 
     it('should handle missing token gracefully', () => {
@@ -192,6 +203,50 @@ describe('app/composables/useAuth', () => {
       // Logout
       auth2.clearAuth()
       expect(auth2.isLoggedIn.value).toBe(false)
+    })
+  })
+
+  describe('logout', () => {
+    it('clears the session and asks the backend to revoke the token', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 })
+      vi.stubGlobal('fetch', fetchMock)
+      const { saveAuth, logout, isLoggedIn } = useAuth()
+      saveAuth({ token: 'jwt-abc', username: 'alice' }, false)
+
+      logout()
+
+      expect(isLoggedIn.value).toBe(false)
+      expect(sessionStorage.getItem('jwt_token')).toBeNull()
+      expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer jwt-abc' },
+        keepalive: true
+      })
+      vi.unstubAllGlobals()
+    })
+
+    it('does not call the backend when nobody is logged in', () => {
+      const fetchMock = vi.fn()
+      vi.stubGlobal('fetch', fetchMock)
+      const { logout } = useAuth()
+
+      logout()
+
+      expect(fetchMock).not.toHaveBeenCalled()
+      vi.unstubAllGlobals()
+    })
+
+    it('still logs out locally when the request fails', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('offline')))
+      const { saveAuth, logout, isLoggedIn } = useAuth()
+      saveAuth({ token: 'jwt-abc' }, true)
+
+      expect(() => logout()).not.toThrow()
+      await Promise.resolve()
+
+      expect(isLoggedIn.value).toBe(false)
+      expect(localStorage.getItem('jwt_token')).toBeNull()
+      vi.unstubAllGlobals()
     })
   })
 })

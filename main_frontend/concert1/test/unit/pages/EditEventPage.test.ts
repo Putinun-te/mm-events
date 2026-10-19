@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import EditEventPage from '~/app/pages/EditEventPage.vue'
+import EditEventPage from '~/pages/EditEventPage.vue'
 
 // Mock composables
 vi.mock('~/composables/useAuth', () => ({

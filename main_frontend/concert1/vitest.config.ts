@@ -15,8 +15,7 @@ export default defineConfig({
       reporter: ['text', 'json', 'html', 'lcov'],
       reportsDirectory: './coverage',
       include: [
-        'app/**/*.{js,ts,vue}',
-        'composables/**/*.{js,ts}'
+        'app/**/*.{js,ts,vue}'
       ],
       exclude: [
         'node_modules/**',
@@ -42,9 +41,11 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@': fileURLToPath(new URL('./', import.meta.url)),
-      '~': fileURLToPath(new URL('./', import.meta.url)),
+      // Same as Nuxt 4: ~ and @ are the app/ directory, ~~ and @@ the project root
       '~~': fileURLToPath(new URL('./', import.meta.url)),
+      '@@': fileURLToPath(new URL('./', import.meta.url)),
+      '~': fileURLToPath(new URL('./app/', import.meta.url)),
+      '@': fileURLToPath(new URL('./app/', import.meta.url)),
       'assets': fileURLToPath(new URL('./app/assets', import.meta.url))
     }
   }

@@ -90,12 +90,12 @@ class UserControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void me_whenTokenUserNoLongerExists_returns500WithMessage() throws Exception {
+    void me_whenTokenUserNoLongerExists_returns404() throws Exception {
         when(userRepository.findByUsername("bob")).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/users/me").header("Authorization", bearer(OTHER_TOKEN)))
-                .andExpect(status().isInternalServerError())
-                .andExpect(content().string("User not found"));
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.error").value("User not found"));
     }
 
     @Test
@@ -166,13 +166,13 @@ class UserControllerApiTest extends SecuredApiTestSupport {
     }
 
     @Test
-    void updateProfile_whenSaveFails_returns500WithMessage() throws Exception {
+    void updateProfile_whenSaveFails_returns500WithoutDetails() throws Exception {
         when(userRepository.save(any(User.class))).thenThrow(new RuntimeException("db down"));
 
         mockMvc.perform(put("/api/users/profile").header("Authorization", bearer(TOKEN))
                         .contentType(MediaType.APPLICATION_JSON).content("{\"phone\":\"1\"}"))
                 .andExpect(status().isInternalServerError())
-                .andExpect(content().string("Error updating profile: db down"));
+                .andExpect(content().string("Error updating profile"));
     }
 
     @Test
@@ -207,6 +207,6 @@ class UserControllerApiTest extends SecuredApiTestSupport {
 
         mockMvc.perform(multipart("/api/users/me/photo").file(file).header("Authorization", bearer(TOKEN)))
                 .andExpect(status().isInternalServerError())
-                .andExpect(content().string("User avatars bucket is not configured"));
+                .andExpect(content().string("Profile photo upload failed"));
     }
 }

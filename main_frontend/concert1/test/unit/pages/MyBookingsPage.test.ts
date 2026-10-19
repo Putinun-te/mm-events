@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import MyBookingsPage from '~/app/pages/MyBookingsPage.vue'
+import MyBookingsPage from '~/pages/MyBookingsPage.vue'
 
 // Mock $fetch globally
 (globalThis as any).$fetch = vi.fn()

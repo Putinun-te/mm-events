@@ -1,13 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import AccountPage from '~/app/pages/AccountPage.vue'
+import AccountPage from '~/pages/AccountPage.vue'
 
 // Mock composables
 vi.mock('~/composables/useAuth', () => ({
   useAuth: () => ({
     loadFromStorage: vi.fn(),
     clearAuth: vi.fn(),
+    logout: vi.fn(),
     isLoggedIn: { value: true }
   })
 }))

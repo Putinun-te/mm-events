@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import IndexPage from '~/app/pages/index.vue'
+import IndexPage from '~/pages/index.vue'
 
 // Mock fetch globally
 global.fetch = vi.fn()

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import EmptyState from '~/app/components/EmptyState.vue'
+import EmptyState from '~/components/EmptyState.vue'
 
 describe('EmptyState.vue', () => {
   it('should render empty state component', () => {

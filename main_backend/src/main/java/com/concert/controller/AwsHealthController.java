@@ -42,7 +42,6 @@ public class AwsHealthController {
             health.put("status", "healthy");
         } catch (Exception e) {
             health.put("s3Access", "FAILED");
-            health.put("error", e.getMessage());
             health.put("status", "unhealthy");
             return ResponseEntity.status(503).body(health);
         }

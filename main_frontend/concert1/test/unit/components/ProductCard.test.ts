@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ProductCard from '~/app/components/ProductCard.vue'
+import ProductCard from '~/components/ProductCard.vue'
 
 // Mock router
 const mockPush = vi.fn()

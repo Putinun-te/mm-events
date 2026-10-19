@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useUnauthorizedHandler } from '~/composables/useUnauthorizedHandler'
-import { useApi } from '../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 type MyEvent = any
 

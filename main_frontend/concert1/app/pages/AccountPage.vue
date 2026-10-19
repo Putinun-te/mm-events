@@ -3,7 +3,7 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useRouter } from 'vue-router'
 import { useToast } from '~/composables/useToast'
-import { useApi } from '../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 interface UserForm {
   fullName: string;
@@ -25,7 +25,7 @@ interface UserStats {
 }
 
 const router = useRouter()
-const { loadFromStorage, isLoggedIn, clearAuth } = useAuth()
+const { loadFromStorage, isLoggedIn, logout } = useAuth()
 const saving = ref(false)
 const message = ref('')
 const successFlag = ref(false)
@@ -196,7 +196,7 @@ function handleLogout() {
 }
 
 function confirmLogout() {
-  clearAuth()
+  logout()
   localStorage.removeItem('profile_data')
   success('Logged out successfully', 'Goodbye!')
   router.push('/')

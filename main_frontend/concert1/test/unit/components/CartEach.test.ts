@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import CartEach from '~/app/components/CartEach.vue'
+import CartEach from '~/components/CartEach.vue'
 
 describe('CartEach.vue', () => {
   it('should render cart component', () => {

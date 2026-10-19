@@ -56,4 +56,44 @@ describe('Sign up and log in', () => {
       cy.location('pathname').should('include', '/LoginPage')
     })
   })
+
+  it('logging out ends the token on the server, not just in the browser', () => {
+    cy.apiUser('logout').then(user => {
+      cy.visitAs(user, '/')
+      cy.contains('a', 'Create Event').should('be.visible')
+
+      cy.intercept('POST', '**/api/auth/logout').as('logout')
+      cy.get('nav li.relative > button').click()
+      cy.contains('button', 'Logout').click()
+      cy.contains('button', 'Yes, Logout').click()
+
+      cy.wait('@logout').its('response.statusCode').should('eq', 204)
+      cy.contains('a', 'Login/Register').should('be.visible')
+      // a copy of the old token is refused from now on
+      cy.request({
+        url: `${Cypress.env('apiUrl')}/api/users/me`,
+        headers: { Authorization: `Bearer ${user.token}` },
+        failOnStatusCode: false
+      }).its('status').should('eq', 401)
+    })
+  })
+
+  it('locks the account for this browser after five wrong passwords', () => {
+    cy.apiUser('lockout').then(user => {
+      cy.visit('/LoginPage')
+      for (let attempt = 0; attempt < 5; attempt++) {
+        cy.get('#email').clear().type(user.username)
+        cy.get('#password').clear().type('not-the-password')
+        cy.get('button[type="submit"]').click()
+        cy.contains('Invalid username/email or password!').should('be.visible')
+      }
+
+      // even the right password is refused until the lockout ends
+      cy.get('#email').clear().type(user.username)
+      cy.get('#password').clear().type(user.password)
+      cy.get('button[type="submit"]').click()
+      cy.contains('Too many failed login attempts').should('be.visible')
+      cy.location('pathname').should('include', '/LoginPage')
+    })
+  })
 })

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import DefaultLayout from '~/app/layouts/default.vue'
+import DefaultLayout from '~/layouts/default.vue'
 
 describe('default.vue layout', () => {
   it('should render layout', () => {

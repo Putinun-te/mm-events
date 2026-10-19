@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
-import ProfilePage from '~/app/pages/ProfilePage.vue'
+import ProfilePage from '~/pages/ProfilePage.vue'
 
 // Mock composables
 const mockLoadFromStorage = vi.fn()

@@ -6,7 +6,7 @@ import {
   loadLeaflet,
   renderVenueMap,
   resetLeafletLoader
-} from '~/app/composables/useVenueMap'
+} from '~/composables/useVenueMap'
 
 function fakeLeaflet() {
   const map = { setView: vi.fn(), getCenter: vi.fn() }

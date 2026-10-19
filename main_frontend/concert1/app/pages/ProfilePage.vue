@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useAuth } from '~/composables/useAuth'
-import { useApi } from '../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 const { loadFromStorage, isLoggedIn } = useAuth()
 const { apiFetch } = useApi()

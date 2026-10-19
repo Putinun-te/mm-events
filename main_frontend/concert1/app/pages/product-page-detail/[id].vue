@@ -3,9 +3,9 @@ import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
-import { useApi } from '../../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 import { useImage } from '~/composables/useImage'
-import { buildVenueQuery, renderVenueMap } from '../../composables/useVenueMap'
+import { buildVenueQuery, renderVenueMap } from '~/composables/useVenueMap'
 
 definePageMeta({
   // Disable SSR so static hosting always hydrates this view client-side.

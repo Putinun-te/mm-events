@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
 import { useUnauthorizedHandler } from '~/composables/useUnauthorizedHandler'
-import { useApi } from '../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 interface Booking {
   id: number
@@ -179,7 +179,7 @@ function goToEvent(booking: Booking) {
       title="No bookings yet"
       description="You haven't booked any events yet. Start exploring and book your first event!"
       actionText="Browse Events"
-      :actionLink="'/ProductPage'"
+      :actionLink="'/product-page'"
     />
 
     <!-- Bookings Grid -->

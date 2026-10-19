@@ -11,6 +11,8 @@ const message = ref('')
 
 const page = ref(0)
 const size = ref(12)
+const hasMore = ref(false)
+const loadingMore = ref(false)
 
 const { apiFetch } = useApi()
 const { loadFromStorage } = useAuth()
@@ -64,25 +66,46 @@ const filteredEvents = computed(() => {
   return result
 })
 
+// The backend returns a Spring page ({ content, last }); a plain array means everything at once.
+async function fetchPage(pageNumber: number): Promise<{ items: EventItem[]; last: boolean }> {
+  const response: any = await apiFetch(`/api/events/json?page=${pageNumber}&size=${size.value}`)
+  if (Array.isArray(response)) return { items: response, last: true }
+  return {
+    items: Array.isArray(response?.content) ? response.content : [],
+    last: response?.last !== false
+  }
+}
+
 async function loadEvents() {
   loading.value = true
   message.value = ''
   try {
-    const response = await apiFetch(`/api/events/json?page=${page.value}&size=${size.value}`)
-    const content = (response as any)?.content
-
-    if (Array.isArray(content)) {
-      events.value = content
-    } else if (Array.isArray(response as any)) {
-      events.value = response as any
-    } else {
-      events.value = []
-    }
+    const { items, last } = await fetchPage(0)
+    page.value = 0
+    events.value = items
+    hasMore.value = !last
   } catch (e: any) {
+    events.value = []
+    hasMore.value = false
     message.value = e?.statusMessage || 'Failed to load events.'
     console.error('Error loading events:', e)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMore() {
+  loadingMore.value = true
+  try {
+    const next = page.value + 1
+    const { items, last } = await fetchPage(next)
+    events.value = [...events.value, ...items]
+    page.value = next
+    hasMore.value = !last
+  } catch (e: any) {
+    message.value = e?.statusMessage || 'Failed to load more events.'
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -238,6 +261,19 @@ onMounted(async () => {
           <div v-for="event in filteredEvents" :key="event.id">
             <ProductCard :event="event" />
           </div>
+        </div>
+
+        <p v-if="message && !loading" class="mt-8 text-center text-red-600">{{ message }}</p>
+
+        <div v-if="hasMore && !loading" class="mt-10 text-center">
+          <button
+            type="button"
+            :disabled="loadingMore"
+            class="px-6 py-3 rounded-full bg-violet-600 text-white font-semibold hover:bg-violet-700 disabled:opacity-60 transition-colors"
+            @click="loadMore"
+          >
+            {{ loadingMore ? 'Loading...' : 'Load more events' }}
+          </button>
         </div>
       </section>
       

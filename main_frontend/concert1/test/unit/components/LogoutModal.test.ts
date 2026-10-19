@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import LogoutModal from '~/app/components/LogoutModal.vue'
+import LogoutModal from '~/components/LogoutModal.vue'
 
 describe('LogoutModal.vue', () => {
   beforeEach(() => {

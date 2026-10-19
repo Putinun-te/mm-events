@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useAuth } from '~/app/composables/useAuth'
+import { useAuth } from '~/composables/useAuth'
 
 describe('app/composables/useAuth', () => {
   beforeEach(() => {
@@ -59,6 +59,17 @@ describe('app/composables/useAuth', () => {
       expect(user.value?.username).toBe('sessionuser')
       expect(remember.value).toBe(false)
       expect(isLoggedIn.value).toBe(true)
+    })
+
+    it('should prefer the remembered localStorage token over a sessionStorage one', () => {
+      localStorage.setItem('jwt_token', 'remembered-token')
+      sessionStorage.setItem('jwt_token', 'session-token')
+
+      const { loadFromStorage, user, remember } = useAuth()
+      loadFromStorage()
+
+      expect(user.value?.token).toBe('remembered-token')
+      expect(remember.value).toBe(true)
     })
 
     it('should handle missing token gracefully', () => {

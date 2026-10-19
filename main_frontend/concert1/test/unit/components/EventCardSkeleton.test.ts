@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import EventCardSkeleton from '~/app/components/EventCardSkeleton.vue'
+import EventCardSkeleton from '~/components/EventCardSkeleton.vue'
 
 describe('EventCardSkeleton.vue', () => {
   it('should render skeleton loader', () => {

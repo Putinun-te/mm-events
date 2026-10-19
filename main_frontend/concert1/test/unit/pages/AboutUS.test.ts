@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import AboutUS from '~/app/pages/AboutUS.vue'
+import AboutUS from '~/pages/AboutUS.vue'
 
 describe('AboutUS.vue', () => {
   let router: any

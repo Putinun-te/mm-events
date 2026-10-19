@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ProductFilterSeclection from '~/app/components/ProductFilterSeclection.vue'
+import ProductFilterSeclection from '~/components/ProductFilterSeclection.vue'
 
 describe('ProductFilterSeclection.vue', () => {
   it('should render filter component', () => {

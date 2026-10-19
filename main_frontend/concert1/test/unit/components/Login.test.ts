@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Login from '~/app/components/Login.vue'
+import Login from '~/components/Login.vue'
 
 // Mock useAuth composable
 vi.mock('~/composables/useAuth', () => ({

@@ -10,8 +10,8 @@ const { apiFetch, toastError, toastSuccess } = vi.hoisted(() => {
 })
 
 vi.mock('~/composables/useApi', () => ({ useApi: () => ({ apiFetch }) }))
-vi.mock('~/app/composables/useVenueMap', async () => {
-  const actual = await vi.importActual<any>('~/app/composables/useVenueMap')
+vi.mock('~/composables/useVenueMap', async () => {
+  const actual = await vi.importActual<any>('~/composables/useVenueMap')
   return { ...actual, renderVenueMap: vi.fn().mockResolvedValue({ found: true, map: {} }) }
 })
 vi.mock('~/composables/useAuth', () => ({
@@ -25,7 +25,7 @@ vi.mock('vue-router', async () => {
   return { ...actual, useRouter: () => ({ push: vi.fn(), back: vi.fn() }) }
 })
 
-import EventDetailPage from '~/app/pages/product-page-detail/[id].vue'
+import EventDetailPage from '~/pages/product-page-detail/[id].vue'
 
 const event = {
   id: 7,

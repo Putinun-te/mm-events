@@ -101,3 +101,6 @@ main_backend/BOOT-INF/
 **/coverage*.txt
 **/*test-output*.txt
 **/*-results.txt
+
+# Helm values generated from Terraform outputs (deploy/terraform/*/README.md)
+mm-events-values.yaml

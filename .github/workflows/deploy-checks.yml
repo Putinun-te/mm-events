@@ -1,0 +1,81 @@
+name: deploy
+
+# Static checks for deploy/: Terraform modules and the Helm chart. No cloud credentials:
+# 'terraform init -backend=false', 'validate', 'helm lint/template' and kubeconform never
+# contact AWS, Google Cloud, Azure or a Kubernetes cluster.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'deploy/**'
+      - '.github/workflows/deploy-checks.yml'
+  pull_request:
+    paths:
+      - 'deploy/**'
+      - '.github/workflows/deploy-checks.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform-fmt:
+    name: terraform fmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    container: hashicorp/terraform:1.16
+    steps:
+      - uses: actions/checkout@v7
+      - run: terraform fmt -check -recursive -diff deploy/terraform
+
+  terraform-validate:
+    name: terraform validate (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container: hashicorp/terraform:1.16
+    strategy:
+      fail-fast: false
+      matrix:
+        module: [aws, gcp, azure]
+    defaults:
+      run:
+        working-directory: deploy/terraform/${{ matrix.module }}
+    steps:
+      - uses: actions/checkout@v7
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
+  helm:
+    name: helm lint + kubeconform (${{ matrix.cloud }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        cloud: [aws, gcp, azure]
+    env:
+      HELM_IMAGE: alpine/helm:3.19.0
+      KUBECONFORM_IMAGE: ghcr.io/yannh/kubeconform:v0.8.0
+      CRD_SCHEMAS: https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: helm lint
+        run: >
+          docker run --rm -v "$PWD/deploy/helm:/apps" -w /apps "$HELM_IMAGE"
+          lint --strict mm-events
+          -f mm-events/values-${{ matrix.cloud }}.yaml -f mm-events/ci/${{ matrix.cloud }}-values.yaml
+
+      - name: helm template | kubeconform
+        run: |
+          docker run --rm -v "$PWD/deploy/helm:/apps" -w /apps "$HELM_IMAGE" \
+            template mm-events mm-events -n mm-events \
+            -f mm-events/values-${{ matrix.cloud }}.yaml -f mm-events/ci/${{ matrix.cloud }}-values.yaml \
+            > rendered.yaml
+          docker run --rm -i "$KUBECONFORM_IMAGE" -strict -summary \
+            -schema-location default -schema-location "$CRD_SCHEMAS" < rendered.yaml

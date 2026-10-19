@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars (git-ignored) and adjust.
+# No secrets go in this file; the database password and JWT secret are generated.
+
+# Required: an existing project with billing enabled
+project_id = "your-gcp-project-id"
+
+# Optional
+# name          = "mm-events"
+# region        = "asia-southeast1"
+# domain        = "events.example.com"   # enables HTTPS with a Google-managed certificate
+# image_tag     = "latest"
+# min_instances = 0
+# max_instances = 2
+# db_tier       = "db-f1-micro"
+# deletion_protection = false

@@ -7,12 +7,13 @@ export interface TestUser {
   email: string
   password: string
   token?: string
+  refreshToken?: string
 }
 
 declare global {
   namespace Cypress {
     interface Chainable {
-      /** Registers a fresh user through the API and returns it with a JWT. */
+      /** Registers a fresh user through the API and returns it with an access and a refresh token. */
       apiUser(prefix?: string): Chainable<TestUser>
       /** Creates an event as `user` through the API and returns its id. */
       apiEvent(user: TestUser, overrides?: Record<string, unknown>): Chainable<number>
@@ -33,7 +34,7 @@ Cypress.Commands.add('apiUser', (prefix = 'user') => {
   const user: TestUser = { username: id, email: `${id}@example.com`, password: 'cypress-pass-123' }
   return cy.request('POST', api('/api/auth/register'), user)
     .then(() => cy.request('POST', api('/api/auth/login'), { usernameOrEmail: user.username, password: user.password }))
-    .then(response => ({ ...user, token: response.body.token as string }))
+    .then(response => ({ ...user, token: response.body.token as string, refreshToken: response.body.refreshToken as string }))
 })
 
 Cypress.Commands.add('apiEvent', (user: TestUser, overrides = {}) => {
@@ -71,6 +72,7 @@ Cypress.Commands.add('visitAs', (user: TestUser, path: string) => {
   return cy.visit(path, {
     onBeforeLoad(win) {
       win.localStorage.setItem('jwt_token', user.token as string)
+      if (user.refreshToken) win.localStorage.setItem('refresh_token', user.refreshToken)
       win.localStorage.setItem('profile_data', JSON.stringify({ username: user.username, email: user.email }))
     }
   })

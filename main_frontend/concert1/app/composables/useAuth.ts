@@ -3,6 +3,9 @@ import { useRuntimeConfig } from 'nuxt/app'
 
 export interface AuthUser { username?: string; email?: string; token?: string }
 
+// everything a login stores; cleared together
+const SESSION_KEYS = ['jwt_token', 'refresh_token', 'user_email', 'username']
+
 const user = ref<AuthUser | null>(null)
 const remember = ref(false)
 
@@ -41,13 +44,16 @@ export function useAuth() {
     } catch {}
   }
 
-  function saveAuth(payload: { token: string; email?: string; username?: string }, rememberMe: boolean) {
+  function saveAuth(payload: { token: string; refreshToken?: string; email?: string; username?: string }, rememberMe: boolean) {
     // clear old values
-    localStorage.removeItem('jwt_token'); localStorage.removeItem('user_email'); localStorage.removeItem('username')
-    sessionStorage.removeItem('jwt_token'); sessionStorage.removeItem('user_email'); sessionStorage.removeItem('username')
+    for (const store of [localStorage, sessionStorage]) {
+      for (const key of SESSION_KEYS) store.removeItem(key)
+    }
 
     const storage: Storage = rememberMe ? localStorage : sessionStorage
     storage.setItem('jwt_token', payload.token)
+    // the refresh token lives next to the access token, so "Remember me" keeps both
+    if (payload.refreshToken) storage.setItem('refresh_token', payload.refreshToken)
     if (payload.email) storage.setItem('user_email', payload.email)
     if (payload.username) storage.setItem('username', payload.username)
     if (rememberMe) localStorage.setItem('remember_me', 'true')
@@ -57,24 +63,33 @@ export function useAuth() {
   }
 
   function clearAuth() {
-    localStorage.removeItem('jwt_token'); localStorage.removeItem('user_email'); localStorage.removeItem('username'); localStorage.removeItem('remember_me')
-    sessionStorage.removeItem('jwt_token'); sessionStorage.removeItem('user_email'); sessionStorage.removeItem('username')
+    for (const store of [localStorage, sessionStorage]) {
+      for (const key of SESSION_KEYS) store.removeItem(key)
+    }
+    localStorage.removeItem('remember_me')
     user.value = null
   }
 
   /**
-   * Logs out here and on the server: the backend revokes the token, so a copy of it
-   * (another tab, a leaked value) stops working too. Local logout never waits for the
-   * network and still happens if the request fails.
+   * Logs out here and on the server: the backend revokes the access token and the
+   * refresh token, so a copy of either (another tab, a leaked value) stops working too.
+   * The refresh token is enough on its own, which matters when the access token has
+   * already expired. Local logout never waits for the network and still happens if
+   * the request fails.
    */
   function logout() {
-    const token = user.value?.token || localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
+    // storage first: it holds the newest access token after a refresh
+    const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token') || user.value?.token
+    const refreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
     clearAuth()
-    if (!token) return
+    if (!token && !refreshToken) return
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (token) headers.Authorization = `Bearer ${token}`
     const baseURL = useRuntimeConfig().public.backendBaseUrl
     fetch(`${baseURL}/api/auth/logout`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
+      headers,
+      body: JSON.stringify(refreshToken ? { refreshToken } : {}),
       keepalive: true
     }).catch(() => {})
   }

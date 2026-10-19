@@ -2,10 +2,12 @@ package com.concert.controller;
 
 import com.concert.dto.AuthResponse;
 import com.concert.dto.LoginRequest;
+import com.concert.dto.RefreshRequest;
 import com.concert.dto.RegisterRequest;
 import com.concert.dto.UserProfileResponse;
 import com.concert.security.LoginAttemptLimiter;
 import com.concert.service.AuthService;
+import com.concert.service.RefreshTokenService;
 import com.concert.service.TokenRevocationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -32,6 +34,9 @@ public class AuthController {
 
     @Autowired
     private TokenRevocationService tokenRevocationService;
+
+    @Autowired
+    private RefreshTokenService refreshTokenService;
     
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -39,6 +44,7 @@ public class AuthController {
             AuthResponse response = authService.register(registerRequest);
             
             if (response.getToken() != null) {
+                response.setRefreshToken(refreshTokenService.issue(response.getUsername()));
                 return ResponseEntity.ok(response);
             } else {
                 return ResponseEntity.badRequest().body(response);
@@ -67,6 +73,7 @@ public class AuthController {
             
             if (response.getToken() != null) {
                 loginAttemptLimiter.reset(attemptKey);
+                response.setRefreshToken(refreshTokenService.issue(response.getUsername()));
                 return ResponseEntity.ok(response);
             } else {
                 loginAttemptLimiter.recordFailure(attemptKey);
@@ -79,11 +86,36 @@ public class AuthController {
         }
     }
 
-    /** Ends the current token: requests that use it afterwards get 401. */
+    /**
+     * Trades a refresh token for a new access token and a new refresh token.
+     * The old refresh token stops working; using it again ends the whole session (401).
+     */
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshRequest request) {
+        RefreshTokenService.Session session = refreshTokenService.refresh(request.getRefreshToken());
+        AuthResponse response = new AuthResponse(session.accessToken(), session.username(), null);
+        response.setRefreshToken(session.refreshToken());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * Ends the session: the access token in the Authorization header (if it is still valid)
+     * and the refresh token in the body (if given) stop working. 401 when neither is given.
+     */
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@RequestHeader(HttpHeaders.AUTHORIZATION) String authorization) {
-        tokenRevocationService.revoke(authorization.substring("Bearer ".length()));
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<Void> logout(@RequestHeader(value = HttpHeaders.AUTHORIZATION, required = false) String authorization,
+                                       @RequestBody(required = false) RefreshRequest body,
+                                       Authentication authentication) {
+        boolean ended = false;
+        if (authentication != null && authorization != null && authorization.startsWith("Bearer ")) {
+            tokenRevocationService.revoke(authorization.substring("Bearer ".length()));
+            ended = true;
+        }
+        if (body != null && body.getRefreshToken() != null && !body.getRefreshToken().isBlank()) {
+            refreshTokenService.revoke(body.getRefreshToken());
+            ended = true;
+        }
+        return ended ? ResponseEntity.noContent().build() : ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
     }
     
     @GetMapping("/test")

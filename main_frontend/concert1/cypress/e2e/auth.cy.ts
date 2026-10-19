@@ -75,6 +75,27 @@ describe('Sign up and log in', () => {
         headers: { Authorization: `Bearer ${user.token}` },
         failOnStatusCode: false
       }).its('status').should('eq', 401)
+      // and so is the refresh token, so the session cannot be renewed
+      cy.request({
+        method: 'POST',
+        url: `${Cypress.env('apiUrl')}/api/auth/refresh`,
+        body: { refreshToken: user.refreshToken },
+        failOnStatusCode: false
+      }).its('status').should('eq', 401)
+    })
+  })
+
+  it('renews an expired access token with the refresh token without logging out', () => {
+    cy.apiUser('renew').then(user => {
+      cy.intercept('POST', '**/api/auth/refresh').as('refresh')
+      // a token the backend no longer accepts, as after 15 minutes
+      cy.visitAs({ ...user, token: 'expired.access.token' }, '/MyBookingsPage')
+
+      cy.wait('@refresh').its('response.statusCode').should('eq', 200)
+      cy.location('pathname').should('eq', '/MyBookingsPage')
+      cy.contains('a', 'Create Event').should('be.visible')
+      cy.window().its('localStorage').invoke('getItem', 'jwt_token').should('not.eq', 'expired.access.token')
+      cy.window().its('localStorage').invoke('getItem', 'refresh_token').should('not.eq', user.refreshToken)
     })
   })
 

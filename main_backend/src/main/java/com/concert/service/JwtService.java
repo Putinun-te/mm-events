@@ -17,8 +17,8 @@ public class JwtService {
     @Value("${jwt.secret:mySecretKey}")
     private String jwtSecret;
     
-    @Value("${jwt.expiration:604800000}")
-    private int jwtExpirationInMs; // 7 days = 604800000ms
+    @Value("${jwt.expiration:900000}")
+    private int jwtExpirationInMs; // access token lifetime; 15 minutes, refresh tokens renew it
     
     public String generateToken(String username) {
         Date expiryDate = new Date(System.currentTimeMillis() + jwtExpirationInMs);

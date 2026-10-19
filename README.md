@@ -161,10 +161,17 @@ and receives only the later migrations. To change the schema, add a new file
 | Setting | Variable | Default |
 |---|---|---|
 | Origins allowed by CORS (comma-separated, patterns such as `http://localhost:[*]`) | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:[*],http://127.0.0.1:[*]` |
-| Token lifetime in ms | `JWT_EXPIRATION_MS` | `86400000` (24 hours) |
+| Access token lifetime in ms | `JWT_EXPIRATION_MS` | `900000` (15 minutes) |
+| Refresh token lifetime in days | `JWT_REFRESH_EXPIRATION_DAYS` | `14` |
 | Signing key, at least 64 characters | `JWT_SECRET` | local profiles only; required in `prod` and `railway` |
 
-- `POST /api/auth/logout` revokes the current token (its id is stored until it expires).
+- Login and registration return a short-lived access token and a refresh token.
+  `POST /api/auth/refresh` trades the refresh token for a new pair; the old refresh token
+  stops working, and presenting it again ends the whole session (it was copied). Only a
+  SHA-256 hash of each refresh token is stored. The frontend refreshes automatically when a
+  request gets 401 and retries it once.
+- `POST /api/auth/logout` revokes the access token (its id is stored until it expires) and,
+  with `{"refreshToken": ...}` in the body, the refresh token's session.
 - After 5 failed logins for the same account from the same address, further attempts get
   `429 Too Many Requests` with `Retry-After` for 15 minutes (in memory, per instance).
 - Error responses do not include exception messages; details go to the backend log.

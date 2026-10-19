@@ -106,6 +106,17 @@ describe('app/composables/useAuth', () => {
       expect(isLoggedIn.value).toBe(true)
     })
 
+    it('should keep the refresh token next to the access token', () => {
+      const { saveAuth } = useAuth()
+
+      saveAuth({ token: 'a', refreshToken: 'r' }, true)
+      expect(localStorage.getItem('refresh_token')).toBe('r')
+
+      saveAuth({ token: 'b', refreshToken: 's' }, false)
+      expect(sessionStorage.getItem('refresh_token')).toBe('s')
+      expect(localStorage.getItem('refresh_token')).toBeNull()
+    })
+
     it('should save to sessionStorage when rememberMe is false', () => {
       const { saveAuth, user } = useAuth()
       saveAuth({ token: 'session-token', email: 'session@example.com', username: 'sessionuser' }, false)
@@ -207,21 +218,50 @@ describe('app/composables/useAuth', () => {
   })
 
   describe('logout', () => {
-    it('clears the session and asks the backend to revoke the token', async () => {
+    it('clears the session and asks the backend to revoke both tokens', async () => {
       const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 })
       vi.stubGlobal('fetch', fetchMock)
       const { saveAuth, logout, isLoggedIn } = useAuth()
-      saveAuth({ token: 'jwt-abc', username: 'alice' }, false)
+      saveAuth({ token: 'jwt-abc', refreshToken: 'refresh-abc', username: 'alice' }, false)
 
       logout()
 
       expect(isLoggedIn.value).toBe(false)
       expect(sessionStorage.getItem('jwt_token')).toBeNull()
+      expect(sessionStorage.getItem('refresh_token')).toBeNull()
       expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', {
         method: 'POST',
-        headers: { Authorization: 'Bearer jwt-abc' },
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer jwt-abc' },
+        body: JSON.stringify({ refreshToken: 'refresh-abc' }),
         keepalive: true
       })
+      vi.unstubAllGlobals()
+    })
+
+    it('sends the newest access token from storage, not the one from login', () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 })
+      vi.stubGlobal('fetch', fetchMock)
+      const { saveAuth, logout } = useAuth()
+      saveAuth({ token: 'jwt-at-login', refreshToken: 'r1' }, true)
+      localStorage.setItem('jwt_token', 'jwt-after-refresh')
+
+      logout()
+
+      expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe('Bearer jwt-after-refresh')
+      vi.unstubAllGlobals()
+    })
+
+    it('revokes with the refresh token alone when there is no access token', () => {
+      const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 204 })
+      vi.stubGlobal('fetch', fetchMock)
+      const { logout } = useAuth()
+      sessionStorage.setItem('refresh_token', 'refresh-only')
+
+      logout()
+
+      const [, init] = fetchMock.mock.calls[0]
+      expect(init.headers).toEqual({ 'Content-Type': 'application/json' })
+      expect(init.body).toBe(JSON.stringify({ refreshToken: 'refresh-only' }))
       vi.unstubAllGlobals()
     })
 

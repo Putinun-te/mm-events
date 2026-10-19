@@ -45,6 +45,22 @@ const resolveRuntimeConfig = () => {
   }
 }
 
+// Requests that must not trigger a token refresh (they are how a session starts or ends).
+const NO_REFRESH = ['/api/auth/login', '/api/auth/register', '/api/auth/refresh', '/api/auth/logout']
+
+// One refresh at a time: requests that fail together wait for the same refresh.
+let refreshInFlight: Promise<boolean> | null = null
+
+const statusOf = (error: any): number | undefined =>
+  error?.status ?? error?.statusCode ?? error?.response?.status
+
+// The refresh token is stored next to the access token (localStorage with "Remember me").
+const tokenStorage = (): Storage | null => {
+  if (localStorage.getItem('refresh_token')) return localStorage
+  if (sessionStorage.getItem('refresh_token')) return sessionStorage
+  return null
+}
+
 export const useApi = () => {
   const config = resolveRuntimeConfig()
   const rawBaseUrl = config.public.backendBaseUrl ?? 'http://localhost:8080'
@@ -90,8 +106,33 @@ export const useApi = () => {
     return `${origin}${finalPath}`
   }
 
-  const apiFetch = async <T = unknown>(url: string, options: FetchOptions = {}): Promise<T> => {
-    const fullUrl = resolveApiUrl(url)
+  // Trades the stored refresh token for a new access + refresh token; false if that is not possible.
+  const refreshSession = (): Promise<boolean> => {
+    if (!refreshInFlight) {
+      refreshInFlight = (async () => {
+        const storage = tokenStorage()
+        if (!storage) return false
+        try {
+          const res: any = await $fetch(resolveApiUrl('/api/auth/refresh'), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: { refreshToken: storage.getItem('refresh_token') }
+          } as any)
+          if (!res?.token || !res?.refreshToken) return false
+          storage.setItem('jwt_token', res.token)
+          storage.setItem('refresh_token', res.refreshToken)
+          return true
+        } catch {
+          return false
+        }
+      })().finally(() => {
+        refreshInFlight = null
+      })
+    }
+    return refreshInFlight
+  }
+
+  const send = <T>(fullUrl: string, options: FetchOptions): Promise<T> => {
     const token = localStorage.getItem('jwt_token') || sessionStorage.getItem('jwt_token')
     
     const headers: Record<string, string> = {
@@ -109,6 +150,18 @@ export const useApi = () => {
     }
     
     return $fetch(fullUrl, fetchOptions as any) as Promise<T>
+  }
+
+  // Access tokens are short-lived: on a 401 the request is retried once after a refresh.
+  const apiFetch = async <T = unknown>(url: string, options: FetchOptions = {}): Promise<T> => {
+    const fullUrl = resolveApiUrl(url)
+    try {
+      return await send<T>(fullUrl, options)
+    } catch (error) {
+      const refreshable = statusOf(error) === 401 && !NO_REFRESH.some(path => fullUrl.includes(path))
+      if (!refreshable || !(await refreshSession())) throw error
+      return await send<T>(fullUrl, options)
+    }
   }
 
   return {

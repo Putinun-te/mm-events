@@ -52,7 +52,7 @@ const handleSubmit = async () => {
       isSuccess.value = true;
 
       if (process.client) {
-        saveAuth({ token: res.token, email: res.email, username: res.username }, rememberMe.value)
+        saveAuth({ token: res.token, refreshToken: res.refreshToken, email: res.email, username: res.username }, rememberMe.value)
       }
 
       password.value = ''

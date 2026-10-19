@@ -7,6 +7,7 @@ public class AuthResponse {
     private String username;
     private String email;
     private String message;
+    private String refreshToken;
     
     // Constructors
     public AuthResponse() {}
@@ -60,5 +61,13 @@ public class AuthResponse {
     
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public String getRefreshToken() {
+        return refreshToken;
+    }
+
+    public void setRefreshToken(String refreshToken) {
+        this.refreshToken = refreshToken;
     }
 }

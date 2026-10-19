@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import CreateEventPage from '~/app/pages/CreateEventPage.vue'
+import CreateEventPage from '~/pages/CreateEventPage.vue'
 
 // Create mock functions at module level for easy access
 const mockLoadFromStorage = vi.fn()

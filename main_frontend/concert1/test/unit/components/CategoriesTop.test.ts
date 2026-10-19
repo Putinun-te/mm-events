@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import CategoriesTop from '~/app/components/CategoriesTop.vue'
+import CategoriesTop from '~/components/CategoriesTop.vue'
 
 describe('CategoriesTop.vue', () => {
   it('should render categories component', () => {

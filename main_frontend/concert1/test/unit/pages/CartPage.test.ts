@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { createRouter, createMemoryHistory } from 'vue-router'
-import CartPage from '~/app/pages/CartPage.vue'
+import CartPage from '~/pages/CartPage.vue'
 
 vi.mock('~/composables/useAuth', () => ({
   useAuth: () => ({

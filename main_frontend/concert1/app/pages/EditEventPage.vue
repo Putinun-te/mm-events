@@ -3,7 +3,7 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuth } from '~/composables/useAuth'
 import { useToast } from '~/composables/useToast'
-import { useApi } from '../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 interface CreateEventForm {
   title: string
@@ -32,7 +32,6 @@ const submitting = ref(false)
 const loading = ref(true)
 const showDeleteModal = ref(false)
 const eventId = route.query.id
-// Photo upload removed - use UploadPhotoPage
 const photoFile = ref<File | null>(null)
 const photoPreview = ref<string | null>(null)
 const photoUrl = ref('')

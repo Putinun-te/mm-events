@@ -10,8 +10,8 @@ const { renderVenueMap } = vi.hoisted(() => {
   return { renderVenueMap: vi.fn() }
 })
 
-vi.mock('~/app/composables/useVenueMap', async () => {
-  const actual = await vi.importActual<typeof import('~/app/composables/useVenueMap')>('~/app/composables/useVenueMap')
+vi.mock('~/composables/useVenueMap', async () => {
+  const actual = await vi.importActual<typeof import('~/composables/useVenueMap')>('~/composables/useVenueMap')
   return { ...actual, renderVenueMap }
 })
 
@@ -28,7 +28,7 @@ vi.mock('vue-router', async () => {
   return { ...actual, useRouter: () => ({ push: vi.fn(), back: vi.fn() }) }
 })
 
-import EventDetailPage from '~/app/pages/product-page-detail/[id].vue'
+import EventDetailPage from '~/pages/product-page-detail/[id].vue'
 
 const event = {
   id: 7,

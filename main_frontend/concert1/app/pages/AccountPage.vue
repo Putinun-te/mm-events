@@ -3,7 +3,7 @@ import { reactive, ref, onMounted, computed } from 'vue'
 import { useAuth } from '~/composables/useAuth'
 import { useRouter } from 'vue-router'
 import { useToast } from '~/composables/useToast'
-import { useApi } from '../../composables/useApi'
+import { useApi } from '~/composables/useApi'
 
 interface UserForm {
   fullName: string;

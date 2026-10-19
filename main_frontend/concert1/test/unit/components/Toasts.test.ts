@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Toasts from '~/app/components/Toasts.vue'
+import Toasts from '~/components/Toasts.vue'
 import { useToast } from '~/composables/useToast'
 
 describe('Toasts.vue', () => {

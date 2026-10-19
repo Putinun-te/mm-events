@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import SideSearchBar from '~/app/components/SideSearchBar.vue'
+import SideSearchBar from '~/components/SideSearchBar.vue'
 
 describe('SideSearchBar.vue', () => {
   it('should mount component', () => {

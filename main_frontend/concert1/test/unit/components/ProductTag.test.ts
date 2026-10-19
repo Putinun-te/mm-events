@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
-import ProductTag from '~/app/components/ProductTag.vue'
+import ProductTag from '~/components/ProductTag.vue'
 
 describe('ProductTag.vue', () => {
   it('should render tag', () => {

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import Register from '~/app/components/Register.vue'
+import Register from '~/components/Register.vue'
 
 // Mock $fetch
 const mockFetch = vi.fn()

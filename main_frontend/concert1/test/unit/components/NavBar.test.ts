@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import NavBar from '~/app/components/NavBar.vue'
+import NavBar from '~/components/NavBar.vue'
 
 // Mock composables
 vi.mock('~/composables/useAuth', () => ({

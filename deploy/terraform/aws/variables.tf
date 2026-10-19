@@ -1,5 +1,5 @@
 variable "project" {
-  description = "Name prefix for every resource."
+  description = "Name prefix for every resource; also the EKS cluster name."
   type        = string
   default     = "mm-events"
 }
@@ -16,34 +16,58 @@ variable "vpc_cidr" {
   default     = "10.40.0.0/16"
 }
 
-variable "image_tag" {
-  description = "Tag of the backend image in ECR to run."
+variable "kubernetes_version" {
+  description = "EKS Kubernetes version, e.g. \"1.34\". null = the current EKS default ('aws eks describe-cluster-versions')."
   type        = string
-  default     = "latest"
+  default     = null
 }
 
-variable "spring_profile" {
-  description = "Spring profile. The 'railway' profile reads everything (port, database, JWT secret, CORS) from environment variables, so it works on any container platform."
-  type        = string
-  default     = "railway"
+variable "cluster_endpoint_public_access_cidrs" {
+  description = "Networks allowed to reach the public Kubernetes API endpoint. Narrow this to your own IP."
+  type        = list(string)
+  default     = ["0.0.0.0/0"]
 }
 
-variable "backend_cpu" {
-  description = "Fargate task CPU units (1024 = 1 vCPU)."
+variable "node_instance_types" {
+  description = "Instance types of the managed node group."
+  type        = list(string)
+  default     = ["t3.medium"]
+}
+
+variable "node_desired_size" {
+  description = "Initial number of nodes."
   type        = number
-  default     = 512
+  default     = 2
 }
 
-variable "backend_memory" {
-  description = "Fargate task memory in MiB. The image starts the JVM with -Xmx512m."
-  type        = number
-  default     = 1024
-}
-
-variable "backend_desired_count" {
-  description = "Number of backend tasks."
+variable "node_min_size" {
+  description = "Minimum number of nodes."
   type        = number
   default     = 1
+}
+
+variable "node_max_size" {
+  description = "Maximum number of nodes."
+  type        = number
+  default     = 3
+}
+
+variable "node_disk_size" {
+  description = "Root volume of each node in GiB."
+  type        = number
+  default     = 30
+}
+
+variable "k8s_namespace" {
+  description = "Namespace the Helm chart is installed into."
+  type        = string
+  default     = "mm-events"
+}
+
+variable "k8s_service_account" {
+  description = "Service account of the backend (chart value backend.serviceAccount.name). Its IRSA role may read the two secrets."
+  type        = string
+  default     = "mm-events-backend"
 }
 
 variable "db_name" {
@@ -89,13 +113,7 @@ variable "deletion_protection" {
 }
 
 variable "log_retention_days" {
-  description = "How long CloudWatch keeps the backend logs."
+  description = "How long CloudWatch keeps the EKS control-plane logs."
   type        = number
   default     = 14
-}
-
-variable "cloudfront_price_class" {
-  description = "CloudFront price class. PriceClass_200 includes Asia."
-  type        = string
-  default     = "PriceClass_200"
 }

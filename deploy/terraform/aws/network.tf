@@ -1,6 +1,5 @@
-# VPC with two public subnets (ALB and Fargate tasks) and two private subnets (RDS).
-# The tasks get public IPs instead of going through a NAT gateway, which would cost
-# about USD 35 a month on its own. Their security group only accepts traffic from the ALB.
+# VPC with two public subnets (ALB, NAT gateway) and two private subnets (EKS nodes, RDS).
+# One NAT gateway keeps the cost down; use one per AZ for production.
 
 data "aws_availability_zones" "available" {
   state = "available"
@@ -24,6 +23,7 @@ resource "aws_internet_gateway" "main" {
   tags = { Name = var.project }
 }
 
+# The AWS Load Balancer Controller places internet-facing ALBs in subnets tagged role/elb
 resource "aws_subnet" "public" {
   count = 2
 
@@ -32,7 +32,10 @@ resource "aws_subnet" "public" {
   availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = true
 
-  tags = { Name = "${var.project}-public-${count.index}" }
+  tags = {
+    Name                     = "${var.project}-public-${count.index}"
+    "kubernetes.io/role/elb" = "1"
+  }
 }
 
 resource "aws_subnet" "private" {
@@ -42,7 +45,10 @@ resource "aws_subnet" "private" {
   cidr_block        = cidrsubnet(var.vpc_cidr, 4, count.index + 8)
   availability_zone = local.azs[count.index]
 
-  tags = { Name = "${var.project}-private-${count.index}" }
+  tags = {
+    Name                              = "${var.project}-private-${count.index}"
+    "kubernetes.io/role/internal-elb" = "1"
+  }
 }
 
 resource "aws_route_table" "public" {
@@ -63,81 +69,51 @@ resource "aws_route_table_association" "public" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private subnets keep the VPC's main route table: local traffic only.
+resource "aws_eip" "nat" {
+  domain = "vpc"
 
-# Only CloudFront may reach the ALB, so the API is not reachable around it.
-data "aws_ec2_managed_prefix_list" "cloudfront" {
-  name = "com.amazonaws.global.cloudfront.origin-facing"
+  tags = { Name = "${var.project}-nat" }
 }
 
-resource "aws_security_group" "alb" {
-  name        = "${var.project}-alb"
-  description = "HTTP from CloudFront to the ALB"
-  vpc_id      = aws_vpc.main.id
+resource "aws_nat_gateway" "main" {
+  allocation_id = aws_eip.nat.id
+  subnet_id     = aws_subnet.public[0].id
+
+  tags = { Name = var.project }
+
+  depends_on = [aws_internet_gateway.main]
 }
 
-resource "aws_vpc_security_group_ingress_rule" "alb_from_cloudfront" {
-  security_group_id = aws_security_group.alb.id
-  description       = "HTTP from CloudFront edge locations"
-  prefix_list_id    = data.aws_ec2_managed_prefix_list.cloudfront.id
-  ip_protocol       = "tcp"
-  from_port         = 80
-  to_port           = 80
+resource "aws_route_table" "private" {
+  vpc_id = aws_vpc.main.id
+
+  route {
+    cidr_block     = "0.0.0.0/0"
+    nat_gateway_id = aws_nat_gateway.main.id
+  }
+
+  tags = { Name = "${var.project}-private" }
 }
 
-resource "aws_vpc_security_group_egress_rule" "alb_to_backend" {
-  security_group_id            = aws_security_group.alb.id
-  description                  = "To the backend tasks"
-  referenced_security_group_id = aws_security_group.backend.id
-  ip_protocol                  = "tcp"
-  from_port                    = 8080
-  to_port                      = 8080
+resource "aws_route_table_association" "private" {
+  count = 2
+
+  subnet_id      = aws_subnet.private[count.index].id
+  route_table_id = aws_route_table.private.id
 }
 
-resource "aws_security_group" "backend" {
-  name        = "${var.project}-backend"
-  description = "Backend tasks: port 8080 from the ALB only"
-  vpc_id      = aws_vpc.main.id
-}
-
-resource "aws_vpc_security_group_ingress_rule" "backend_from_alb" {
-  security_group_id            = aws_security_group.backend.id
-  description                  = "Port 8080 from the ALB"
-  referenced_security_group_id = aws_security_group.alb.id
-  ip_protocol                  = "tcp"
-  from_port                    = 8080
-  to_port                      = 8080
-}
-
-# Outbound HTTPS for ECR, Secrets Manager and CloudWatch Logs; MySQL to RDS.
-resource "aws_vpc_security_group_egress_rule" "backend_https" {
-  security_group_id = aws_security_group.backend.id
-  description       = "HTTPS to AWS APIs"
-  cidr_ipv4         = "0.0.0.0/0"
-  ip_protocol       = "tcp"
-  from_port         = 443
-  to_port           = 443
-}
-
-resource "aws_vpc_security_group_egress_rule" "backend_to_db" {
-  security_group_id            = aws_security_group.backend.id
-  description                  = "MySQL to RDS"
-  referenced_security_group_id = aws_security_group.db.id
-  ip_protocol                  = "tcp"
-  from_port                    = 3306
-  to_port                      = 3306
-}
-
+# RDS accepts MySQL only from the EKS cluster security group, which the managed nodes and
+# therefore the pods (VPC CNI) use.
 resource "aws_security_group" "db" {
   name        = "${var.project}-db"
-  description = "MySQL from the backend tasks only"
+  description = "MySQL from the EKS nodes only"
   vpc_id      = aws_vpc.main.id
 }
 
-resource "aws_vpc_security_group_ingress_rule" "db_from_backend" {
+resource "aws_vpc_security_group_ingress_rule" "db_from_cluster" {
   security_group_id            = aws_security_group.db.id
-  description                  = "MySQL from the backend tasks"
-  referenced_security_group_id = aws_security_group.backend.id
+  description                  = "MySQL from EKS nodes and pods"
+  referenced_security_group_id = aws_eks_cluster.main.vpc_config[0].cluster_security_group_id
   ip_protocol                  = "tcp"
   from_port                    = 3306
   to_port                      = 3306

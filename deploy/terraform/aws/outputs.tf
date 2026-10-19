@@ -1,46 +1,36 @@
-output "frontend_url" {
-  description = "Public URL of the site (CloudFront)."
-  value       = "https://${aws_cloudfront_distribution.site.domain_name}"
+output "cluster_name" {
+  description = "EKS cluster name."
+  value       = aws_eks_cluster.main.name
 }
 
-output "api_base_url" {
-  description = "Base URL of the API, used as NUXT_PUBLIC_BACKEND_BASE_URL. Same origin as the site; the app calls <this>/api/..."
-  value       = "https://${aws_cloudfront_distribution.site.domain_name}"
+output "kubeconfig_command" {
+  description = "Writes a kubeconfig entry for the cluster."
+  value       = "aws eks update-kubeconfig --region ${var.region} --name ${aws_eks_cluster.main.name}"
 }
 
-output "health_url" {
-  description = "Backend health check through CloudFront."
-  value       = "https://${aws_cloudfront_distribution.site.domain_name}/actuator/health"
+output "vpc_id" {
+  description = "VPC ID (the Load Balancer Controller needs it)."
+  value       = aws_vpc.main.id
 }
 
-output "ecr_repository_url" {
+output "lb_controller_role_arn" {
+  description = "IAM role for the AWS Load Balancer Controller's service account."
+  value       = aws_iam_role.lb_controller.arn
+}
+
+output "backend_role_arn" {
+  description = "IAM role for the backend's service account (reads the two secrets)."
+  value       = aws_iam_role.backend.arn
+}
+
+output "ecr_backend_url" {
   description = "Push the backend image here."
-  value       = aws_ecr_repository.backend.repository_url
+  value       = aws_ecr_repository.app["backend"].repository_url
 }
 
-output "site_bucket" {
-  description = "S3 bucket for the static frontend files."
-  value       = aws_s3_bucket.site.id
-}
-
-output "cloudfront_distribution_id" {
-  description = "Distribution to invalidate after uploading the frontend."
-  value       = aws_cloudfront_distribution.site.id
-}
-
-output "ecs_cluster" {
-  description = "ECS cluster name."
-  value       = aws_ecs_cluster.main.name
-}
-
-output "ecs_service" {
-  description = "ECS service name."
-  value       = aws_ecs_service.backend.name
-}
-
-output "log_group" {
-  description = "CloudWatch log group of the backend."
-  value       = aws_cloudwatch_log_group.backend.name
+output "ecr_frontend_url" {
+  description = "Push the frontend image here."
+  value       = aws_ecr_repository.app["frontend"].repository_url
 }
 
 output "db_endpoint" {
@@ -51,4 +41,47 @@ output "db_endpoint" {
 output "db_password_secret_arn" {
   description = "Secrets Manager secret holding the RDS master password (created by RDS)."
   value       = aws_db_instance.mysql.master_user_secret[0].secret_arn
+}
+
+output "jwt_secret_name" {
+  description = "Secrets Manager secret holding the JWT signing key."
+  value       = aws_secretsmanager_secret.jwt.name
+}
+
+# Values for deploy/helm/mm-events, together with values-aws.yaml. Contains no secret
+# values, only names and ARNs:
+#   terraform output -raw helm_values > mm-events-values.yaml
+output "helm_values" {
+  description = "Cloud-specific values for the Helm chart (no secrets)."
+  value = yamlencode({
+    backend = {
+      image = { repository = aws_ecr_repository.app["backend"].repository_url }
+      datasource = {
+        host     = aws_db_instance.mysql.address
+        port     = aws_db_instance.mysql.port
+        database = var.db_name
+        username = var.db_username
+      }
+      serviceAccount = {
+        name        = var.k8s_service_account
+        annotations = { "eks.amazonaws.com/role-arn" = aws_iam_role.backend.arn }
+      }
+    }
+    frontend = {
+      image = { repository = aws_ecr_repository.app["frontend"].repository_url }
+    }
+    secrets = {
+      externalSecrets = {
+        provider = {
+          aws = {
+            service = "SecretsManager"
+            region  = var.region
+            auth    = { jwt = { serviceAccountRef = { name = var.k8s_service_account } } }
+          }
+        }
+        dbPassword = { key = aws_db_instance.mysql.master_user_secret[0].secret_arn, property = "password" }
+        jwtSecret  = { key = aws_secretsmanager_secret.jwt.name }
+      }
+    }
+  })
 }

@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Start MySQL, Redis and backend
         run: docker compose up -d --build --wait --wait-timeout 400 mysql redis backend

@@ -32,7 +32,7 @@ jobs:
       run:
         working-directory: main_frontend/concert1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Check configuration
         env:
@@ -43,7 +43,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '20'
           cache: npm
@@ -57,7 +57,7 @@ jobs:
           NUXT_PUBLIC_BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
         run: npx nuxt generate
 
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: main_frontend/concert1/.output/public
 
@@ -70,4 +70,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

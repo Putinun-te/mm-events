@@ -40,12 +40,17 @@ Railway's variables.
    | `SPRING_DATASOURCE_USERNAME` | `${{MySQL.MYSQLUSER}}` |
    | `SPRING_DATASOURCE_PASSWORD` | `${{MySQL.MYSQLPASSWORD}}` |
    | `JWT_SECRET` | a random string of at least 64 characters, e.g. the output of `openssl rand -base64 64` |
+   | `APP_CORS_ALLOWED_ORIGINS` | optional; defaults to `https://putinun-te.github.io`. Set it if the site runs under another account or domain |
 
    The `${{MySQL....}}` values are Railway reference variables; type them exactly like this.
 5. **Settings → Networking → Generate Domain** to get a public URL such as
    `https://mm-events-backend.up.railway.app`.
 6. After the deploy finishes, open `https://<your-domain>/actuator/health`; it should show
-   `{"status":"UP"}`.
+   `{"status":"UP"}`. The API docs are at `https://<your-domain>/swagger-ui.html`.
+
+   On the first start Flyway creates the tables. If the database was already filled by an
+   earlier deploy (Hibernate `ddl-auto=update`), Flyway adopts it at version 1 and applies
+   only the newer migrations.
 
 ## 2. Frontend on GitHub Pages
 
@@ -68,8 +73,10 @@ stops with a message saying what is missing.
   fail in the demo. Everything else (accounts, events, bookings, maps) works.
 - **Maps**: venue search uses OpenStreetMap's free Nominatim service (about one search per
   second), which is fine for a demo.
-- **CORS**: the API currently accepts requests from any origin. If it is later restricted,
-  add `https://<owner>.github.io` to the allowed origins.
+- **CORS**: the API only accepts browser requests from `APP_CORS_ALLOWED_ORIGINS`
+  (default `https://putinun-te.github.io`). A fork published under another account must
+  set this variable to its own `https://<owner>.github.io`.
+- **Login rate limit**: counted in memory, so it resets when the backend restarts.
 
 ## Checked before publishing
 

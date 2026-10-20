@@ -152,7 +152,6 @@ wait a few minutes and run it again.
 
 ## Limits
 
-- Photo uploads (`/api/upload`) use AWS S3 in the code and are not available here, as in the
-  free demo.
+- Photo uploads (`/api/upload`) use AWS S3 in the code and are not available here.
 - The login rate limit is kept in memory per pod.
 - `master_authorized_networks` defaults to everywhere; narrow it to your IP.

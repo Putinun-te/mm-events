@@ -174,6 +174,6 @@ before you keep real data.
 ## Limits
 
 - Photo uploads (`/api/upload`) need an S3 bucket and permissions that are not part of this
-  setup, as in the free demo.
+  setup.
 - The login rate limit is kept in memory per pod, so each backend replica counts separately.
 - `cluster_endpoint_public_access_cidrs` defaults to everywhere; narrow it to your IP.

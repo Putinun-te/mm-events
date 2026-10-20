@@ -2,7 +2,7 @@
 
 | File | What it covers |
 |---|---|
-| [DEPLOY.md](DEPLOY.md) | Live demo: backend + MySQL on Railway, frontend on GitHub Pages |
+| [DEPLOY.md](DEPLOY.md) | Free demo: frontend on GitHub Pages, backend on Render, MySQL on Aiven |
 | [EC2-VS-ECS-VS-EKS.md](EC2-VS-ECS-VS-EKS.md) | Choosing between EC2, ECS and EKS for the backend |
 | [EKS-VS-ECS-AUTOSCALING.md](EKS-VS-ECS-AUTOSCALING.md) | How autoscaling differs on EKS and ECS |
 | [ROUTE53-VS-S3-CLOUDFRONT.md](ROUTE53-VS-S3-CLOUDFRONT.md) | What Route 53, S3 and CloudFront each do for the frontend |

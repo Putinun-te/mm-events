@@ -1,4 +1,4 @@
-"""Current live-demo setup: GitHub Pages (frontend) + Railway (backend and MySQL)."""
+"""Current demo setup on free tiers: GitHub Pages (frontend), Render (backend), Aiven (MySQL)."""
 
 from diagrams import Cluster, Diagram, Edge
 from diagrams.onprem.ci import GithubActions
@@ -9,7 +9,7 @@ from diagrams.programming.framework import Spring
 
 from common import diagram_kwargs
 
-with Diagram(**diagram_kwargs("MM Events - current demo (GitHub Pages + Railway)", "current-railway-pages")):
+with Diagram(**diagram_kwargs("MM Events - free demo (GitHub Pages + Render + Aiven)", "current-free-demo")):
     users = Users("Browser")
 
     with Cluster("GitHub"):
@@ -17,13 +17,15 @@ with Diagram(**diagram_kwargs("MM Events - current demo (GitHub Pages + Railway)
         actions = GithubActions("deploy-pages.yml\nnuxt generate")
         pages = Github("GitHub Pages\n/mm-events/ (static SPA)")
 
-    with Cluster("Railway project"):
-        api = Spring("Backend service\nmain_backend/Dockerfile\nprofile: railway")
-        db = Mysql("MySQL 8\n(private network)")
+    with Cluster("Render (free web service)"):
+        api = Spring("mm-events-api\nmain_backend/Dockerfile\nprofile: cloud\nsleeps when idle")
+
+    with Cluster("Aiven (free MySQL 8)"):
+        db = Mysql("MySQL 8\nTLS required")
 
     repo >> Edge(label="push to main") >> actions >> Edge(label="upload") >> pages
-    repo >> Edge(label="build from Dockerfile", style="dashed") >> api
+    repo >> Edge(label="render.yaml\nbuild on push", style="dashed") >> api
 
     users >> Edge(label="HTTPS") >> pages
     users >> Edge(label="HTTPS /api/* (CORS)") >> api
-    api >> Edge(label="JDBC") >> db
+    api >> Edge(label="JDBC over TLS") >> db

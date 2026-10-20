@@ -11,5 +11,5 @@ IAM. The AWS account it ran in has been closed, so nothing here is live.
   routes and S3 presigned uploads.
 - `iam_eks_deployment_policy.json`: IAM policy for the EKS deploy user.
 
-To run the app today, use Docker Compose or the Railway + GitHub Pages demo
+To run the app today, use Docker Compose or the free demo (GitHub Pages + Render + Aiven)
 described in the main README.

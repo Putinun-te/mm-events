@@ -166,7 +166,6 @@ provider purges the soft-deleted Key Vault, so the same names can be used again.
 
 ## Limits
 
-- Photo uploads (`/api/upload`) use AWS S3 in the code and are not available here, as in the
-  free demo.
+- Photo uploads (`/api/upload`) use AWS S3 in the code and are not available here.
 - The login rate limit is kept in memory per pod.
 - The Kubernetes API is open to every network unless `api_server_authorized_ip_ranges` is set.

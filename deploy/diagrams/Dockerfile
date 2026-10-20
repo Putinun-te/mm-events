@@ -12,4 +12,4 @@ RUN apt-get update \
 RUN pip install --no-cache-dir diagrams==0.25.1
 
 WORKDIR /work
-CMD ["sh", "-c", "for f in current_free_demo.py aws.py gcp.py azure.py; do python \"$f\" || exit 1; done"]
+CMD ["sh", "-c", "for f in aws.py gcp.py azure.py; do python \"$f\" || exit 1; done"]

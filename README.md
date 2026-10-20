@@ -12,7 +12,7 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 > Cognito, API Gateway, EKS) was used during the course and **has been
 > decommissioned**; that AWS account is closed. The course's Terraform and
 > Kubernetes code (`aws/`, `infra/terraform/`, `k8s/`) is kept as a record only.
-> The demo setup now uses free tiers (GitHub Pages + Render + Aiven MySQL), and `deploy/` has new,
+> There is no hosted demo; run it locally with Docker Compose (below). `deploy/` has
 > deployable Terraform and a Helm chart for managed Kubernetes on AWS (EKS),
 > Google Cloud (GKE) and Azure (AKS) (see [Infrastructure](#infrastructure)).
 >
@@ -21,23 +21,80 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 > and authorship are preserved; credentials, Terraform state, keys and build
 > artifacts were removed from all history.
 
-## Infrastructure
+## Run locally (Docker Compose)
 
-### Current setup: free demo on GitHub Pages + Render + Aiven
+Requirements: Docker with Docker Compose v2. One command starts MySQL, Redis, the
+backend and the frontend:
 
-![Current infrastructure: GitHub Pages, Render and Aiven](deploy/diagrams/current-free-demo.png)
+```bash
+docker compose up -d --build
+```
 
-| Part | Where it runs | Configured by |
+| Service | URL |
+|---|---|
+| Frontend | http://localhost:3000 |
+| Backend API | http://localhost:8080 |
+| Health check | http://localhost:8080/actuator/health |
+| API docs (Swagger UI) | http://localhost:8080/swagger-ui.html |
+| OpenAPI document | http://localhost:8080/v3/api-docs |
+
+The first start takes a few minutes: the backend image is built with Maven and
+the frontend container runs `npm install`. No `.env` file is needed for local
+use; all values in `docker-compose.yml` are local-only defaults. The venue map uses OpenStreetMap and needs no key.
+
+In Swagger UI, log in with `POST /api/auth/login`, copy the `token` from the response and
+paste it under **Authorize** to call the protected endpoints.
+
+### Database schema (Flyway)
+
+The schema is created by Flyway from `main_backend/src/main/resources/db/migration`
+(`V1__baseline.sql`, `V2__...`). Hibernate only validates it (`ddl-auto=validate`), so a
+mismatch between an entity and the tables stops startup instead of silently changing the
+database. A database that Hibernate created before Flyway was added is adopted at version 1
+and receives only the later migrations. To change the schema, add a new file
+`V<next>__<description>.sql`; never edit a migration that has already run.
+
+### Security settings
+
+| Setting | Variable | Default |
 |---|---|---|
-| Frontend (static Nuxt SPA) | GitHub Pages, `https://putinun-te.github.io/mm-events/` | `.github/workflows/deploy-pages.yml` (`nuxt generate` on every merge to `main`) |
-| Backend (Spring Boot API) | Render free web service built from `main_backend/Dockerfile` | `render.yaml`, `application-cloud.properties` |
-| Database (MySQL 8) | Aiven free MySQL plan, TLS required | JDBC URL entered in Render |
-| Secrets (DB password, JWT secret) | Render environment variables | entered once in the Render dashboard, never in the repository |
-| CI | GitHub-hosted runners | `.github/workflows/` (see [CI/CD](#cicd)) |
+| Origins allowed by CORS (comma-separated, patterns such as `http://localhost:[*]`) | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:[*],http://127.0.0.1:[*]` |
+| Access token lifetime in ms | `JWT_EXPIRATION_MS` | `900000` (15 minutes) |
+| Refresh token lifetime in days | `JWT_REFRESH_EXPIRATION_DAYS` | `14` |
+| Signing key, at least 64 characters | `JWT_SECRET` | local profiles only; required in `prod` and `cloud` |
 
-All three are free plans without a time limit. The backend sleeps after ~15 idle minutes
-and takes about a minute to wake. The site goes live after the one-time account setup in
-[docs/DEPLOY.md](docs/DEPLOY.md), which also lists the limits.
+- Login and registration return a short-lived access token and a refresh token.
+  `POST /api/auth/refresh` trades the refresh token for a new pair; the old refresh token
+  stops working, and presenting it again ends the whole session (it was copied). Only a
+  SHA-256 hash of each refresh token is stored. The frontend refreshes automatically when a
+  request gets 401 and retries it once.
+- `POST /api/auth/logout` revokes the access token (its id is stored until it expires) and,
+  with `{"refreshToken": ...}` in the body, the refresh token's session.
+- After 5 failed logins for the same account from the same address, further attempts get
+  `429 Too Many Requests` with `Retry-After` for 15 minutes (in memory, per instance).
+- Error responses do not include exception messages; details go to the backend log.
+- The H2 console is not exposed, and responses carry `X-Frame-Options: DENY`,
+  `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
+
+Stop everything and delete the database volume:
+
+```bash
+docker compose down -v
+```
+
+### Frontend without Docker
+
+Start only the data stores and the API in Docker, then run Nuxt with hot reload:
+
+```bash
+docker compose up -d --build mysql redis backend
+cd main_frontend/concert1
+npm ci --legacy-peer-deps
+npm run dev
+```
+
+
+## Infrastructure
 
 ### Deploying to Kubernetes on AWS, Google Cloud or Azure (`deploy/`)
 
@@ -163,80 +220,9 @@ flowchart LR
 | `k8s/` | Course infrastructure, shut down: EKS manifests (backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment) |
 | `aws/` | Course infrastructure, shut down: Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM), plus the Lambda sources and EC2 user data |
 | `infra/terraform/` | Course infrastructure, shut down: Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
-| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate), `ci.yml` (frontend, e2e, images, secret scan), `mutation-tests.yml`, `load-test.yml`, `deploy-pages.yml`, `deploy-checks.yml` (Terraform and Helm checks for `deploy/`) |
+| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate), `ci.yml` (frontend, e2e, images, secret scan), `mutation-tests.yml`, `load-test.yml`, `deploy-checks.yml` (Terraform and Helm checks for `deploy/`) |
 | `load-tests/` | k6 booking-rush script |
-| `docs/` | Live demo setup (`DEPLOY.md`) and design notes comparing AWS hosting options; see [docs/README.md](docs/README.md) |
-
-## Run locally
-
-Requirements: Docker with Docker Compose v2.
-
-```bash
-docker compose up -d --build
-```
-
-| Service | URL |
-|---|---|
-| Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8080 |
-| Health check | http://localhost:8080/actuator/health |
-| API docs (Swagger UI) | http://localhost:8080/swagger-ui.html |
-| OpenAPI document | http://localhost:8080/v3/api-docs |
-
-The first start takes a few minutes: the backend image is built with Maven and
-the frontend container runs `npm install`. No `.env` file is needed for local
-use; all values in `docker-compose.yml` are local-only defaults. The venue map uses OpenStreetMap and needs no key.
-
-In Swagger UI, log in with `POST /api/auth/login`, copy the `token` from the response and
-paste it under **Authorize** to call the protected endpoints.
-
-### Database schema (Flyway)
-
-The schema is created by Flyway from `main_backend/src/main/resources/db/migration`
-(`V1__baseline.sql`, `V2__...`). Hibernate only validates it (`ddl-auto=validate`), so a
-mismatch between an entity and the tables stops startup instead of silently changing the
-database. A database that Hibernate created before Flyway was added is adopted at version 1
-and receives only the later migrations. To change the schema, add a new file
-`V<next>__<description>.sql`; never edit a migration that has already run.
-
-### Security settings
-
-| Setting | Variable | Default |
-|---|---|---|
-| Origins allowed by CORS (comma-separated, patterns such as `http://localhost:[*]`) | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:[*],http://127.0.0.1:[*]` |
-| Access token lifetime in ms | `JWT_EXPIRATION_MS` | `900000` (15 minutes) |
-| Refresh token lifetime in days | `JWT_REFRESH_EXPIRATION_DAYS` | `14` |
-| Signing key, at least 64 characters | `JWT_SECRET` | local profiles only; required in `prod` and `cloud` |
-
-- Login and registration return a short-lived access token and a refresh token.
-  `POST /api/auth/refresh` trades the refresh token for a new pair; the old refresh token
-  stops working, and presenting it again ends the whole session (it was copied). Only a
-  SHA-256 hash of each refresh token is stored. The frontend refreshes automatically when a
-  request gets 401 and retries it once.
-- `POST /api/auth/logout` revokes the access token (its id is stored until it expires) and,
-  with `{"refreshToken": ...}` in the body, the refresh token's session.
-- After 5 failed logins for the same account from the same address, further attempts get
-  `429 Too Many Requests` with `Retry-After` for 15 minutes (in memory, per instance).
-- Error responses do not include exception messages; details go to the backend log.
-- The H2 console is not exposed, and responses carry `X-Frame-Options: DENY`,
-  `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
-
-Stop everything and delete the database volume:
-
-```bash
-docker compose down -v
-```
-
-### Frontend without Docker
-
-Start only the data stores and the API in Docker, then run Nuxt with hot reload:
-
-```bash
-docker compose up -d --build mysql redis backend
-cd main_frontend/concert1
-npm ci --legacy-peer-deps
-npm run dev
-```
+| `docs/` | Design notes comparing AWS hosting options; see [docs/README.md](docs/README.md) |
 
 ## Testing
 
@@ -346,7 +332,6 @@ cloud credentials, no deploy jobs.
 
 **`mutation-tests.yml`** runs PIT on backend pull requests (not a required check), weekly
 and on demand. **`load-test.yml`** runs the k6 ticket rush on demand and weekly.
-**`deploy-pages.yml`** publishes the frontend to GitHub Pages (see `docs/DEPLOY.md`).
 **`deploy-checks.yml`** runs `terraform fmt -check` and `terraform validate` on the modules
 in `deploy/terraform/`, and `helm lint` plus `helm template | kubeconform -strict` on the
 chart for each cloud (no cloud credentials).
@@ -362,7 +347,6 @@ the `archive/*` tags.
 
 ## Deploying again (optional)
 
-For the free demo (GitHub Pages + Render + Aiven) follow [docs/DEPLOY.md](docs/DEPLOY.md).
 For Kubernetes on AWS, Google Cloud or Azure use the Terraform and Helm chart in
 [deploy/](deploy/README.md).
 

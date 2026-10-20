@@ -10,7 +10,6 @@ export default defineNuxtConfig({
     preset: 'static'
   },
   app: {
-    // '/' locally; '/mm-events/' when built for GitHub Pages (see deploy-pages.yml)
     baseURL: process.env.NUXT_APP_BASE_URL || '/',
     head: {
       meta: []

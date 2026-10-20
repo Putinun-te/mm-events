@@ -134,6 +134,16 @@ is kept as a record of the course work; use `deploy/terraform/` for a new deploy
 - OpenAPI document and Swagger UI for the REST API
 - Schema migrations with Flyway; logout that revokes the token; login rate limiting
 
+### Screenshots
+
+Taken from the local Docker Compose stack with sample events (`docs/screenshots/`).
+
+![Home page: "Welcome to MM concerts" banner with a Browse Events button](docs/screenshots/home.jpg)
+
+![Event list: search box, category filters and cards for four upcoming concerts](docs/screenshots/events.jpg)
+
+![Event detail: Bangkok Jazz Night with date, venue, price, seats left and an OpenStreetMap map of the venue](docs/screenshots/event-detail.jpg)
+
 ## Tech stack
 
 | Layer | Technologies |

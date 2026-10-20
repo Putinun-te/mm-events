@@ -26,9 +26,9 @@ backend:
   # Used when autoscaling is off
   replicas: 2
 
-  # The 'railway' profile reads port, datasource, JWT secret and CORS origin from the
-  # environment, so it works on any platform (see application-railway.properties).
-  springProfile: railway
+  # The 'cloud' profile reads port, datasource, JWT secret and CORS origin from the
+  # environment, so it works on any platform (see application-cloud.properties).
+  springProfile: cloud
 
   datasource:
     host: ""

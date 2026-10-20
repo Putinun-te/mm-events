@@ -3,7 +3,7 @@ name: deploy-pages
 # Builds the Nuxt frontend as a static site and publishes it to GitHub Pages.
 # Needs (see docs/DEPLOY.md):
 #   - Settings > Pages > Source: "GitHub Actions"
-#   - repository variable BACKEND_BASE_URL, e.g. https://mm-events-backend.up.railway.app
+#   - repository variable BACKEND_BASE_URL, e.g. https://mm-events-api.onrender.com
 
 on:
   push:
@@ -39,7 +39,7 @@ jobs:
           BACKEND_BASE_URL: ${{ vars.BACKEND_BASE_URL }}
         run: |
           if [ -z "$BACKEND_BASE_URL" ]; then
-            echo "::error::Set the repository variable BACKEND_BASE_URL (Settings > Secrets and variables > Actions > Variables) to the Railway backend URL."
+            echo "::error::Set the repository variable BACKEND_BASE_URL (Settings > Secrets and variables > Actions > Variables) to the backend URL (e.g. https://mm-events-api.onrender.com)."
             exit 1
           fi
 

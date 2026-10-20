@@ -12,7 +12,7 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 > Cognito, API Gateway, EKS) was used during the course and **has been
 > decommissioned**; that AWS account is closed. The course's Terraform and
 > Kubernetes code (`aws/`, `infra/terraform/`, `k8s/`) is kept as a record only.
-> The app now runs as a demo on GitHub Pages + Railway, and `deploy/` has new,
+> The demo setup now uses free tiers (GitHub Pages + Render + Aiven MySQL), and `deploy/` has new,
 > deployable Terraform and a Helm chart for managed Kubernetes on AWS (EKS),
 > Google Cloud (GKE) and Azure (AKS) (see [Infrastructure](#infrastructure)).
 >
@@ -21,27 +21,23 @@ automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
 > and authorship are preserved; credentials, Terraform state, keys and build
 > artifacts were removed from all history.
 
-## Live demo
-
-The demo setup is ready in the repository: frontend on GitHub Pages
-(`https://putinun-te.github.io/mm-events/`), backend and MySQL on Railway. It goes live
-after the one-time account setup in [docs/DEPLOY.md](docs/DEPLOY.md).
-
 ## Infrastructure
 
-### Current setup: GitHub Pages + Railway
+### Current setup: free demo on GitHub Pages + Render + Aiven
 
-![Current infrastructure: GitHub Pages and Railway](deploy/diagrams/current-railway-pages.png)
+![Current infrastructure: GitHub Pages, Render and Aiven](deploy/diagrams/current-free-demo.png)
 
 | Part | Where it runs | Configured by |
 |---|---|---|
 | Frontend (static Nuxt SPA) | GitHub Pages, `https://putinun-te.github.io/mm-events/` | `.github/workflows/deploy-pages.yml` (`nuxt generate` on every merge to `main`) |
-| Backend (Spring Boot API) | Railway service built from `main_backend/Dockerfile` | `main_backend/railway.json`, `application-railway.properties` |
-| Database (MySQL 8) | Railway MySQL, private network | Railway reference variables |
-| Secrets (DB password, JWT secret) | Railway service variables | set once in the Railway dashboard, never in the repository |
+| Backend (Spring Boot API) | Render free web service built from `main_backend/Dockerfile` | `render.yaml`, `application-cloud.properties` |
+| Database (MySQL 8) | Aiven free MySQL plan, TLS required | JDBC URL entered in Render |
+| Secrets (DB password, JWT secret) | Render environment variables | entered once in the Render dashboard, never in the repository |
 | CI | GitHub-hosted runners | `.github/workflows/` (see [CI/CD](#cicd)) |
 
-Setup steps and limits: [docs/DEPLOY.md](docs/DEPLOY.md).
+All three are free plans without a time limit. The backend sleeps after ~15 idle minutes
+and takes about a minute to wake. The site goes live after the one-time account setup in
+[docs/DEPLOY.md](docs/DEPLOY.md), which also lists the limits.
 
 ### Deploying to Kubernetes on AWS, Google Cloud or Azure (`deploy/`)
 
@@ -210,7 +206,7 @@ and receives only the later migrations. To change the schema, add a new file
 | Origins allowed by CORS (comma-separated, patterns such as `http://localhost:[*]`) | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:[*],http://127.0.0.1:[*]` |
 | Access token lifetime in ms | `JWT_EXPIRATION_MS` | `900000` (15 minutes) |
 | Refresh token lifetime in days | `JWT_REFRESH_EXPIRATION_DAYS` | `14` |
-| Signing key, at least 64 characters | `JWT_SECRET` | local profiles only; required in `prod` and `railway` |
+| Signing key, at least 64 characters | `JWT_SECRET` | local profiles only; required in `prod` and `cloud` |
 
 - Login and registration return a short-lived access token and a refresh token.
   `POST /api/auth/refresh` trades the refresh token for a new pair; the old refresh token
@@ -366,7 +362,7 @@ the `archive/*` tags.
 
 ## Deploying again (optional)
 
-For the free-standing demo (GitHub Pages + Railway) follow [docs/DEPLOY.md](docs/DEPLOY.md).
+For the free demo (GitHub Pages + Render + Aiven) follow [docs/DEPLOY.md](docs/DEPLOY.md).
 For Kubernetes on AWS, Google Cloud or Azure use the Terraform and Helm chart in
 [deploy/](deploy/README.md).
 

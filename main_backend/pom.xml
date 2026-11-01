@@ -29,7 +29,7 @@
 		<!-- Filled in by jacoco prepare-agent / prepare-agent-integration -->
 		<surefireArgLine/>
 		<failsafeArgLine/>
-		<aws.java.sdk.version>2.56.0</aws.java.sdk.version>
+		<aws.java.sdk.version>2.57.6</aws.java.sdk.version>
 	</properties>
 
 	<dependencyManagement>
@@ -110,7 +110,7 @@
 		<dependency>
 			<groupId>org.springdoc</groupId>
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
-			<version>2.9.1</version>
+			<version>2.10.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.h2database</groupId>

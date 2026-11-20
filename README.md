@@ -1,401 +1,212 @@
 # MM Events – Concert Booking Platform
 
-MM Events is a concert and event booking web application built as a team project
-for **ITDS323 (DevOps)** at Mahidol University. Visitors browse upcoming concerts,
-register and log in, book tickets and manage their bookings; organizers create,
-edit and delete their own events with photos and a venue map.
+[![CI](https://github.com/Putinun-te/mm-events/actions/workflows/ci.yml/badge.svg)](https://github.com/Putinun-te/mm-events/actions/workflows/ci.yml)
+[![backend-ci](https://github.com/Putinun-te/mm-events/actions/workflows/backend-ci.yml/badge.svg)](https://github.com/Putinun-te/mm-events/actions/workflows/backend-ci.yml)
 
-The course focus was the delivery pipeline around the app: containerisation,
-automated testing, CI/CD, Kubernetes and infrastructure as code on AWS.
+MM Events is a concert and event booking web application. Visitors browse upcoming
+concerts, register, log in, book tickets and cancel bookings; organizers create, edit and
+delete their own events with photos and a venue map. It was built as a team project for the
+**ITDS323 (DevOps)** course, so the emphasis is on the delivery pipeline around the app:
+containers, layered automated tests, CI/CD, Kubernetes and infrastructure as code.
 
-> **Status:** the AWS infrastructure (EC2, RDS, ElastiCache, S3/CloudFront,
-> Cognito, API Gateway, EKS) was used during the course and **has been
-> decommissioned**; that AWS account is closed. The course's Terraform and
-> Kubernetes code (`aws/`, `infra/terraform/`, `k8s/`) is kept as a record only.
-> There is no hosted demo; run it locally with Docker Compose (below). `deploy/` has
-> deployable Terraform and a Helm chart for managed Kubernetes on AWS (EKS),
-> Google Cloud (GKE) and Azure (AKS) (see [Infrastructure](#infrastructure)).
->
+<p>
+  <img src="docs/screenshots/home.jpg" alt="Home page: Welcome to MM concerts banner with a Browse Events button" width="32%">
+  <img src="docs/screenshots/events.jpg" alt="Event list with search box, category filters and cards for four upcoming concerts" width="32%">
+  <img src="docs/screenshots/event-detail.jpg" alt="Event detail with date, venue, price, seats left and an OpenStreetMap map" width="32%">
+</p>
+
 > This repository is a cleaned copy of the team repository
-> [MorningMores/develop](https://github.com/MorningMores/develop). Commit history
-> and authorship are preserved; credentials, Terraform state, keys and build
-> artifacts were removed from all history.
+> [MorningMores/develop](https://github.com/MorningMores/develop). Commit history and
+> authorship are preserved; credentials, Terraform state, keys and build artifacts were
+> removed from all history. There is no hosted demo: run it locally (see
+> [Getting started](#getting-started)).
 
-## Run locally (Docker Compose)
+## Tech stack
 
-Requirements: Docker with Docker Compose v2. One command starts MySQL, Redis, the
-backend and the frontend:
+| Area | Technologies |
+|---|---|
+| **Frontend** | Nuxt 4 (client-side SPA, static build), Vue 3, Tailwind CSS 4, Leaflet + OpenStreetMap (no API key) |
+| **Backend** | Java 21, Spring Boot 3.5 (Web, Data JPA, Security, Validation, Actuator), JJWT (HS512), BCrypt, Flyway, springdoc-openapi (Swagger UI), AWS SDK v2 for S3 uploads, Maven |
+| **Data** | MySQL 8 (Flyway migrations; Hibernate only validates the schema) |
+| **Testing** | JUnit 5, Mockito, Spring Boot Test, Testcontainers, JaCoCo, PIT mutation testing; Vitest, Vue Test Utils, Testing Library; Cypress; k6 |
+| **Infrastructure** | Docker (multi-stage images) and Docker Compose; Kubernetes via one Helm chart (Deployment, HPA, PodDisruptionBudget, Ingress, External Secrets Operator); Terraform for EKS (AWS), GKE (Google Cloud) and AKS (Azure) |
+| **CI/CD** | GitHub Actions, Dependabot, gitleaks, kubeconform |
+
+## Architecture
+
+```mermaid
+flowchart LR
+  user(["Browser"])
+  osm["OpenStreetMap tiles<br/>Leaflet from unpkg"]
+  s3["Amazon S3<br/>photo and avatar uploads"]
+
+  subgraph compose["Local: docker compose"]
+    fe1["frontend<br/>Nuxt dev server :3000"]
+    be1["backend<br/>Spring Boot :8080"]
+    db1[("MySQL 8 :3306")]
+    be1 -->|"JPA, Flyway"| db1
+  end
+
+  subgraph k8s["deploy/: Helm chart on EKS, GKE or AKS (validated in CI, not applied)"]
+    ing["Ingress"]
+    fe2["frontend<br/>nginx, static Nuxt build"]
+    be2["backend<br/>Deployment + HPA"]
+    db2[("Managed MySQL 8<br/>RDS, Cloud SQL or MySQL Flexible Server")]
+    es["External Secrets Operator<br/>DB password, JWT secret"]
+    ing -->|"everything else"| fe2
+    ing -->|"/api, /actuator/health, /swagger-ui, /v3/api-docs"| be2
+    be2 --> db2
+    es -.-> be2
+  end
+
+  user -->|"load SPA"| fe1
+  user -->|"REST + Bearer JWT"| be1
+  user -->|"same origin"| ing
+  user -.-> osm
+  be1 -.->|"presigned URLs"| s3
+  be2 -.->|"presigned URLs"| s3
+```
+
+The browser runs the SPA and calls the REST API directly. Compose also starts a Redis 7
+container, but the application code does not use Redis.
+
+Key design decisions visible in the code:
+
+- **No overbooking under concurrency.** `BookingService.createBooking` takes a pessimistic
+  write lock on the event row (`EventRepository.findByIdForUpdate`) and runs at
+  `READ_COMMITTED`, so the seat count sees bookings committed while it waited for the lock.
+  `BookingConcurrencyIT` and the k6 "ticket rush" test this.
+- **Short-lived JWT plus rotating refresh tokens.** Access tokens last 15 minutes and carry
+  a `jti`, so logout can revoke one. Refresh tokens last 14 days, are stored only as a
+  SHA-256 hash, and are single use: presenting an old one ends the whole session. Login is
+  rate limited (5 failures, then `429` with `Retry-After`). The frontend refreshes once on
+  `401` and shares one refresh between concurrent requests.
+- **Schema as code.** Flyway owns the schema (`db/migration/V1`–`V4`) and Hibernate runs with
+  `ddl-auto=validate`, so an entity/table mismatch stops startup. A database that Hibernate
+  created before Flyway is adopted at version 1; `FlywayMigrationIT` checks both paths on real
+  MySQL.
+- **One chart, three clouds.** The static Nuxt build is served by nginx behind the same
+  Ingress as the API (one origin, no CORS), so the same Helm chart runs on EKS, GKE and AKS
+  with small per-cloud values files. Passwords and the JWT secret are created through
+  ephemeral resources and write-only arguments (on AWS, RDS generates the database
+  password), so they are not stored in Terraform state or in git.
+- **Quality gates, not just tests.** `mvn verify` fails below 94% line / 83% branch coverage
+  (JaCoCo) and the PIT profile fails below a 97% mutation score; the secret scan runs over
+  the full git history in CI.
+
+## Getting started
+
+**Prerequisites:** Docker with Docker Compose v2. For running outside Docker you also need
+JDK 21 (Maven wrapper included) and Node 22.
 
 ```bash
 docker compose up -d --build
 ```
+
+The first start takes a few minutes (Maven build, then `npm install` in the frontend
+container). No `.env` file is needed: `docker-compose.yml` contains local-only defaults.
 
 | Service | URL |
 |---|---|
 | Frontend | http://localhost:3000 |
 | Backend API | http://localhost:8080 |
 | Health check | http://localhost:8080/actuator/health |
-| API docs (Swagger UI) | http://localhost:8080/swagger-ui.html |
+| Swagger UI | http://localhost:8080/swagger-ui.html |
 | OpenAPI document | http://localhost:8080/v3/api-docs |
 
-The first start takes a few minutes: the backend image is built with Maven and
-the frontend container runs `npm install`. No `.env` file is needed for local
-use; all values in `docker-compose.yml` are local-only defaults. The venue map uses OpenStreetMap and needs no key.
+In Swagger UI, call `POST /api/auth/login`, copy the `token` from the response and paste it
+under **Authorize** to try the protected endpoints. Stop everything and delete the database
+volume with `docker compose down -v`.
 
-In Swagger UI, log in with `POST /api/auth/login`, copy the `token` from the response and
-paste it under **Authorize** to call the protected endpoints.
-
-### Database schema (Flyway)
-
-The schema is created by Flyway from `main_backend/src/main/resources/db/migration`
-(`V1__baseline.sql`, `V2__...`). Hibernate only validates it (`ddl-auto=validate`), so a
-mismatch between an entity and the tables stops startup instead of silently changing the
-database. A database that Hibernate created before Flyway was added is adopted at version 1
-and receives only the later migrations. To change the schema, add a new file
-`V<next>__<description>.sql`; never edit a migration that has already run.
-
-### Security settings
-
-| Setting | Variable | Default |
-|---|---|---|
-| Origins allowed by CORS (comma-separated, patterns such as `http://localhost:[*]`) | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:[*],http://127.0.0.1:[*]` |
-| Access token lifetime in ms | `JWT_EXPIRATION_MS` | `900000` (15 minutes) |
-| Refresh token lifetime in days | `JWT_REFRESH_EXPIRATION_DAYS` | `14` |
-| Signing key, at least 64 characters | `JWT_SECRET` | local profiles only; required in `prod` and `cloud` |
-
-- Login and registration return a short-lived access token and a refresh token.
-  `POST /api/auth/refresh` trades the refresh token for a new pair; the old refresh token
-  stops working, and presenting it again ends the whole session (it was copied). Only a
-  SHA-256 hash of each refresh token is stored. The frontend refreshes automatically when a
-  request gets 401 and retries it once.
-- `POST /api/auth/logout` revokes the access token (its id is stored until it expires) and,
-  with `{"refreshToken": ...}` in the body, the refresh token's session.
-- After 5 failed logins for the same account from the same address, further attempts get
-  `429 Too Many Requests` with `Retry-After` for 15 minutes (in memory, per instance).
-- Error responses do not include exception messages; details go to the backend log.
-- The H2 console is not exposed, and responses carry `X-Frame-Options: DENY`,
-  `X-Content-Type-Options: nosniff` and `Referrer-Policy: no-referrer`.
-
-Stop everything and delete the database volume:
+To work on the frontend with hot reload, run only the API and database in Docker:
 
 ```bash
-docker compose down -v
-```
-
-### Frontend without Docker
-
-Start only the data stores and the API in Docker, then run Nuxt with hot reload:
-
-```bash
-docker compose up -d --build mysql redis backend
+docker compose up -d --build mysql backend
 cd main_frontend/concert1
 npm ci --legacy-peer-deps
 npm run dev
 ```
 
+Backend settings that matter outside local use (all environment variables):
 
-## Infrastructure
+| Variable | Meaning | Default |
+|---|---|---|
+| `JWT_SECRET` | HS512 signing key, at least 64 characters | local dev value; **required** in the `prod` and `cloud` profiles |
+| `JWT_EXPIRATION_MS` | Access token lifetime | `900000` (15 min) |
+| `JWT_REFRESH_EXPIRATION_DAYS` | Refresh token lifetime | `14` |
+| `APP_CORS_ALLOWED_ORIGINS` | Allowed browser origins, comma separated, patterns like `http://localhost:[*]` | localhost on any port |
+| `SPRING_DATASOURCE_URL`, `_USERNAME`, `_PASSWORD` | MySQL connection | local MySQL |
+| `SPRING_PROFILES_ACTIVE` | `docker` (Compose), `prod`, `cloud` (Helm chart), `dev` | – |
 
-### Deploying to Kubernetes on AWS, Google Cloud or Azure (`deploy/`)
-
-Terraform per cloud for the network, managed Kubernetes cluster, container registry,
-managed MySQL 8, secret store and workload identities, plus one Helm chart
-([`deploy/helm/mm-events`](deploy/helm/mm-events)) that runs the backend (probes, HPA,
-PodDisruptionBudget), the nginx frontend and an Ingress on all three, with secrets pulled
-from the cloud's secret store by the External Secrets Operator. Each cloud has an
-architecture diagram, a README (`terraform apply`, kubeconfig, pushing the images,
-`helm install`, rough monthly cost, `destroy`) and a `terraform.tfvars.example`.
-Overview and diagrams: [deploy/README.md](deploy/README.md).
-
-| Cloud | Kubernetes | Ingress | Database | Secrets | Rough cost / month |
-|---|---|---|---|---|---|
-| [AWS](deploy/terraform/aws/README.md) | EKS + managed node group | ALB (AWS Load Balancer Controller) | RDS MySQL 8 | Secrets Manager + IRSA | ~USD 255 |
-| [Google Cloud](deploy/terraform/gcp/README.md) | GKE Standard, zonal | GKE Ingress (external Application LB) | Cloud SQL MySQL 8 | Secret Manager + Workload Identity | ~USD 100 |
-| [Azure](deploy/terraform/azure/README.md) | AKS, Free tier | Application Gateway for Containers | MySQL Flexible Server | Key Vault + Workload Identity | ~USD 225 |
-
-These are checked in CI (`deploy-checks.yml`: `terraform fmt`/`validate`, `helm lint`,
-`helm template | kubeconform`) and have not been applied from this repository:
-`terraform apply` creates billable resources in your own account.
-
-### Course infrastructure (shut down)
-
-`aws/`, `infra/terraform/` and `k8s/` are the original infrastructure from the ITDS323
-course (EC2, ECS Fargate, Lambda, API Gateway, Cognito, ElastiCache and EKS on AWS). The
-account they ran in has been closed and none of those resources exist any more. The code
-is kept as a record of the course work; use `deploy/terraform/` for a new deployment.
-
-## Features
-
-- Event catalogue with details, photos and an OpenStreetMap map of the venue (Leaflet, no API key)
-- Registration and login with JWT (Spring Security)
-- Create, edit and delete events; join/leave events
-- Ticket bookings, booking cancellation and a "My bookings" page
-- Profile and account settings with avatar upload (local disk or S3 presigned URLs)
-- OpenAPI document and Swagger UI for the REST API
-- Schema migrations with Flyway; logout that revokes the token; login rate limiting
-
-### Screenshots
-
-Taken from the local Docker Compose stack with sample events (`docs/screenshots/`).
-
-![Home page: "Welcome to MM concerts" banner with a Browse Events button](docs/screenshots/home.jpg)
-
-![Event list: search box, category filters and cards for four upcoming concerts](docs/screenshots/events.jpg)
-
-![Event detail: Bangkok Jazz Night with date, venue, price, seats left and an OpenStreetMap map of the venue](docs/screenshots/event-detail.jpg)
-
-## Tech stack
-
-| Layer | Technologies |
-|---|---|
-| Frontend | Nuxt 4 (SPA), Vue 3, Tailwind CSS 4, Leaflet + OpenStreetMap |
-| Backend | Java 21, Spring Boot 3.5 (Web, Data JPA, Security, Validation, Actuator, Data Redis, Mail), Flyway, springdoc-openapi, JJWT, AWS SDK v2 (S3) |
-| Data | MySQL 8, Redis 7 |
-| Testing | JUnit 5, Spring Boot Test, Testcontainers, JaCoCo; Vitest, Vue Test Utils, Testing Library; Cypress |
-| Containers | Docker (multi-stage images), Docker Compose |
-| Orchestration | Kubernetes on Amazon EKS (Deployment, Service, HPA), Prometheus, Grafana, Actions Runner Controller |
-| Infrastructure | Terraform: VPC, EC2, RDS, ElastiCache, S3, CloudFront, Cognito, API Gateway, Lambda, ECS Fargate, CloudWatch |
-| CI/CD | GitHub Actions, Dependabot, gitleaks |
-
-## Architecture
-
-```mermaid
-flowchart LR
-  subgraph Dev["Developer"]
-    code["Source code"]
-  end
-
-  subgraph GH["GitHub"]
-    repo["Repository"]
-    subgraph CI["GitHub Actions (backend-ci.yml + ci.yml, GitHub-hosted runners)"]
-      be_test["Backend unit + integration tests<br/>JUnit, Testcontainers, coverage gate"]
-      fe_test["Frontend tests + build<br/>Vitest / Nuxt"]
-      e2e["API e2e tests<br/>on Docker Compose stack"]
-      img["Docker image builds"]
-      leaks["gitleaks history scan"]
-    end
-  end
-
-  subgraph Local["Local: docker compose"]
-    fe["frontend<br/>Nuxt dev :3000"]
-    be["backend<br/>Spring Boot :8080"]
-    db[("MySQL 8 :3306")]
-    cache[("Redis 7 :6379")]
-    fe -->|REST + JWT| be
-    be --> db
-    be --> cache
-  end
-
-  subgraph AWS["AWS (course infrastructure, shut down)"]
-    subgraph TF["Terraform: aws/ and infra/terraform/"]
-      cdn["S3 + CloudFront<br/>static frontend"]
-      apigw["API Gateway"]
-      compute["EC2 / ECS Fargate / Lambda"]
-      rds[("RDS MySQL")]
-      redis[("ElastiCache Redis")]
-      cognito["Cognito"]
-      s3img["S3 uploads"]
-      cw["CloudWatch"]
-    end
-    subgraph K8S["Kubernetes: k8s/ on EKS"]
-      dep["backend Deployment + HPA"]
-      kredis["Redis"]
-      mon["Prometheus + Grafana"]
-      arc["Actions Runner Controller"]
-    end
-  end
-
-  code -->|git push / PR| repo
-  repo --> CI
-  e2e -.->|same compose file| Local
-  cdn --> apigw --> compute
-  compute --> rds
-  compute --> redis
-  compute --> s3img
-  cdn -.-> cognito
-  dep --> rds
-  dep --> kredis
-  mon -.-> dep
-```
-
-## Repository layout
-
-| Path | Contents |
-|---|---|
-| `main_backend/` | Spring Boot API (`src/main`), tests (`src/test`), Dockerfile |
-| `main_frontend/concert1/` | Nuxt 4 app (`app/`), unit tests (`test/unit`), e2e tests (`test/e2e`), Cypress specs, Dockerfile + nginx config |
-| `docker-compose.yml` | Local stack: MySQL, Redis, backend, frontend (and a `tests` profile for Dockerised backend tests) |
-| `docker-compose.prod.yml` | Backend + frontend images against an external RDS database (reads `.env`) |
-| `deploy/` | Deployable Terraform for EKS, GKE and AKS (`deploy/terraform/<cloud>/`), the shared Helm chart (`deploy/helm/mm-events/`) and the architecture diagrams with their sources (`deploy/diagrams/`) |
-| `k8s/` | Course infrastructure, shut down: EKS manifests (backend Deployment/Service/HPA, Redis, Prometheus/Grafana, runner deployment) |
-| `aws/` | Course infrastructure, shut down: Terraform for the EC2-based deployment (VPC, EC2, RDS, ElastiCache, S3, Cognito, API Gateway, CloudWatch, IAM), plus the Lambda sources and EC2 user data |
-| `infra/terraform/` | Course infrastructure, shut down: Terraform for the serverless (`serverless/`, `production/`) and ECS Fargate (`ecs-fargate/`) variants |
-| `.github/workflows/` | `backend-ci.yml` (backend tests + coverage gate), `ci.yml` (frontend, e2e, images, secret scan), `mutation-tests.yml`, `load-test.yml`, `deploy-checks.yml` (Terraform and Helm checks for `deploy/`) |
-| `load-tests/` | k6 booking-rush script |
-| `docs/` | Design notes comparing AWS hosting options; see [docs/README.md](docs/README.md) |
+`.env.example` shows the variable names for a non-local setup (placeholders only).
 
 ## Testing
 
-### Backend (`main_backend/`)
-
-Tests are split in two Maven phases, exactly as CI runs them:
-
-| Kind | What runs | Command | Needs |
-|---|---|---|---|
-| Unit | Plain JUnit/Mockito tests and Spring slices (`@WebMvcTest` with the real security config, `@DataJpaTest` on H2) — surefire | `./mvnw -B -ntp test` | JDK 21 |
-| Integration | Full Spring context and Testcontainers tests on MySQL 8.0 (`*IT`, `integration/**`, `*DockerTest`), then the coverage gate — failsafe | `./mvnw -B -ntp verify -DskipUTs=true` | JDK 21 + Docker |
-| Both | Unit, integration and the coverage gate in one go | `./mvnw -B -ntp verify` | JDK 21 + Docker |
-
-`main_backend/run-tests.sh` wraps the same commands:
-
-```bash
-cd main_backend
-./run-tests.sh            # unit, then integration + coverage gate (same as CI)
-./run-tests.sh unit       # unit tests only, no Docker
-./run-tests.sh coverage   # same as CI, then prints a coverage summary
-./run-tests.sh specific EventServicePhotoTest
-```
-
-No local JDK? `main_backend/run-docker-tests.sh` runs the same commands inside
-a Maven container (Docker Compose profile `tests`).
-
-New integration tests go in a class whose name ends in `IT`; everything else
-runs as a unit test. S3 is always a Mockito fake in tests, and nothing needs
-AWS credentials.
-
-### Coverage report
-
-JaCoCo writes two HTML reports:
-
-- `main_backend/target/site/jacoco/index.html` – unit + integration, the one the gate checks
-- `main_backend/target/site/jacoco-unit/index.html` – unit tests only (after `./mvnw test`)
-
-Open `index.html` and drill down package → class → source: green lines are
-covered, red are not, yellow lines have branches that were only partly taken.
-
-The gate (`jacoco.minLine` / `jacoco.minBranch` in `main_backend/pom.xml`) fails
-`mvn verify` when total line or branch coverage drops below the minimum. It is
-set one point below the measured coverage (currently 94% lines, 83% branches); raise it when you add tests, never
-lower it to make a build pass.
-
-### Frontend and end-to-end
-
-| What | Command | Notes |
+| Kind | Command | Needs |
 |---|---|---|
-| Frontend unit | `cd main_frontend/concert1 && npm run test` | `npm run test:coverage` for coverage. As in Nuxt, `~/` means `app/`, so tests import and mock the same files the app uses |
-| API end-to-end | `docker compose up -d --build --wait`, then `cd main_frontend/concert1 && npm run test:e2e` | Runs against the local stack on :3000 / :8080 |
-| Cypress UI tests | `cd main_frontend/concert1 && npm run test:cy:headless` | Needs the local stack running; sign-up, login, browsing, booking, cancelling and the "sold out" case. Each test creates its own users and events through the API |
+| Backend unit (JUnit/Mockito, `@WebMvcTest` with the real security config, `@DataJpaTest` on H2) | `cd main_backend && ./mvnw -B -ntp test` | JDK 21 |
+| Backend integration (full Spring context and Testcontainers on MySQL 8.0, `*IT` classes, then the JaCoCo gate) | `cd main_backend && ./mvnw -B -ntp verify -DskipUTs=true` | JDK 21, Docker |
+| Backend, everything | `cd main_backend && ./run-tests.sh` (also `unit`, `coverage`, `specific <TestClass>`) | JDK 21, Docker |
+| Backend in a container (no local JDK) | `cd main_backend && ./run-docker-tests.sh` | Docker |
+| Frontend unit (Vitest: components, composables, pages) | `cd main_frontend/concert1 && npm run test` | Node 22 |
+| API end-to-end (Vitest against the running stack) | `docker compose up -d --build --wait`, then `cd main_frontend/concert1 && npm run test:e2e` | Docker, Node 22 |
+| UI end-to-end (Cypress: sign-up, login, browsing, booking, cancelling, sold-out case) | stack running, then `cd main_frontend/concert1 && npm run test:cy:headless` | Docker, Node 22 |
+| Mutation testing (PIT on services, security and error mapping) | `cd main_backend && ./mvnw -Pmutation test-compile org.pitest:pitest-maven:mutationCoverage` | JDK 21 |
+| Load test (k6 "ticket rush": many buyers, limited seats) | `docker compose up -d --build --wait mysql redis backend`, then run `load-tests/booking-rush.js` with `grafana/k6` as in the CI workflow `load-test.yml` | Docker |
 
-### Mutation testing (backend)
+- Coverage reports: `main_backend/target/site/jacoco/index.html` (unit + integration; this
+  is the one the gate checks) and `main_backend/target/site/jacoco-unit/index.html`.
+  The gate thresholds are `jacoco.minLine` and `jacoco.minBranch` in `main_backend/pom.xml`.
+- The k6 script fails on unexpected responses, overbooking, or p95 latency above 500 ms
+  (browsing) or 3 s (booking). `SEATS` and `BUYERS` set the size of the rush.
+- S3 is a Mockito fake in the tests; nothing needs AWS credentials.
 
-[PIT](https://pitest.org) changes the business logic in small ways (flips a condition,
-removes a call, changes a return value) and checks that a unit test fails for each
-change. A surviving mutant is a bug the tests would not notice.
+## Deployment and CI/CD
 
-```bash
-cd main_backend
-./mvnw -Pmutation test-compile org.pitest:pitest-maven:mutationCoverage
-open target/pit-reports/index.html
-```
+All workflows run on GitHub-hosted runners with no cloud credentials and no deploy jobs.
 
-Scope: services, security, error mapping and utilities. Current score 99% (239 of 242;
-the three survivors are equivalent mutants). The build fails below 97%
-(`pit.mutationThreshold` in the `mutation` profile).
+| Workflow | Trigger | What it does |
+|---|---|---|
+| `backend-ci.yml` | push to `main`, pull requests | Detects whether `main_backend/**` changed; if so runs unit tests, then integration tests on Testcontainers MySQL and the coverage gate; uploads reports and writes a summary. A final always-run job `backend-ci` can serve as a required check. |
+| `ci.yml` | push to `main`, pull requests | Frontend: `npm ci`, Vitest, `nuxt build`. End-to-end: starts the Compose stack, runs the API e2e suite and Cypress. Builds the backend and frontend Docker images (not pushed). Runs gitleaks over the full history. |
+| `deploy-checks.yml` | changes under `deploy/` | `terraform fmt -check` and `terraform validate` for the AWS, GCP and Azure modules; `helm lint --strict` and `helm template \| kubeconform -strict` per cloud. |
+| `mutation-tests.yml` | backend pull requests, weekly, manual | PIT mutation tests; fails below the gate in `pom.xml`. |
+| `load-test.yml` | weekly, manual | k6 ticket rush against the Compose backend. |
 
-### Load testing
+Dependabot updates npm, Maven and GitHub Actions dependencies monthly.
 
-`load-tests/booking-rush.js` is a [k6](https://k6.io) "ticket rush": many buyers book the
-same limited event at the same moment while others browse the event list. It fails on
-unexpected responses, on overbooking, or when p95 latency goes over 500 ms (browsing) or
-3 s (booking).
+**Deploying.** [`deploy/`](deploy/README.md) contains Terraform for a managed Kubernetes
+cluster, registry, managed MySQL 8, secret store and workload identities on
+[AWS](deploy/terraform/aws/README.md), [Google Cloud](deploy/terraform/gcp/README.md) and
+[Azure](deploy/terraform/azure/README.md), plus the Helm chart
+[`deploy/helm/mm-events`](deploy/helm/mm-events). These are validated by the checks above
+but have not been applied from this repository: `terraform apply` creates billable resources
+in your own account, and each cloud README lists a rough monthly cost.
 
-```bash
-docker compose up -d --build --wait mysql redis backend
-docker run --rm -i -e BASE_URL=http://host.docker.internal:8080 grafana/k6:2.3.0 run - < load-tests/booking-rush.js
-```
+**Earlier course infrastructure.** `aws/`, `infra/terraform/` and `k8s/` are the original
+ITDS323 setup (EC2, ECS Fargate, Lambda, API Gateway, Cognito, ElastiCache and EKS). The AWS
+account they ran in is closed, so they are kept as a record only. The course pipeline also
+pushed images and deployed to EKS from self-hosted runners; those jobs were removed with the
+infrastructure and remain in the git history and the `archive/*` tags.
 
-`SEATS` and `BUYERS` (default 50 and 120) change the size of the rush. Local result: 120
-buyers for 50 seats, exactly 50 sold and 70 told "sold out", booking p95 about 250 ms.
+## Project context
 
-## CI/CD
+- **Course:** ITDS323 (DevOps), team project at ICT, Mahidol University; the commit
+  history spans September 2025 onward and the license is dated 2025.
+- **Team:** built by the ITDS323 project team; the full contributor history is in the
+  original repository, [MorningMores/develop](https://github.com/MorningMores/develop).
+- **Repository layout:** `main_backend/` (Spring Boot API and its tests),
+  `main_frontend/concert1/` (Nuxt app, unit, e2e and Cypress tests), `deploy/` (Terraform and
+  Helm), `load-tests/` (k6), `docs/` (AWS design notes from the course), and the three
+  course-era directories above. The `archive/*` tags keep earlier lines of work, for example
+  `git log archive/k8s-development`.
 
-All workflows run on GitHub-hosted runners only: no self-hosted runners, no
-cloud credentials, no deploy jobs.
+### My role
 
-**`backend-ci.yml`** (push to `main`, every pull request):
-
-1. **changes** – checks whether `main_backend/**` (or the workflow) changed.
-2. **tests** – only when the backend changed: Temurin 21 with the Maven cache,
-   `./mvnw test` (unit), then `./mvnw verify -DskipUTs=true` (integration on
-   Testcontainers MySQL 8.0 + coverage gate). Uploads the surefire, failsafe
-   and JaCoCo reports as the `backend-test-reports` artifact and writes a
-   test and coverage table to the run's summary page.
-3. **backend-ci** – always runs and reports the result, so it can be a required
-   status check even on pull requests that do not touch the backend.
-
-**`ci.yml`** (push to `main`, every pull request):
-
-1. **frontend** – `npm ci`, Vitest unit tests, `nuxt build`
-2. **e2e** – starts the Docker Compose stack and runs the API e2e suite and the Cypress UI tests
-3. **docker-images** – builds the backend and frontend images (not pushed)
-4. **secret-scan** – gitleaks over the full git history (`.gitleaks.toml`)
-
-**`mutation-tests.yml`** runs PIT on backend pull requests (not a required check), weekly
-and on demand. **`load-test.yml`** runs the k6 ticket rush on demand and weekly.
-**`deploy-checks.yml`** runs `terraform fmt -check` and `terraform validate` on the modules
-in `deploy/terraform/`, and `helm lint` plus `helm template | kubeconform -strict` on the
-chart for each cloud (no cloud credentials).
-
-To see why a backend run failed, open the run in the Actions tab: the summary
-page lists failed tests and coverage per package, and the
-`backend-test-reports` artifact has the full reports.
-
-During the course the pipeline also pushed images to GHCR and deployed to EKS
-through self-hosted runners; those jobs needed AWS credentials and were removed
-together with the infrastructure. Their history is in the git log and under
-the `archive/*` tags.
-
-## Deploying again (optional)
-
-For Kubernetes on AWS, Google Cloud or Azure use the Terraform and Helm chart in
-[deploy/](deploy/README.md).
-
-The options below recreate the original course setup from the shut-down infrastructure
-code. They are kept for reference and create billable AWS resources in **your** account.
-
-- **Terraform:** `cd aws` (or `infra/terraform/<variant>`), copy
-  `terraform.tfvars.example` to `terraform.tfvars`, fill in your values, then
-  `terraform init && terraform plan && terraform apply`. State and `*.tfvars`
-  files are git-ignored.
-- **Kubernetes:** replace the placeholder values in the `backend-secrets` Secret
-  inside `k8s/backend-deployment.yaml` (or create the Secret with `kubectl create
-  secret`), set your image, then `kubectl apply -f k8s/`.
-- **Docker Compose on a VM:** copy `.env.example` to `.env`, fill in the
-  production section and run `docker compose -f docker-compose.prod.yml up -d --build`.
-
-## Branches and tags
-
-`main` holds the final state of the project. The `archive/*` tags keep earlier
-lines of work (test branches, the Kubernetes and AWS experiments and individual
-frontend branches) so that every team member's commits remain in the history.
-Browse one with `git log archive/k8s-development` or check it out in a separate
-worktree with `git worktree add ../k8s archive/k8s-development`.
-
-## My role
-
-**Fullstack Developer and Tester** – Putinun ([@Putinun-te](https://github.com/Putinun-te)).
-I worked on both the Spring Boot backend and the Nuxt frontend, and wrote and
-maintained the backend and frontend test suites (JUnit with Testcontainers,
-Vitest, API end-to-end tests). I also contributed to the project's Docker,
-CI/CD, Kubernetes and Terraform setup.
-
-## Credits
-
-MM Events was built by the ITDS323 project team. The original repository, with
-the full team and contributor history, is
-[MorningMores/develop](https://github.com/MorningMores/develop).
+<!-- TODO(author): describe your role and the parts you built, in your own words. -->
+_To be filled in._
 
 ## License
 
-[MIT](LICENSE) – Copyright (c) 2025 PANAIYAKORN, PORAMEE, THANASON, PICHITCHAI,
-PUTINUN, SUVEEWAT, KANTANAT.
+[MIT](LICENSE) – Copyright (c) 2025 PANAIYAKORN, PORAMEE, THANASON, PICHITCHAI, PUTINUN,
+SUVEEWAT, KANTANAT.

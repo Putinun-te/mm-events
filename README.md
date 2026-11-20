@@ -191,8 +191,8 @@ infrastructure and remain in the git history and the `archive/*` tags.
 
 ## Project context
 
-- **Course:** ITDS323 (DevOps), team project; the commit history spans September 2025
-  onward and the license is dated 2025.
+- **Course:** ITDS323 (DevOps), team project at ICT, Mahidol University; the commit
+  history spans September 2025 onward and the license is dated 2025.
 - **Team:** built by the ITDS323 project team; the full contributor history is in the
   original repository, [MorningMores/develop](https://github.com/MorningMores/develop).
 - **Repository layout:** `main_backend/` (Spring Boot API and its tests),

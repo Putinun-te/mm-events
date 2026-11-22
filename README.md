@@ -28,7 +28,7 @@ containers, layered automated tests, CI/CD, Kubernetes and infrastructure as cod
 | **Frontend** | Nuxt 4 (client-side SPA, static build), Vue 3, Tailwind CSS 4, Leaflet + OpenStreetMap (no API key) |
 | **Backend** | Java 21, Spring Boot 3.5 (Web, Data JPA, Security, Validation, Actuator), JJWT (HS512), BCrypt, Flyway, springdoc-openapi (Swagger UI), AWS SDK v2 for S3 uploads, Maven |
 | **Data** | MySQL 8 (Flyway migrations; Hibernate only validates the schema) |
-| **Testing** | JUnit 5, Mockito, Spring Boot Test, Testcontainers, JaCoCo, PIT mutation testing; Vitest, Vue Test Utils, Testing Library; Cypress; k6 |
+| **Testing** | JUnit 5, Mockito, Spring Boot Test, Testcontainers, JaCoCo, PIT mutation testing; Vitest, Vue Test Utils, Testing Library; Playwright, Cypress; k6 |
 | **Infrastructure** | Docker (multi-stage images) and Docker Compose; Kubernetes via one Helm chart (Deployment, HPA, PodDisruptionBudget, Ingress, External Secrets Operator); Terraform for EKS (AWS), GKE (Google Cloud) and AKS (Azure) |
 | **CI/CD** | GitHub Actions, Dependabot, gitleaks, kubeconform |
 
@@ -150,7 +150,8 @@ Backend settings that matter outside local use (all environment variables):
 | Backend in a container (no local JDK) | `cd main_backend && ./run-docker-tests.sh` | Docker |
 | Frontend unit (Vitest: components, composables, pages) | `cd main_frontend/concert1 && npm run test` | Node 22 |
 | API end-to-end (Vitest against the running stack) | `docker compose up -d --build --wait`, then `cd main_frontend/concert1 && npm run test:e2e` | Docker, Node 22 |
-| UI end-to-end (Cypress: sign-up, login, browsing, booking, cancelling, sold-out case) | stack running, then `cd main_frontend/concert1 && npm run test:cy:headless` | Docker, Node 22 |
+| UI end-to-end (Playwright: sign-up, login, browsing, booking, cancelling, sold-out case) | stack running, then `cd main_frontend/concert1 && npx playwright install chromium && npm run test:pw` | Docker, Node 22 |
+| UI end-to-end (Cypress, same scenarios; kept until the Playwright suite has proven itself in CI) | stack running, then `cd main_frontend/concert1 && npm run test:cy:headless` | Docker, Node 22 |
 | Mutation testing (PIT on services, security and error mapping) | `cd main_backend && ./mvnw -Pmutation test-compile org.pitest:pitest-maven:mutationCoverage` | JDK 21 |
 | Load test (k6 "ticket rush": many buyers, limited seats) | `docker compose up -d --build --wait mysql redis backend`, then run `load-tests/booking-rush.js` with `grafana/k6` as in the CI workflow `load-test.yml` | Docker |
 
@@ -168,7 +169,7 @@ All workflows run on GitHub-hosted runners with no cloud credentials and no depl
 | Workflow | Trigger | What it does |
 |---|---|---|
 | `backend-ci.yml` | push to `main`, pull requests | Detects whether `main_backend/**` changed; if so runs unit tests, then integration tests on Testcontainers MySQL and the coverage gate; uploads reports and writes a summary. A final always-run job `backend-ci` can serve as a required check. |
-| `ci.yml` | push to `main`, pull requests | Frontend: `npm ci`, Vitest, `nuxt build`. End-to-end: starts the Compose stack, runs the API e2e suite and Cypress. Builds the backend and frontend Docker images (not pushed). Runs gitleaks over the full history. |
+| `ci.yml` | push to `main`, pull requests | Frontend: `npm ci`, Vitest, `nuxt build`. End-to-end: starts the Compose stack, runs the API e2e suite, Cypress and Playwright. Builds the backend and frontend Docker images (not pushed). Runs gitleaks over the full history. |
 | `deploy-checks.yml` | changes under `deploy/` | `terraform fmt -check` and `terraform validate` for the AWS, GCP and Azure modules; `helm lint --strict` and `helm template \| kubeconform -strict` per cloud. |
 | `mutation-tests.yml` | backend pull requests, weekly, manual | PIT mutation tests; fails below the gate in `pom.xml`. |
 | `load-test.yml` | weekly, manual | k6 ticket rush against the Compose backend. |

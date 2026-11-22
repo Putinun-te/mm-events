@@ -82,6 +82,29 @@ jobs:
         working-directory: main_frontend/concert1
         run: npx cypress run --browser electron
 
+      # Playwright runs the same UI scenarios as Cypress while both suites are kept, and
+      # runs even when Cypress failed so the two results can be compared.
+      - name: Install Playwright Chromium
+        if: ${{ !cancelled() }}
+        working-directory: main_frontend/concert1
+        run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright UI tests
+        if: ${{ !cancelled() }}
+        working-directory: main_frontend/concert1
+        run: npx playwright test
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            main_frontend/concert1/playwright-report/
+            main_frontend/concert1/test-results/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: Upload Cypress screenshots
         if: failure()
         uses: actions/upload-artifact@v7

@@ -34,6 +34,16 @@ containers, layered automated tests, CI/CD, Kubernetes and infrastructure as cod
 
 ## Architecture
 
+![MM Events architecture: Docker Compose locally, Helm chart on EKS, GKE or AKS](deploy/diagrams/overview.png)
+
+The image is rendered from [`deploy/diagrams/overview.py`](deploy/diagrams/overview.py); see
+[Regenerating the diagrams](deploy/README.md#regenerating-the-diagrams). AWS icons stand in for
+the cloud services, and the labels name the GKE and AKS equivalents. Detailed per-cloud
+diagrams are in [`deploy/README.md`](deploy/README.md).
+
+<details>
+<summary>Same diagram as Mermaid (text source)</summary>
+
 ```mermaid
 flowchart LR
   user(["Browser"])
@@ -66,6 +76,8 @@ flowchart LR
   be1 -.->|"presigned URLs"| s3
   be2 -.->|"presigned URLs"| s3
 ```
+
+</details>
 
 The browser runs the SPA and calls the REST API directly. Compose also starts a Redis 7
 container, but the application code does not use Redis.

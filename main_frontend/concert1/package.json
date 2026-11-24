@@ -18,6 +18,8 @@
     "cy:open": "cypress open",
     "test:cy": "cypress run --browser electron",
     "test:cy:headless": "cypress run --browser electron --headless",
+    "test:pw": "playwright test",
+    "test:pw:ui": "playwright test --ui",
     "test:all": "npm run test:coverage && npm run test:e2e"
   },
   "dependencies": {
@@ -29,6 +31,7 @@
   },
   "devDependencies": {
     "@nuxt/test-utils": "^3.20.1",
+    "@playwright/test": "1.64.1",
     "@testing-library/jest-dom": "6.6.3",
     "@testing-library/user-event": "14.5.2",
     "@testing-library/vue": "8.1.0",

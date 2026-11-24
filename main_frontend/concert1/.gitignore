@@ -13,6 +13,12 @@ node_modules
 logs
 *.log
 
+# Playwright output
+test-results
+playwright-report
+blob-report
+.playwright-cli
+
 # Misc
 .DS_Store
 .fleet
